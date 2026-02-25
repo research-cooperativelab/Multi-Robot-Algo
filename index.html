@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Robot Search & Rescue — Auction Algorithm Visualization</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0a0e17;
+    color: #e0e6f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+    gap: 0;
+  }
+
+  .header {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #0f1628 0%, #1a1f35 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header .subtitle {
+    font-size: 11px;
+    color: #6b7280;
+    margin-left: 16px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .controls button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: #e0e6f0;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .controls button:hover {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.4);
+  }
+
+  .controls button.primary {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border-color: transparent;
+    font-weight: 600;
+  }
+
+  .controls button.primary:hover {
+    opacity: 0.9;
+  }
+
+  .controls button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .canvas-panel {
+    position: relative;
+    background: #0d1220;
+    overflow: hidden;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .round-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .round-badge .label {
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .round-badge .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #60a5fa;
+  }
+
+  .round-badge .status {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .found-status { color: #34d399; }
+  .searching-status { color: #fbbf24; }
+
+  .sidebar {
+    background: #111827;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+
+  .stat-label { color: #9ca3af; }
+  .stat-value { 
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #e0e6f0;
+  }
+
+  .drone-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .drone-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .drone-info {
+    flex: 1;
+    font-size: 11px;
+  }
+
+  .drone-name {
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  .drone-detail {
+    color: #6b7280;
+    font-size: 10px;
+  }
+
+  .energy-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .energy-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .log-entry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: #9ca3af;
+    line-height: 1.5;
+  }
+
+  .log-entry .highlight { color: #60a5fa; }
+  .log-entry .success { color: #34d399; }
+  .log-entry .warn { color: #fbbf24; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 10px;
+    color: #6b7280;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .legend-sq {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #6b7280;
+  }
+
+  .speed-control input[type="range"] {
+    width: 60px;
+    accent-color: #6366f1;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <div style="display:flex;align-items:center">
+      <h1>SEARCH &amp; RESCUE</h1>
+      <span class="subtitle">Auction-Based Multi-Drone Coordination (p/d² bids)</span>
+    </div>
+    <div class="controls">
+      <div class="speed-control">
+        <span>Speed</span>
+        <input type="range" id="speed" min="1" max="10" value="4">
+      </div>
+      <button id="btn-reset" onclick="resetSim()">Reset</button>
+      <button id="btn-step" onclick="stepRound()">Step →</button>
+      <button id="btn-play" class="primary" onclick="togglePlay()">▶ Play</button>
+    </div>
+  </div>
+
+  <div class="canvas-panel">
+    <canvas id="canvas"></canvas>
+    <div class="round-badge">
+      <div class="label">Sortie Round</div>
+      <div class="value" id="round-num">0</div>
+      <div id="round-status" class="status searching-status">Ready to launch</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">Instance</div>
+      <div class="stat-row"><span class="stat-label">Search Sites</span><span class="stat-value" id="s-nodes">30</span></div>
+      <div class="stat-row"><span class="stat-label">Drones</span><span class="stat-value" id="s-drones">3</span></div>
+      <div class="stat-row"><span class="stat-label">Energy Budget</span><span class="stat-value" id="s-energy">14.0</span></div>
+      <div class="stat-row"><span class="stat-label">Area</span><span class="stat-value">10 × 10</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Drones</div>
+      <div id="drone-cards"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Search Progress</div>
+      <div class="stat-row"><span class="stat-label">Sites Searched</span><span class="stat-value" id="s-searched">0 / 30</span></div>
+      <div class="stat-row"><span class="stat-label">Prob. Eliminated</span><span class="stat-value" id="s-prob">0%</span></div>
+      <div class="stat-row"><span class="stat-label">Entropy</span><span class="stat-value" id="s-entropy">—</span></div>
+      <div class="stat-row"><span class="stat-label">Finder CR</span><span class="stat-value" id="s-fcr">—</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Round Log</div>
+      <div id="log" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Legend</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> High prob</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1e3a5f"></div> Low prob</div>
+        <div class="legend-item"><div class="legend-sq" style="background:#374151"></div> Searched (empty)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Target</div>
+        <div class="legend-item"><div class="legend-sq" style="background:#fff;border:1px solid #555"></div> Base station</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SIMULATION ENGINE (mirrors search_final.py exactly)
+// ============================================================
+
+const DRONE_COLORS = ['#3b82f6', '#f97316', '#a855f7', '#14b8a6', '#f43f5e', '#eab308'];
+const N_NODES = 30, N_ROBOTS = 3, AREA = 10, ENERGY = 14;
+
+let state = null;
+let playing = false;
+let playTimer = null;
+let animPhase = 0; // 0=idle, 1=flying-out, 2=at-site, 3=flying-back
+let animT = 0;
+let animFrame = null;
+
+function dist(a, b) { return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2); }
+
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) & 0xFFFFFFFF;
+    return (s >>> 0) / 0xFFFFFFFF;
+  };
+}
+
+function generateInstance(seed) {
+  const rng = seededRandom(seed);
+  const nodes = {};
+  for (let i = 0; i < N_NODES; i++) {
+    nodes[i] = [rng() * AREA, rng() * AREA];
+  }
+  const rawP = {};
+  let total = 0;
+  for (let i = 0; i < N_NODES; i++) {
+    rawP[i] = 0.1 + rng() * 0.9;
+    total += rawP[i];
+  }
+  const probs = {};
+  for (let i = 0; i < N_NODES; i++) probs[i] = rawP[i] / total;
+
+  const bases = {};
+  for (let r = 0; r < N_ROBOTS; r++) {
+    bases[r] = [rng() * AREA, rng() * AREA];
+  }
+
+  // Pick target from distribution
+  let cumul = 0, roll = rng();
+  let target = 0;
+  for (let i = 0; i < N_NODES; i++) {
+    cumul += probs[i];
+    if (roll <= cumul) { target = i; break; }
+  }
+
+  let optDist = Infinity;
+  for (let r = 0; r < N_ROBOTS; r++) {
+    optDist = Math.min(optDist, dist(bases[r], nodes[target]));
+  }
+
+  return { nodes, probs: {...probs}, bases, target, optDist };
+}
+
+function initState() {
+  const seed = Math.floor(Math.random() * 100000);
+  const inst = generateInstance(seed);
+  return {
+    inst,
+    probs: {...inst.probs},
+    available: new Set(Object.keys(inst.nodes).map(Number)),
+    visited: new Set(),
+    round: 0,
+    found: false,
+    finder: null,
+    finderDist: 0,
+    robotDists: Object.fromEntries(Array.from({length: N_ROBOTS}, (_, i) => [i, 0])),
+    tours: {},         // current round tours {r: [{node, pos, d}]}
+    tourPhase: 'idle',
+    log: [],
+    totalProbElim: 0,
+    seed,
+  };
+}
+
+function runAuctionRound(st) {
+  const { inst, probs, available } = st;
+  const { nodes, bases } = inst;
+
+  // Phase 1: Auction
+  const robotBids = {};
+  for (let r = 0; r < N_ROBOTS; r++) {
+    const bids = [];
+    for (const n of available) {
+      const d = dist(bases[r], nodes[n]);
+      const p = probs[n] || 0;
+      if (2 * d <= ENERGY && d > 0 && p > 0) {
+        bids.push({ node: n, bid: p / (d * d), dist: d });
+      }
+    }
+    bids.sort((a, b) => b.bid - a.bid);
+    robotBids[r] = bids;
+  }
+
+  // SSI auction
+  const assigned = {};
+  const taken = new Set();
+  const robotOrder = Object.keys(robotBids)
+    .map(Number)
+    .sort((a, b) => {
+      const ba = robotBids[a].length ? robotBids[a][0].bid : -1;
+      const bb = robotBids[b].length ? robotBids[b][0].bid : -1;
+      return bb - ba;
+    });
+
+  for (const r of robotOrder) {
+    for (const b of robotBids[r]) {
+      if (!taken.has(b.node)) {
+        assigned[r] = { node: b.node, dist: b.dist };
+        taken.add(b.node);
+        break;
+      }
+    }
+  }
+
+  if (Object.keys(assigned).length === 0) return null;
+
+  // Phase 2: Greedy chain extension
+  const allClaimed = new Set(Object.values(assigned).map(a => a.node));
+  const tours = {};
+  const robotRem = {};
+  const robotPos = {};
+
+  for (const [r, a] of Object.entries(assigned)) {
+    const ri = Number(r);
+    tours[ri] = [{ node: a.node, pos: nodes[a.node], d: a.dist }];
+    robotPos[ri] = nodes[a.node];
+    robotRem[ri] = ENERGY - a.dist;
+  }
+
+  let active = new Set(Object.keys(tours).map(Number));
+  while (active.size > 0) {
+    let progress = false;
+    for (const r of [...active]) {
+      let bestNode = null, bestBid = -1, bestD = 0;
+      for (const n of available) {
+        if (allClaimed.has(n)) continue;
+        const dTo = dist(robotPos[r], nodes[n]);
+        const dBack = dist(nodes[n], bases[r]);
+        const p = probs[n] || 0;
+        if (dTo + dBack <= robotRem[r] && dTo > 0 && p > 0) {
+          const bv = p / (dTo * dTo);
+          if (bv > bestBid) { bestBid = bv; bestD = dTo; bestNode = n; }
+        }
+      }
+      if (bestNode === null) {
+        active.delete(r);
+      } else {
+        tours[r].push({ node: bestNode, pos: nodes[bestNode], d: bestD });
+        allClaimed.add(bestNode);
+        robotRem[r] -= bestD;
+        robotPos[r] = nodes[bestNode];
+        progress = true;
+      }
+    }
+    if (!progress) break;
+  }
+
+  return tours;
+}
+
+function executeRound(st, tours) {
+  st.round++;
+  st.tours = tours;
+  st.tourPhase = 'done';
+
+  let found = false, finder = null;
+  const visited = new Set();
+  let probCap = 0;
+  const roundSites = {};
+
+  for (const [r, tour] of Object.entries(tours)) {
+    const ri = Number(r);
+    roundSites[ri] = [];
+    for (const stop of tour) {
+      st.robotDists[ri] += stop.d;
+      visited.add(stop.node);
+      roundSites[ri].push(stop.node);
+      probCap += st.probs[stop.node] || 0;
+      if (stop.node === st.inst.target) {
+        found = true;
+        finder = ri;
+        break;
+      }
+    }
+    if (!(found && ri === finder) && tour.length > 0) {
+      const last = tour[tour.length - 1];
+      st.robotDists[ri] += dist(last.pos, st.inst.bases[ri]);
+    }
+  }
+
+  // Bayesian update
+  let visitedProb = 0;
+  for (const n of visited) visitedProb += st.probs[n] || 0;
+  const remaining = 1 - visitedProb;
+  if (remaining > 1e-12) {
+    for (const n of Object.keys(st.probs).map(Number)) {
+      if (visited.has(n)) st.probs[n] = 0;
+      else st.probs[n] /= remaining;
+    }
+  }
+
+  for (const n of visited) {
+    st.available.delete(n);
+    st.visited.add(n);
+  }
+
+  st.totalProbElim += probCap;
+
+  if (found) {
+    st.found = true;
+    st.finder = finder;
+    st.finderDist = st.robotDists[finder];
+  }
+
+  // Log
+  let msg = `<span class="highlight">Round ${st.round}</span>: `;
+  for (const [r, sites] of Object.entries(roundSites)) {
+    msg += `D${r}→${sites.length} sites `;
+  }
+  if (found) {
+    msg += `<span class="success">★ TARGET FOUND by Drone ${finder}!</span>`;
+  }
+  st.log.push(msg);
+
+  return { found, visited: [...visited], probCap, roundSites };
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * devicePixelRatio;
+  canvas.height = rect.height * devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+}
+
+function toScreen(pos) {
+  const pad = 50 * devicePixelRatio;
+  const w = canvas.width - 2 * pad;
+  const h = canvas.height - 2 * pad;
+  const scale = Math.min(w, h) / AREA;
+  return [
+    pad + pos[0] * scale,
+    canvas.height - pad - pos[1] * scale  // flip Y
+  ];
+}
+
+function probToColor(p, maxP) {
+  const t = Math.min(1, p / maxP);
+  // Dark blue → amber/gold
+  const r = Math.floor(30 + t * 220);
+  const g = Math.floor(58 + t * 130);
+  const b = Math.floor(95 - t * 55);
+  return `rgb(${r},${g},${b})`;
+}
+
+function draw() {
+  if (!state) return;
+  const { inst, probs, available, visited, tours, found, finder } = state;
+  const { nodes, bases, target } = inst;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const dpr = devicePixelRatio;
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= AREA; i++) {
+    const [x1, y1] = toScreen([i, 0]);
+    const [x2, y2] = toScreen([i, AREA]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const [x3, y3] = toScreen([0, i]);
+    const [x4, y4] = toScreen([AREA, i]);
+    ctx.beginPath(); ctx.moveTo(x3, y3); ctx.lineTo(x4, y4); ctx.stroke();
+  }
+
+  // Find max probability for color scaling
+  let maxP = 0;
+  for (const n of available) maxP = Math.max(maxP, probs[n] || 0);
+  if (maxP === 0) maxP = 1;
+
+  // Draw search sites
+  for (let n = 0; n < N_NODES; n++) {
+    const [sx, sy] = toScreen(nodes[n]);
+    const p = probs[n] || 0;
+    const r = 6 * dpr;
+
+    if (visited.has(n)) {
+      // Searched and empty
+      ctx.fillStyle = 'rgba(55, 65, 81, 0.5)';
+      ctx.strokeStyle = 'rgba(75, 85, 99, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // X mark
+      ctx.strokeStyle = 'rgba(107, 114, 128, 0.5)';
+      ctx.lineWidth = 1.5 * dpr;
+      const cr = 3 * dpr;
+      ctx.beginPath(); ctx.moveTo(sx - cr, sy - cr); ctx.lineTo(sx + cr, sy + cr); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx + cr, sy - cr); ctx.lineTo(sx - cr, sy + cr); ctx.stroke();
+    } else {
+      // Active site — color by probability
+      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 3);
+      const col = probToColor(p, maxP);
+      glow.addColorStop(0, col);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(sx - r * 3, sy - r * 3, r * 6, r * 6);
+
+      ctx.fillStyle = col;
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Prob label
+      if (p > 0.03) {
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.font = `${9 * dpr}px JetBrains Mono`;
+        ctx.textAlign = 'center';
+        ctx.fillText((p * 100).toFixed(1) + '%', sx, sy - 10 * dpr);
+      }
+    }
+  }
+
+  // Draw target with pulsing ring if found
+  if (found) {
+    const [tx, ty] = toScreen(nodes[target]);
+    const pulse = 12 * dpr + Math.sin(Date.now() / 200) * 4 * dpr;
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+    ctx.lineWidth = 2 * dpr;
+    ctx.beginPath();
+    ctx.arc(tx, ty, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(tx, ty, 8 * dpr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${10 * dpr}px DM Sans`;
+    ctx.textAlign = 'center';
+    ctx.fillText('✦', tx, ty + 3.5 * dpr);
+  }
+
+  // Draw tour paths
+  for (const [r, tour] of Object.entries(tours)) {
+    const ri = Number(r);
+    const color = DRONE_COLORS[ri % DRONE_COLORS.length];
+    const base = bases[ri];
+
+    if (tour.length > 0) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([6 * dpr, 4 * dpr]);
+      ctx.globalAlpha = 0.6;
+
+      // Base to first
+      const [bx, by] = toScreen(base);
+      const [fx, fy] = toScreen(tour[0].pos);
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(fx, fy);
+
+      // Through tour
+      for (let i = 1; i < tour.length; i++) {
+        const [nx, ny] = toScreen(tour[i].pos);
+        ctx.lineTo(nx, ny);
+      }
+
+      // Return to base (if not finder)
+      if (!(found && ri === finder)) {
+        ctx.lineTo(bx, by);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      // Visit order numbers
+      for (let i = 0; i < tour.length; i++) {
+        const [nx, ny] = toScreen(tour[i].pos);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 8 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${8 * dpr}px JetBrains Mono`;
+        ctx.textAlign = 'center';
+        ctx.fillText(String(i + 1), nx, ny + 3 * dpr);
+      }
+    }
+  }
+
+  // Draw base stations
+  for (let r = 0; r < N_ROBOTS; r++) {
+    const [bx, by] = toScreen(bases[r]);
+    const color = DRONE_COLORS[r % DRONE_COLORS.length];
+    const sz = 8 * dpr;
+
+    ctx.fillStyle = '#111827';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2 * dpr;
+    ctx.beginPath();
+    ctx.rect(bx - sz, by - sz, sz * 2, sz * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Drone icon label
+    ctx.fillStyle = color;
+    ctx.font = `bold ${9 * dpr}px JetBrains Mono`;
+    ctx.textAlign = 'center';
+    ctx.fillText('D' + r, bx, by + 3 * dpr);
+
+    // "BASE" label
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = `${7 * dpr}px JetBrains Mono`;
+    ctx.fillText('BASE', bx, by + sz + 10 * dpr);
+  }
+
+  if (found) {
+    requestAnimationFrame(draw); // keep pulsing
+  }
+}
+
+// ============================================================
+// UI UPDATES
+// ============================================================
+
+function updateUI() {
+  if (!state) return;
+  const { inst, round, found, finder, finderDist, robotDists, visited, probs, totalProbElim, log } = state;
+
+  document.getElementById('round-num').textContent = round;
+  const statusEl = document.getElementById('round-status');
+  if (found) {
+    statusEl.className = 'status found-status';
+    statusEl.textContent = `✦ Target found by Drone ${finder}!`;
+  } else if (round === 0) {
+    statusEl.className = 'status searching-status';
+    statusEl.textContent = 'Ready to launch';
+  } else {
+    statusEl.className = 'status searching-status';
+    statusEl.textContent = `Searching... ${state.available.size} sites remain`;
+  }
+
+  document.getElementById('s-nodes').textContent = N_NODES;
+  document.getElementById('s-drones').textContent = N_ROBOTS;
+  document.getElementById('s-energy').textContent = ENERGY.toFixed(1);
+  document.getElementById('s-searched').textContent = `${visited.size} / ${N_NODES}`;
+  document.getElementById('s-prob').textContent = (totalProbElim * 100).toFixed(1) + '%';
+
+  // Entropy
+  let H = 0;
+  for (const p of Object.values(probs)) {
+    if (p > 0) H -= p * Math.log2(p);
+  }
+  document.getElementById('s-entropy').textContent = H.toFixed(2) + ' bits';
+
+  // FCR
+  if (found) {
+    document.getElementById('s-fcr').textContent = (finderDist / inst.optDist).toFixed(2);
+  }
+
+  // Drone cards
+  const dcEl = document.getElementById('drone-cards');
+  dcEl.innerHTML = '';
+  for (let r = 0; r < N_ROBOTS; r++) {
+    const color = DRONE_COLORS[r % DRONE_COLORS.length];
+    const d = robotDists[r] || 0;
+    const tourLen = (state.tours[r] || []).length;
+    const energyUsed = d; // approximate
+    const card = document.createElement('div');
+    card.className = 'drone-card';
+    card.innerHTML = `
+      <div class="drone-dot" style="background:${color}"></div>
+      <div class="drone-info">
+        <div class="drone-name" style="color:${color}">Drone ${r}</div>
+        <div class="drone-detail">Dist: ${d.toFixed(1)} | Tour: ${tourLen} sites</div>
+        <div class="energy-bar"><div class="energy-fill" style="width:${Math.max(0, 100 - d/ENERGY*30)}%;background:${color}"></div></div>
+      </div>`;
+    dcEl.appendChild(card);
+  }
+
+  // Log
+  const logEl = document.getElementById('log');
+  logEl.innerHTML = log.map(l => `<div class="log-entry">${l}</div>`).join('');
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ============================================================
+// CONTROLS
+// ============================================================
+
+function resetSim() {
+  stopPlay();
+  state = initState();
+  resize();
+  draw();
+  updateUI();
+}
+
+function stepRound() {
+  if (!state || state.found) return;
+  if (state.available.size === 0) return;
+
+  const tours = runAuctionRound(state);
+  if (!tours) return;
+
+  executeRound(state, tours);
+  draw();
+  updateUI();
+
+  if (state.found) {
+    stopPlay();
+  }
+}
+
+function togglePlay() {
+  if (playing) {
+    stopPlay();
+  } else {
+    playing = true;
+    document.getElementById('btn-play').textContent = '⏸ Pause';
+    playLoop();
+  }
+}
+
+function stopPlay() {
+  playing = false;
+  if (playTimer) clearTimeout(playTimer);
+  playTimer = null;
+  document.getElementById('btn-play').textContent = '▶ Play';
+}
+
+function playLoop() {
+  if (!playing || !state || state.found) { stopPlay(); return; }
+  stepRound();
+  const speed = parseInt(document.getElementById('speed').value);
+  const delay = Math.max(100, 2000 / speed);
+  playTimer = setTimeout(playLoop, delay);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+window.addEventListener('resize', () => { resize(); draw(); });
+resetSim();
+</script>
+</body>
+</html>
