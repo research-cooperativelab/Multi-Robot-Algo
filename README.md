@@ -28,3 +28,7 @@ Random BaselineInfiniteNoneBase → Random Node → Base
 Auction + Infinite Infinite Full (Auction) Node-to-node (no return to base)
 Auction + Finite SingleFiniteAt Base (Auction)Base → 1 Node → Base
 Auction + Finite MultiFiniteAt Base (Auction)Base → Multiple Nodes → Base
+
+
+todo 
+fix the figure legend for iteration 
