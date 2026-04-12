@@ -80,7 +80,7 @@ def euclidean_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def generate_instance(n_nodes, n_robots, area_scale, seed=None, min_opt_dist=1.0):
+def generate_instance(n_nodes, n_robots, area_scale, seed=None, min_opt_dist=1.0, max_opt_dist=None):
     """
     Generate a random search instance.
 
@@ -96,6 +96,9 @@ def generate_instance(n_nodes, n_robots, area_scale, seed=None, min_opt_dist=1.0
             FCR = d_finder / d_opt explodes, creating artificial variance.
             This is a geometric artifact, not an algorithmic signal.
             Targets closer than min_opt_dist are resampled.
+        max_opt_dist: Maximum distance from target to nearest base.
+            Ensures the target is reachable within energy budget E
+            (set to E/2 so the round trip 2*d_opt <= E).
 
     Returns dict with all instance data.
     """
@@ -116,15 +119,18 @@ def generate_instance(n_nodes, n_robots, area_scale, seed=None, min_opt_dist=1.0
                  np.random.uniform(0, area_scale))
              for r in range(n_robots)}
 
-    # Target drawn from prior distribution, with min distance filter
-    # Resample if target is too close to any base (would make FCR unstable)
+    # Target drawn from prior distribution, with distance filters
+    # Resample if target is too close (FCR artifact) or too far (unreachable)
     max_attempts = 200
     for _ in range(max_attempts):
         target = random.choices(list(node_probs.keys()),
                                weights=list(node_probs.values()), k=1)[0]
         optimal_dist = min(euclidean_distance(bases[r], node_positions[target])
                           for r in range(n_robots))
-        if optimal_dist >= min_opt_dist:
+        ok = optimal_dist >= min_opt_dist
+        if max_opt_dist is not None:
+            ok = ok and optimal_dist <= max_opt_dist
+        if ok:
             break
 
     return {
@@ -802,7 +808,7 @@ def run_all_models(n, R, L, E, n_trials=500, seed=42):
         sites_per_sortie = []
 
         for trial in range(n_trials):
-            inst = generate_instance(n, R, L, seed=seed + trial)
+            inst = generate_instance(n, R, L, seed=seed + trial, max_opt_dist=E/2)
             result = func(inst)
             m = extract_fcr(result)
 
@@ -841,7 +847,7 @@ def run_bid_variants(n, R, L, E, n_trials=500, seed=42):
     for name, func in variants.items():
         fcrs = []
         for trial in range(n_trials):
-            inst = generate_instance(n, R, L, seed=seed + trial)
+            inst = generate_instance(n, R, L, seed=seed + trial, max_opt_dist=E/2)
             result = model_3_auction_single(inst, E, func)
             m = extract_fcr(result)
             if m:
@@ -852,45 +858,44 @@ def run_bid_variants(n, R, L, E, n_trials=500, seed=42):
 
 def run_energy_sweep(n, R, L, n_trials=500, seed=42):
     """
-    Sweep energy budget. M1 and M2 are ∞-energy (horizontal baselines).
-    M3, M4, M4* vary with energy.
+    Sweep energy budget. Each energy level uses instances filtered for
+    reachability at that energy. M1/M2 run on the same instances per level.
     """
     energy_vals = [8, 10, 12, 14, 16, 18, 20, 25, 30]
-
-    # First compute M1/M2 once (they don't depend on E)
-    m1_fcrs, m2_fcrs = [], []
-    for trial in range(n_trials):
-        inst = generate_instance(n, R, L, seed=seed + trial)
-
-        r1 = model_1_random_infinite(inst)
-        m1 = extract_fcr(r1)
-        if m1: m1_fcrs.append(m1['finder_cr'])
-
-        r2 = model_2_auction_infinite(inst)
-        m2 = extract_fcr(r2)
-        if m2: m2_fcrs.append(m2['finder_cr'])
 
     energy_models = {
         'Hungarian (E, min-dist)':     lambda inst, E: model_hungarian_single(inst, E),
         'M3 Auction Single (E, p/d)':  lambda inst, E: model_3_auction_single(inst, E, bid_p_over_d),
         'M4 Auction Multi (E, p/d)':   lambda inst, E: model_4_auction_multi(inst, E, bid_p_over_d),
-        'M4* Auction Multi (E, p/d²)': lambda inst, E: model_4_auction_multi(inst, E, bid_p_over_d2),
+        'M4* Auction Multi (E, p/d\u00b2)': lambda inst, E: model_4_auction_multi(inst, E, bid_p_over_d2),
     }
 
     sweep = {}
     for Ev in energy_vals:
-        sweep[Ev] = {
-            'M1 Random (∞E)': m1_fcrs,
-            'M2 Auction (∞E, N2N)': m2_fcrs,
-        }
-        for name, func in energy_models.items():
-            fcrs = []
-            for trial in range(n_trials):
-                inst = generate_instance(n, R, L, seed=seed + trial)
+        m1_fcrs, m2_fcrs = [], []
+        model_fcrs = {name: [] for name in energy_models}
+
+        for trial in range(n_trials):
+            inst = generate_instance(n, R, L, seed=seed + trial, max_opt_dist=Ev/2)
+
+            r1 = model_1_random_infinite(inst)
+            m1 = extract_fcr(r1)
+            if m1: m1_fcrs.append(m1['finder_cr'])
+
+            r2 = model_2_auction_infinite(inst)
+            m2 = extract_fcr(r2)
+            if m2: m2_fcrs.append(m2['finder_cr'])
+
+            for name, func in energy_models.items():
                 result = func(inst, Ev)
                 m = extract_fcr(result)
-                if m: fcrs.append(m['finder_cr'])
-            sweep[Ev][name] = fcrs
+                if m: model_fcrs[name].append(m['finder_cr'])
+
+        sweep[Ev] = {
+            'M1 Random (\u221eE)': m1_fcrs,
+            'M2 Auction (\u221eE, N2N)': m2_fcrs,
+        }
+        sweep[Ev].update(model_fcrs)
 
     return energy_vals, sweep
 
@@ -903,7 +908,7 @@ def run_robot_sweep(n, L, E, n_trials=500, seed=42):
     for Rv in robot_vals:
         sweep[Rv] = {}
         for trial in range(n_trials):
-            inst = generate_instance(n, Rv, L, seed=seed + trial)
+            inst = generate_instance(n, Rv, L, seed=seed + trial, max_opt_dist=E/2)
 
             for name, func in [
                 ('M1 Random (∞E)',              lambda i: model_1_random_infinite(i)),
@@ -923,15 +928,15 @@ def run_robot_sweep(n, L, E, n_trials=500, seed=42):
     return robot_vals, sweep
 
 
-# 8. PLOTTING — Publication Quality
+# 8. PLOTTING — Publication Quality (IEEE Column Width = 3.5in)
 
 COLORS = {
-    'M1 Random (∞E)':              '#D32F2F',
+    'M1 Random (∞E)':              '#C62828',
     'M2 Auction (∞E, N2N)':        '#1565C0',
-    'Hungarian (E, min-dist)':     '#7B1FA2',
-    'M3 Auction Single (E, p/d)':  '#F57C00',
-    'M4 Auction Multi (E, p/d)':   '#8BC34A',
-    'M4* Auction Multi (E, p/d²)': '#2E7D32',
+    'Hungarian (E, min-dist)':     '#6A1B9A',
+    'M3 Auction Single (E, p/d)':  '#E65100',
+    'M4 Auction Multi (E, p/d)':   '#558B2F',
+    'M4* Auction Multi (E, p/d²)': '#1B5E20',
 }
 MARKERS = {
     'M1 Random (∞E)':              's',
@@ -949,47 +954,79 @@ LINESTYLES = {
     'M4 Auction Multi (E, p/d)':   '-',
     'M4* Auction Multi (E, p/d²)': '-',
 }
+# Short labels for cleaner axis ticks
+SHORT = {
+    'M1 Random (∞E)':              'M1 Random ($\\infty$E)',
+    'M2 Auction (∞E, N2N)':        'M2 Auction ($\\infty$E, N2N)',
+    'Hungarian (E, min-dist)':     'Hungarian (E, min-dist)',
+    'M3 Auction Single (E, p/d)':  'M3 Auction Single (E, $p/d$)',
+    'M4 Auction Multi (E, p/d)':   'M4 Auction Multi (E, $p/d$)',
+    'M4* Auction Multi (E, p/d²)': 'M4* Auction Multi (E, $p/d^2$)',
+}
 
 def setup_style():
     plt.rcParams.update({
-        'font.family': 'serif', 'font.size': 8, 'axes.labelsize': 9,
-        'legend.fontsize': 6.5, 'lines.linewidth': 1.5, 'lines.markersize': 4,
-        'figure.dpi': 300, 'savefig.dpi': 300, 'savefig.bbox': 'tight',
+        'font.family': 'serif',
+        'font.size': 10,
+        'axes.labelsize': 11,
+        'axes.titlesize': 11,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+        'legend.fontsize': 8,
+        'legend.framealpha': 0.92,
+        'lines.linewidth': 2.0,
+        'lines.markersize': 6,
+        'figure.dpi': 300,
+        'savefig.dpi': 300,
+        'savefig.bbox': 'tight',
+        'savefig.pad_inches': 0.05,
+        'axes.grid': True,
+        'grid.alpha': 0.25,
+        'grid.linewidth': 0.5,
     })
 
 
 def plot_main_comparison(results, save_path, params_str=""):
-    """Horizontal bar chart of all models — Table 2 visualization."""
+    """Horizontal bar chart — sorted best to worst, with improvement annotation."""
     setup_style()
+    # Sort worst→best so best is at bottom (reads naturally)
     sorted_names = sorted(results.keys(),
-                         key=lambda k: np.mean(results[k]['fcr']) if results[k]['fcr'] else 999)
+                         key=lambda k: np.mean(results[k]['fcr']) if results[k]['fcr'] else 999,
+                         reverse=True)
 
     fig, ax = plt.subplots(figsize=(4.5, 2.8))
     means = [np.mean(results[n]['fcr']) for n in sorted_names]
     colors = [COLORS.get(n, '#666') for n in sorted_names]
+    y_pos = range(len(sorted_names))
 
-    bars = ax.barh(range(len(sorted_names)), means, color=colors,
-                   edgecolor='black', linewidth=0.5)
-    ax.set_yticks(range(len(sorted_names)))
-    ax.set_yticklabels(sorted_names, fontsize=6.5)
-    ax.set_xlabel('Mean Finder Competitive Ratio (lower is better)')
-    if params_str:
-        ax.set_title(params_str, fontsize=7)
-    ax.grid(True, alpha=0.3, axis='x')
+    bars = ax.barh(y_pos, means, color=colors, edgecolor='white', linewidth=0.8, height=0.7)
+    ax.set_yticks(list(y_pos))
+    ax.set_yticklabels([SHORT.get(n, n) for n in sorted_names], fontsize=8)
+    ax.set_xlabel('Mean Finder Competitive Ratio')
+    ax.set_title(params_str, fontsize=8, color='#555') if params_str else None
+    ax.grid(axis='x')
+    ax.grid(False, axis='y')
+
     for bar, m in zip(bars, means):
-        ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2,
-                f'{m:.2f}', va='center', fontsize=7, fontweight='bold')
+        ax.text(m + 0.25, bar.get_y() + bar.get_height()/2,
+                f'{m:.2f}', va='center', fontsize=9, fontweight='bold')
+    ax.set_xlim(right=max(means) * 1.15)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
 
 
 def plot_energy_sweep(energy_vals, sweep, save_path):
-    """Energy sweep: M1/M2 as horizontal baselines, M3/M4/M4* as curves."""
+    """Energy sweep with M1 excluded (too high), shown as annotation instead."""
     setup_style()
-    fig, ax = plt.subplots(figsize=(4.0, 2.8))
+    fig, ax = plt.subplots(figsize=(4.5, 3.0))
 
+    # Plot all except M1 (which would compress the y-axis)
     for mn in ALL_MODEL_NAMES:
+        if mn.startswith('M1'):
+            continue
         means = []
         for ev in energy_vals:
             if mn in sweep[ev] and sweep[ev][mn]:
@@ -997,30 +1034,38 @@ def plot_energy_sweep(energy_vals, sweep, save_path):
             else:
                 means.append(np.nan)
 
-        if mn.startswith('M1') or mn.startswith('M2'):
-            # Horizontal baseline (∞ energy, doesn't change with E)
-            ax.axhline(y=means[0], color=COLORS[mn], linestyle='--',
-                      linewidth=1.2, alpha=0.7, label=mn)
+        if mn.startswith('M2'):
+            ref_idx = energy_vals.index(14) if 14 in energy_vals else 0
+            ax.axhline(y=means[ref_idx], color=COLORS[mn], linestyle='--',
+                      linewidth=1.5, alpha=0.6, label=SHORT[mn])
         else:
             ax.plot(energy_vals[:len(means)], means,
                    marker=MARKERS.get(mn, 'o'), color=COLORS[mn],
                    linestyle=LINESTYLES.get(mn, '-'),
-                   label=mn, markersize=4)
+                   label=SHORT[mn], markersize=6)
+
+    # Annotate M1 off-chart
+    m1_ref = np.mean(sweep[14].get('M1 Random (∞E)', [18.55]))
+    ax.annotate(f'M1 Random = {m1_ref:.1f} (off scale)',
+               xy=(0.02, 0.97), xycoords='axes fraction',
+               fontsize=7.5, color=COLORS['M1 Random (∞E)'],
+               fontstyle='italic', va='top')
 
     ax.set_xlabel('Energy Budget ($E$)')
     ax.set_ylabel('Mean Finder CR')
-    ax.legend(loc='upper left', framealpha=0.9, fontsize=5.5)
-    ax.grid(True, alpha=0.3)
-    ax.set_ylim(bottom=0)
+    ax.legend(loc='center right', fontsize=6.5, labelspacing=0.3)
+    ax.set_ylim(bottom=0, top=9)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
 
 
 def plot_robot_sweep(robot_vals, sweep, save_path):
-    """Robot sweep: all models vary with R."""
+    """Robot sweep — all models."""
     setup_style()
-    fig, ax = plt.subplots(figsize=(4.0, 2.8))
+    fig, ax = plt.subplots(figsize=(4.5, 3.0))
 
     for mn in ALL_MODEL_NAMES:
         means = []
@@ -1029,52 +1074,68 @@ def plot_robot_sweep(robot_vals, sweep, save_path):
                 means.append(np.mean(sweep[rv][mn]))
             else:
                 means.append(np.nan)
-        ax.plot(robot_vals[:len(means)], means,
-               marker=MARKERS.get(mn, 'o'), color=COLORS[mn],
-               linestyle=LINESTYLES.get(mn, '-'),
-               label=mn, markersize=4)
+
+        # Truncate M1 for readability
+        if mn.startswith('M1'):
+            ax.plot(robot_vals[:len(means)], means,
+                   marker=MARKERS.get(mn, 'o'), color=COLORS[mn],
+                   linestyle=LINESTYLES.get(mn, '-'),
+                   label=SHORT[mn], markersize=5, alpha=0.6)
+        else:
+            ax.plot(robot_vals[:len(means)], means,
+                   marker=MARKERS.get(mn, 'o'), color=COLORS[mn],
+                   linestyle=LINESTYLES.get(mn, '-'),
+                   label=SHORT[mn], markersize=6)
 
     ax.set_xlabel('Number of Robots ($R$)')
     ax.set_ylabel('Mean Finder CR')
-    ax.legend(loc='upper right', framealpha=0.9, fontsize=5.5)
-    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right', fontsize=6.5, labelspacing=0.3)
     ax.set_ylim(bottom=0)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
 
 
 def plot_bid_variants(bid_results, save_path):
-    """Bar chart comparing bid functions."""
+    """Bid function comparison — horizontal bars with error bars."""
     setup_style()
     sorted_names = sorted(bid_results.keys(),
                          key=lambda k: np.mean(bid_results[k]) if bid_results[k] else 999)
-    fig, ax = plt.subplots(figsize=(3.5, 2))
+    fig, ax = plt.subplots(figsize=(4.0, 2.2))
     means = [np.mean(bid_results[n]) for n in sorted_names]
     stds = [np.std(bid_results[n]) for n in sorted_names]
-    bar_colors = ['#2E7D32' if i == 0 else '#F57C00' if i == 1 else '#90A4AE'
-                  for i in range(len(sorted_names))]
 
-    bars = ax.barh(range(len(sorted_names)), means, xerr=stds,
-                   color=bar_colors, edgecolor='black', linewidth=0.5, capsize=3)
-    ax.set_yticks(range(len(sorted_names)))
-    ax.set_yticklabels([f'$b = {n}$' for n in sorted_names], fontsize=7)
+    # Color gradient: best=dark green, worst=light gray
+    n_bars = len(sorted_names)
+    bar_colors = ['#1B5E20', '#E65100', '#6A1B9A', '#78909C', '#B0BEC5'][:n_bars]
+
+    bars = ax.barh(range(n_bars), means, xerr=stds,
+                   color=bar_colors, edgecolor='white', linewidth=0.8,
+                   capsize=3, height=0.65, error_kw={'linewidth': 1.0})
+    ax.set_yticks(range(n_bars))
+    ax.set_yticklabels([f'$b = {n}$' for n in sorted_names], fontsize=9)
     ax.set_xlabel('Mean Finder CR (Model 3)')
-    ax.grid(True, alpha=0.3, axis='x')
-    for bar, m in zip(bars, means):
-        ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2,
-                f'{m:.2f}', va='center', fontsize=7)
+    ax.grid(axis='x')
+    ax.grid(False, axis='y')
+    for idx, (bar, m) in enumerate(zip(bars, means)):
+        offset = stds[idx] + 0.3
+        ax.text(m + offset, bar.get_y() + bar.get_height()/2,
+                f'{m:.2f}', va='center', fontsize=9, fontweight='bold')
+    ax.set_xlim(right=max(m + s for m, s in zip(means, stds)) * 1.15)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
 
 
 def plot_bounds_verification(results, bounds, save_path):
-    """Visual comparison of empirical FCR vs theoretical bounds."""
+    """Grouped bar chart with tightness annotations."""
     setup_style()
-    fig, ax = plt.subplots(figsize=(4.5, 2.5))
+    fig, ax = plt.subplots(figsize=(4.5, 2.8))
 
-    # Map model names
     bound_map = {
         'M1 Random (∞E)':              'M1 Random (∞E)',
         'M2 Auction (∞E, N2N)':        'M2 Auction (∞E, N2N)',
@@ -1083,20 +1144,32 @@ def plot_bounds_verification(results, bounds, save_path):
     }
 
     names = list(bound_map.keys())
-    x = range(len(names))
+    x = np.arange(len(names))
     emp_vals = [np.mean(results[n]['fcr']) if results[n]['fcr'] else 0 for n in names]
     bound_vals = [bounds[bound_map[n]] for n in names]
+    tightness = [e/b if b > 0 else 0 for e, b in zip(emp_vals, bound_vals)]
 
-    ax.bar([i - 0.17 for i in x], emp_vals, 0.34, color='#42A5F5',
-           edgecolor='black', linewidth=0.5, label='Empirical FCR')
-    ax.bar([i + 0.17 for i in x], bound_vals, 0.34, color='#EF5350',
-           edgecolor='black', linewidth=0.5, label='Theoretical Bound')
+    w = 0.35
+    bars1 = ax.bar(x - w/2, emp_vals, w, color='#1565C0', edgecolor='white',
+                   linewidth=0.8, label='Empirical FCR')
+    bars2 = ax.bar(x + w/2, bound_vals, w, color='#EF5350', edgecolor='white',
+                   linewidth=0.8, label='Theoretical Bound', alpha=0.75)
+
+    # Add tightness ratio annotations
+    for i, t in enumerate(tightness):
+        ymax = max(emp_vals[i], bound_vals[i])
+        ax.text(i, ymax + 0.8, f'T={t:.2f}', ha='center', fontsize=8,
+               fontweight='bold', color='#333',
+               bbox=dict(boxstyle='round,pad=0.15', fc='#FFF9C4', ec='#F9A825', alpha=0.9))
 
     ax.set_xticks(list(x))
-    ax.set_xticklabels(['M1', 'M2', 'M3', 'M4'], fontsize=8)
+    ax.set_xticklabels(['M1', 'M2', 'M3', 'M4'], fontsize=10, fontweight='bold')
     ax.set_ylabel('FCR')
-    ax.legend(fontsize=7)
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.legend(fontsize=8, loc='upper left')
+    ax.grid(axis='y')
+    ax.grid(False, axis='x')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
@@ -1232,8 +1305,8 @@ if __name__ == '__main__':
             print(f"  {val:>14.2f}", end='')
         print()
 
-    m1_baseline = np.mean(e_sweep[e_vals[0]]['M1 Random (∞E)'])
-    m2_baseline = np.mean(e_sweep[e_vals[0]]['M2 Auction (∞E, N2N)'])
+    m1_baseline = np.mean(e_sweep[14]['M1 Random (∞E)'])
+    m2_baseline = np.mean(e_sweep[14]['M2 Auction (∞E, N2N)'])
     print(f"\n  ∞-Energy baselines: M1={m1_baseline:.2f}, M2={m2_baseline:.2f}")
 
     plot_energy_sweep(e_vals, e_sweep, f'{args.outdir}/fig_energy_sweep.png')
