@@ -201,23 +201,41 @@ def run_auction(robot_bids):
     """
     Sequential Single-Item (SSI) auction (Koenig et al., 2006).
 
+    Items are auctioned one at a time. In each round:
+      1. Every unassigned robot submits its highest bid for any available item.
+      2. The globally highest bid wins: that robot gets that item.
+      3. Both are removed; remaining robots re-bid on remaining items.
+    Repeat until all robots are assigned or no items remain.
+
     Each robot has a ranked list of (node, bid_value, distance).
-    Highest-bid robot wins its preferred node; losers re-bid on remaining.
     Returns: dict {robot_id: (node_id, distance)}
     """
     assigned = {}
-    taken = set()
+    taken_nodes = set()
+    assigned_robots = set()
 
-    robots = sorted(robot_bids.keys(),
-                   key=lambda r: robot_bids[r][0][1] if robot_bids[r] else -1,
-                   reverse=True)
+    # Build a dict of {robot: list of (node, bid_value, dist)} for fast lookup
+    # Lists are already sorted descending by bid_value
+    remaining = {r: list(bids) for r, bids in robot_bids.items() if bids}
 
-    for r in robots:
-        for node, bv, d in robot_bids[r]:
-            if node not in taken:
-                assigned[r] = (node, d)
-                taken.add(node)
-                break
+    while remaining:
+        # Each unassigned robot proposes its best available item
+        best_r, best_node, best_bv, best_d = None, None, -1, 0
+        for r, bids in remaining.items():
+            # Skip taken nodes to find this robot's best available item
+            for node, bv, d in bids:
+                if node not in taken_nodes:
+                    if bv > best_bv:
+                        best_r, best_node, best_bv, best_d = r, node, bv, d
+                    break  # only consider top available bid per robot
+
+        if best_r is None:
+            break  # no valid bids remain
+
+        # Assign winner
+        assigned[best_r] = (best_node, best_d)
+        taken_nodes.add(best_node)
+        del remaining[best_r]
 
     return assigned
 
