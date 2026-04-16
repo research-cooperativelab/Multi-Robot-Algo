@@ -1,0 +1,167 @@
+\documentclass[12pt,oneside,letterpaper,chapterprefix=on,numbers=noenddot]{scrbook}
+
+\usepackage{todonotes}
+\usepackage{dirtytalk}
+
+\usepackage[margin=1in,includefoot,heightrounded]{geometry}
+\usepackage[left=1.5in,right=1in,top=1in,bottom=1in,includefoot,heightrounded]{geometry}
+\usepackage{mathptmx}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\setlength{\parindent}{0.25in}
+\usepackage[document]{ragged2e}
+\setlength{\RaggedRightParindent}{\parindent}
+\usepackage{comment}
+\pagestyle{plain}
+\usepackage[justification=raggedright,singlelinecheck=false,labelsep=period]{caption}
+\setkomafont{captionlabel}{\bfseries}
+\setkomafont{caption}{\bfseries}
+\setcapindent{0pt}
+\usepackage{graphicx}
+\graphicspath{{../figures/}{figures/}}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+\usepackage{algorithm}
+\makeatletter
+\renewcommand{\ALG@name}{ALGORITHM}
+\captionsetup[algorithm]{labelfont=bf,labelsep=period,font=bf}
+\makeatother
+\usepackage{algpseudocode}
+\algdef{SE}[DOWHILE]{Do}{DoWhile}{\algorithmicdo}[1]{\algorithmicwhile\ #1}
+
+\newtheoremstyle{csulb}
+  {\topsep}{\topsep}{\normalfont}{0.25in}{\itshape}{{\normalfont :\ } }{0pt}
+  {\thmname{#1} \thmnumber{#2}}
+\theoremstyle{csulb}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{problem}{Problem}
+
+\DeclareOldFontCommand{\bf}{\normalfont\bfseries}{\mathbf}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+\usepackage[square,sort,comma,numbers]{natbib}
+\setlength{\bibsep}{\baselineskip}
+
+\makeatletter
+\renewcommand\chapterlinesformat[3]{\@hangfrom{#2}{\MakeUppercase{#3}}}
+\makeatother
+\renewcommand\chapterlineswithprefixformat[3]{\MakeUppercase{#2#3}}
+
+\usepackage{chngcntr}
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+
+\let\raggedchapter\centering
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=0pt]{chapter}
+\setkomafont{disposition}{\bfseries\normalsize}
+\setkomafont{chapter}{\normalsize}
+\let\raggedsection\centering
+\setkomafont{section}{\normalsize}
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{section}
+\setkomafont{subsection}{\normalsize}
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{subsection}
+
+\usepackage{etoolbox}
+\AtBeginEnvironment{figure}{\setlength{\RaggedRightParindent}{0em}}
+\AtBeginEnvironment{table}{\setlength{\RaggedRightParindent}{0em}}
+\AtBeginEnvironment{algorithm}{\setlength{\RaggedRightParindent}{0em}}
+
+\usepackage{tocloft}
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{0pt}
+\renewcommand*\contentsname{TABLE OF CONTENTS}
+\renewcommand{\cfttoctitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftaftertoctitle}{\hspace*{\fill}}
+\KOMAoptions{toc=chapterentrydotfill}
+\setkomafont{chapterentry}{}
+\addtokomafont{chapterentrypagenumber}{\mdseries}
+\RedeclareSectionCommand[tocnumwidth=3.5em]{chapter}
+
+\setlength{\cftbeforelottitleskip}{0pt}
+\setlength{\cftafterlottitleskip}{0pt}
+\renewcommand*\listtablename{LIST OF TABLES}
+\renewcommand{\cftlottitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftafterlottitle}{\hspace*{\fill}}
+\setlength{\cfttabindent}{0.25in}
+
+\setlength{\cftbeforeloftitleskip}{0pt}
+\setlength{\cftafterloftitleskip}{0pt}
+\renewcommand*\listfigurename{LIST OF FIGURES}
+\renewcommand{\cftloftitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftafterloftitle}{\hspace*{\fill}}
+\setlength{\cftfigindent}{0.25in}
+\newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
+\addtocontents{lof}{\protect\noaddvspace}
+\addtocontents{lot}{\protect\noaddvspace}
+
+\renewenvironment{proof}{\indent{\em Proof}:}{}
+
+\usepackage[page,toc,title]{appendix}
+\renewcommand{\appendixtocname}{APPENDICES}
+\renewcommand{\appendixpagename}{\vspace*{\fill}\centering\normalsize APPENDICES\vspace*{\fill}}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks,citecolor=black,linkcolor=black,urlcolor=black}
+
+\usepackage[english]{babel}
+\addto\captionsenglish{\renewcommand{\contentsname}{TABLE OF CONTENTS}}
+\addto\captionsenglish{\renewcommand{\listfigurename}{LIST OF FIGURES}}
+\addto\captionsenglish{\renewcommand{\listtablename}{LIST OF TABLES}}
+\captionsetup{figurename=FIGURE,tablename=TABLE}
+
+\begin{document}
+
+\frontmatter
+
+\input{Chapters/title}
+\input{Chapters/signature}
+\setcounter{page}{2}
+
+\input{Chapters/abstract}
+\input{Chapters/acknowledgments}
+
+\begin{doublespacing}
+  \clearpage
+  \tableofcontents
+  \renewcommand{\autodot}{.}
+
+  \clearpage
+  \phantomsection
+  \listoftables
+  \addcontentsline{toc}{chapter}{LIST OF TABLES}
+
+  \clearpage
+  \phantomsection
+  \listoffigures
+  \addcontentsline{toc}{chapter}{LIST OF FIGURES}
+\end{doublespacing}
+
+\mainmatter
+
+\input{Chapters/introduction}
+\input{Chapters/literature_review}
+\input{Chapters/problem_formulation}
+\input{Chapters/methodology}
+\input{Chapters/results}
+\input{Chapters/conclusion}
+
+\clearpage
+\phantomsection
+\vspace*{\fill}\centering\normalsize \textbf{REFERENCES}\vspace*{\fill}
+\addcontentsline{toc}{chapter}{REFERENCES}
+\clearpage
+
+\bibliographystyle{ieeetr}
+\bibliography{ref}
+
+\end{document}

@@ -1,0 +1,116 @@
+\chapter{LITERATURE REVIEW}\label{ch:lit}
+
+\begin{doublespacing}
+
+Multi-robot search and rescue draws on three largely independent
+research traditions: online competitive search theory, market-based
+multi-robot task allocation, and energy-constrained graph exploration.
+This chapter reviews each in turn, identifies the gap they leave when
+taken together, and positions the present work inside that gap.
+
+\section{Competitive Search Theory}
+
+Competitive analysis measures an online algorithm by the worst-case
+ratio of its cost to the cost an omniscient offline algorithm would
+incur on the same instance~\cite{Sleator1985}. The canonical
+instantiation of this idea for search is the \emph{cow-path problem}:
+a searcher stands at the origin of an infinite half-line, a target is
+somewhere on the line, and the cost is the distance traveled before
+the target is found. Baeza-Yates, Culberson, and
+Rawlins~\cite{BaezaYates1993} proved that a geometric doubling strategy
+achieves a deterministic competitive ratio of 9 and that no
+deterministic strategy can do better. Kao, Reif, and
+Tate~\cite{Kao1996} showed that randomization brings the ratio down to
+approximately $4.59$. These results are important because they
+characterize the intrinsic cost of not knowing the target's location,
+independent of the specific algorithm chosen.
+
+Extensions to parallel search introduce multiple agents and ask how
+the ratio changes. L\'{o}pez-Ortiz and Schuierer~\cite{LopezOrtiz2004}
+gave competitive ratios for $p$ parallel searchers exploring $m$ rays
+emanating from a common origin. Chrobak, G\c{a}sieniec, Gorry, and
+Martin~\cite{Chrobak2015} studied group search on a line and proved a
+striking dichotomy: with wireless communication, two agents achieve
+ratio 3, while with only face-to-face (rendezvous) communication the
+ratio remains the single-searcher 9. That is, the \emph{mode} of
+communication matters more than the number of searchers. This
+observation motivates the first finding of the present work: that
+coordination alone, not the number of robots, accounts for the bulk of
+the improvement over random search. The competitive-ratio literature
+has, however, focused on one-dimensional geometries and has not
+integrated energy constraints.
+
+\section{Market-Based Multi-Robot Coordination}
+
+Gerkey and Matari\'{c}~\cite{Gerkey2004} introduced the multi-robot
+task allocation (MRTA) taxonomy that classifies problems by three
+axes: single-task versus multi-task robots, single-robot versus
+multi-robot tasks, and instantaneous versus time-extended assignment.
+In this taxonomy, the present problem is
+\emph{single-task, multi-robot, instantaneous} (ST-MR-IA): each site
+is a single task, multiple robots may claim different sites in the
+same round, and the assignment is recomputed every round.
+
+Auction-based task allocation was popularized by the TraderBots
+architecture of Dias and Stentz~\cite{Dias2006} and the earlier market
+economy of Zlot et al.~\cite{Zlot2002}. Koenig et al.~\cite{Koenig2006}
+analyzed sequential single-item (SSI) auctions---in which items are
+auctioned one at a time and the globally highest bidder wins each
+item---and proved constant-factor approximation guarantees against
+centralized optima for several objective functions. SSI auctions are
+attractive because they are simple, communication-efficient, and
+produce provably near-optimal assignments. This thesis adopts SSI as
+the basic coordination primitive. The market-based literature has,
+however, historically studied mobility as unconstrained: a robot is
+expected to be able to reach any assigned task, which does not match
+the energy-constrained sortie regime that this thesis studies.
+
+\section{Energy-Constrained and Probabilistic Search}
+
+The third strand of related work concerns search under finite energy
+and under probabilistic priors. Betke, Rivest, and
+Singh~\cite{Betke1995} introduced \emph{piecemeal learning}, in which
+a robot must periodically return to the origin and therefore can only
+execute bounded-length excursions. Das, Dereniowski, and
+Uznanski~\cite{Das2015} studied energy-constrained depth-first search
+and proved that the number of robots required to explore a graph
+grows with the ratio of graph diameter to battery capacity. The common
+thread is that energy constraints fundamentally alter the structure of
+optimal search strategies; a fuel-limited robot cannot use the same
+plans as a fuel-unlimited one.
+
+On the probabilistic side, Stone's classical \emph{Theory of Optimal
+Search}~\cite{Stone1975} established that search effort should be
+allocated in proportion to the ratio of target probability to search
+cost. This is the theoretical basis for the $p_i / d$ bid function
+used in this thesis: it is Stone's rule evaluated locally at each
+decision point. Bourgault, Furukawa, and
+Durrant-Whyte~\cite{Bourgault2002} applied information-theoretic
+criteria (specifically mutual information) to coordinated target
+search and demonstrated experimentally that information-greedy
+policies outperform distance-greedy policies. The observation
+generalizes to the present work.
+
+\section{Gap and Positioning}
+
+Taken together, the three literatures leave a gap. Competitive-ratio
+analysis gives worst-case bounds but assumes unrealistic
+one-dimensional geometries and does not model energy. Market-based
+coordination scales to many robots but assumes unbounded mobility.
+Energy-constrained exploration models batteries but does not use
+auctions or compute competitive ratios. No prior work unifies all
+three into a single framework that asks: what is the expected
+competitive ratio of an auction-coordinated multi-robot search team
+under a finite energy budget?
+
+The present thesis fills that gap. It formulates four algorithmic
+models that systematically vary the energy and communication
+assumptions, derives expected-FCR upper bounds for each model under
+realistic two-dimensional instance distributions, and validates the
+bounds by Monte Carlo simulation. In addition, it studies the choice
+of bid function---a design decision that the existing auction
+literature has largely left to practical convention---and identifies
+a bid function that is provably motivated by and empirically optimal
+under energy constraints.
+
+\end{doublespacing}

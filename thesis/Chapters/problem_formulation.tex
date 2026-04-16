@@ -1,0 +1,140 @@
+\chapter{PROBLEM FORMULATION AND RESEARCH HYPOTHESIS}\label{ch:problem}
+
+\begin{doublespacing}
+
+This chapter formalizes the search problem, defines the metric used
+throughout the thesis, introduces the sortie model for energy
+constraints, and states the research hypotheses that the remainder of
+the thesis tests.
+
+\section{Search Instance}
+
+\begin{definition}[Search Instance]
+A search instance $\mathcal{I} = (\mathcal{N}, \mathbf{p}, \mathcal{B}, \tau)$
+consists of (i) a set $\mathcal{N}$ of $n$ candidate sites with positions
+$x_i \in [0, L]^2$, where $L$ is the side length of the square search
+arena; (ii) a vector of prior probabilities
+$\mathbf{p} = (p_1, \ldots, p_n)$ satisfying $p_i \geq 0$ and
+$\sum_{i=1}^n p_i = 1$; (iii) a set $\mathcal{B}$ of $R$ robot base
+stations at positions $x_0^r \in [0, L]^2$ for $r = 1, \ldots, R$; and
+(iv) a target site $\tau \in \mathcal{N}$ drawn according to the prior
+$\mathbf{p}$.
+\end{definition}
+
+Distances are Euclidean. The position of the target is written
+$x_\tau$. A robot inspects a site by physically visiting it; a
+visit reveals whether the target is present with certainty (the
+perfect-sensor assumption, discussed in Chapter~VI as a limitation to
+relax in future work). After each search round, robots return to base,
+share their observations---specifically, the list of sites they
+visited and did not find the target at---and update the joint prior
+by Bayesian renormalization. For a set $\mathcal{V}$ of visited sites
+from the current round, each visited site gets $p_i \leftarrow 0$ and
+the remaining probabilities are renormalized:
+\[
+  p_i' = \frac{p_i}{1 - \sum_{j \in \mathcal{V}} p_j}, \quad i \notin \mathcal{V}.
+\]
+The updated prior is the input to the next round's auction.
+
+\section{The Finder Competitive Ratio}
+
+Competitive analysis requires a reference cost. We use the
+\emph{optimal distance}, the distance the closest robot would need to
+travel if it knew the target's location in advance:
+\[
+  D_{\mathrm{opt}} = \min_{r \in \{1,\ldots,R\}} d(x_0^r, x_\tau).
+\]
+
+\begin{definition}[Finder Competitive Ratio]
+If robot $f$ is the robot that first inspects $\tau$, and $D_f$ is its
+total travel distance up to the moment of discovery, then the
+\emph{finder competitive ratio} (FCR) of the algorithm on instance
+$\mathcal{I}$ is
+\[
+  \mathrm{FCR}(\mathcal{I}) = \frac{D_f}{D_{\mathrm{opt}}}.
+\]
+\end{definition}
+
+FCR is the natural metric for this problem because it factors out the
+underlying geometric difficulty of the instance. A team that happens
+to be assigned a target near one of the bases should not be rewarded
+for ``finding quickly''; FCR normalizes that away. An FCR of three
+means the finding robot traveled three times the distance an omniscient
+agent would have.
+
+\section{Sortie Model}
+
+In energy-constrained models, a robot begins a search at its base,
+visits one or more sites, and returns to base to recharge. We call
+each such excursion a \emph{sortie}.
+
+\begin{definition}[Energy-Feasible Sortie]
+A sortie for robot $r$ that visits sites $s_1, s_2, \ldots, s_k$ in
+order is \emph{energy-feasible} under budget $E$ if
+\[
+  d(x_0^r, x_{s_1}) + \sum_{j=1}^{k-1} d(x_{s_j}, x_{s_{j+1}}) + d(x_{s_k}, x_0^r) \leq E.
+\]
+If the target is found mid-tour at site $s_j$, the finder stops
+immediately and pays only $d(x_0^r, x_{s_1}) + \sum_{\ell=1}^{j-1}
+d(x_{s_\ell}, x_{s_{\ell+1}}) + d(x_{s_{j-1}}, x_{s_j})$ (no return leg).
+\end{definition}
+
+We require every instance to be solvable: the target must be reachable
+by at least one robot with a single-site sortie, that is,
+$\min_r 2 \, d(x_0^r, x_\tau) \leq E$.
+
+\section{Geometric Constants}
+
+The bounds derived in Chapter~IV are expressed in terms of two
+geometric quantities.
+
+\begin{enumerate}
+\item The expected distance between two independent uniform-random
+points in the square $[0,L]^2$ is
+$d_{\mathrm{avg}} \approx 0.5214\,L$~\cite{Robbins1978}. This is used
+to estimate the expected cost of base-to-site legs.
+\item The characteristic inter-site spacing
+$d_{\mathrm{hop}} = L / \sqrt{n}$ arises from the regular-grid
+approximation in which $n$ sites are placed in a square of side $L$;
+each site then occupies a cell of area $L^2/n$, whose side length is
+$L/\sqrt{n}$.
+\end{enumerate}
+
+\section{Research Hypotheses}
+
+The research question stated in the introduction---how should robots
+coordinate to minimize travel distance under energy and communication
+constraints---decomposes into four testable hypotheses. Each is stated
+below as a falsifiable claim, and each is evaluated in Chapter~V both
+theoretically (bounds) and experimentally (Monte Carlo).
+
+\begin{description}
+\item[H1. Communication dominates fleet size.] An auction-coordinated
+team of $R$ robots achieves substantially lower FCR than a team of $R$
+robots that chooses sites independently. The hypothesis is that the
+improvement factor is large (of order $5\times$ or greater) at the
+default parameter setting.
+
+\item[H2. Probability-awareness dominates centralization.] A
+distributed auction with bids $p_i / d$ achieves lower FCR than a
+centralized Hungarian assignment that minimizes total distance without
+using probability information. Moreover, if the Hungarian is given
+access to $p_i$-weighted costs, its performance matches the distributed
+auction's, so that the gap is attributable to the bid function rather
+than to the allocation mechanism.
+
+\item[H3. Multi-site sorties recover most of the energy penalty.]
+A multi-sortie planner that chains several sites per excursion closes
+the majority of the FCR gap between an energy-constrained single-sortie
+algorithm and an unconstrained-energy baseline.
+
+\item[H4. A quadratic distance penalty is empirically optimal under
+energy constraints.] Of the bid functions
+$\{p, d^{-1}, p\,e^{-d/E}, p/d, p/d^2\}$, the function $p/d^2$ achieves
+the lowest FCR on the default parameter setting. The hypothesized
+mechanism is a cost-foreclosure argument: committing to a distant
+anchor site wastes budget that would otherwise support additional
+chain extensions.
+\end{description}
+
+\end{doublespacing}

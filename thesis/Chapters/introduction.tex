@@ -1,0 +1,106 @@
+\chapter{INTRODUCTION}\label{ch:intro}
+
+\begin{doublespacing}
+
+In the minutes and hours after a building collapses, collapsed-structure
+entry is dangerous for human rescuers and a high-stakes information
+problem: a survivor is somewhere in a rubble field and the probability
+that they are in any particular void pocket is unevenly distributed.
+Small autonomous robots---aerial drones, crawling ground units, or
+tethered probes---can be deployed into the structure to search. When
+several robots are available, the question becomes not merely
+\emph{where should a robot look} but \emph{how should a team of robots
+divide the search}. Poor coordination causes robots to check the same
+locations and to burn their finite batteries before checking the most
+likely ones. Good coordination \emph{on the right mathematical
+foundations} can cut search distance dramatically, and it is those
+foundations that this thesis studies.
+
+This thesis addresses the following question. Given a team of $R$
+battery-powered robots, a set of $n$ candidate survivor locations with
+non-uniform prior probabilities, and a worst-case metric of efficiency,
+what combination of communication assumptions, bid functions, and
+routing decisions minimizes the distance a robot travels before finding
+the target? The answer, which this thesis develops formally and
+validates numerically, is that the bottleneck is not fleet size or
+battery capacity in isolation but the bid function that robots use to
+decide which site to visit next, together with their ability to chain
+several sites into a single energy-feasible tour.
+
+\section{Motivation}
+
+Urban search-and-rescue (USAR) robotics has matured from tele-operated
+single-unit deployments toward teams of semi-autonomous robots. Field
+reports from deployments at the World Trade Center~\cite{Casper2003},
+the Fukushima Daiichi plant, and several recent earthquakes consistently
+identify two practical pain points: robots exhaust their batteries
+before finishing their search, and multiple robots redundantly cover
+the same ground when communication links drop. The two problems are
+related. Under strict energy budgets, each wasted sortie---that is,
+each excursion that checks a site of low prior probability or revisits
+a site that a teammate already cleared---is a larger fraction of the
+total searchable volume. Coordination quality therefore matters more
+as energy grows scarcer, not less, which inverts the intuition that
+a ``self-sufficient'' robot with enough battery can simply brute-force
+the problem.
+
+From a theoretical standpoint, multi-robot search sits at the
+intersection of three literatures that have mostly evolved in
+isolation. Competitive-ratio analysis, originating from the
+cow-path problem~\cite{BaezaYates1993}, gives precise guarantees on
+online search on simple topologies but assumes a single searcher on a
+half-line. Market-based auction coordination~\cite{Dias2006} gives
+practical scalability but traditionally assumes unlimited mobility and
+therefore ignores energy. Energy-constrained exploration~\cite{Betke1995}
+studies fuel-limited traversal but typically without auction
+coordination. This thesis unifies all three into a single framework:
+competitive-ratio upper bounds on auction-coordinated search under
+finite energy.
+
+\section{Scope and Contributions}
+
+The scope of this work is algorithmic and simulation-based. Four
+algorithmic models that span the energy--communication design space
+are formulated, closed-form upper bounds on their expected finder
+competitive ratio are derived, and the bounds are validated by 500
+Monte Carlo trials per configuration on identical instances with
+sweeps over the energy budget $E$ and the fleet size $R$. Physical
+robot deployment is not in scope and is left as future work.
+
+The specific contributions of this thesis are as follows.
+
+\begin{enumerate}
+\item Formalization of four search models (M1 random, M2 unconstrained
+auction, M3 single-sortie auction, M4/M4* multi-sortie auction) that
+systematically vary the two operational dimensions---energy and
+communication---and derivation of an expected-FCR upper bound for each.
+\item An ablation on the Hungarian centralized assignment baseline that
+disentangles two previously conflated effects: probability-aware bidding
+versus centralized allocation. Probability-awareness is shown to be the
+dominant factor.
+\item Identification of a bid function $p_i/d^2$ that empirically
+outperforms the standard $p_i/d$ bid under energy constraints, together
+with a cost-foreclosure argument that justifies the quadratic distance
+penalty.
+\item Validation of all four bounds across 500 trials, with parameter
+sweeps over $E \in [8, 30]$ and $R \in [1, 6]$ showing the stability of
+the ranking and the diminishing-returns behavior of fleet size.
+\end{enumerate}
+
+\section{Thesis Organization}
+
+The remainder of the thesis is organized as follows. Chapter~II reviews
+the related work in competitive search theory, auction-based
+coordination, and probabilistic and energy-constrained search, and
+positions the present contribution relative to each. Chapter~III states
+the formal problem, defines the finder competitive ratio, and
+introduces the sortie model and the geometric constants used in the
+bounds. Chapter~IV presents the four algorithmic models and the
+Hungarian baselines, together with the theoretical upper bounds on the
+expected FCR. Chapter~V describes the experimental setup and reports
+the main comparison results, the bounds verification, and the
+parameter sweeps, and discusses the filtering thresholds and the
+simplifying assumptions. Chapter~VI concludes with a summary of
+findings and a discussion of future work.
+
+\end{doublespacing}

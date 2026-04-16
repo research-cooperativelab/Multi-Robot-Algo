@@ -1,0 +1,251 @@
+\chapter{METHODOLOGY}\label{ch:method}
+
+\begin{doublespacing}
+
+This chapter presents the four algorithmic models and the Hungarian
+baselines, then derives upper bounds on their expected finder
+competitive ratio. Table~\ref{tab:models} summarizes the models along
+the two operational axes of energy and communication.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of the four algorithmic models and their operational characteristics.}\label{tab:models}
+\vspace{2pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+& \textbf{Energy} & \textbf{Communication} & \textbf{Movement} & \textbf{Coordination} \\
+\midrule
+M1 & unbounded & none & Base $\to$ node $\to$ base & Random \\
+M2 & unbounded & full & Node $\to$ node & Auction \\
+M3 & $E$ & at base & Base $\to$ node $\to$ base & Auction \\
+M4 & $E$ & at base & Base $\to$ tour $\to$ base & Auction \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Algorithmic Models}
+
+\subsection{Model 1: Random Baseline}
+
+In Model 1 each of the $R$ robots independently samples an unvisited
+site from the normalized prior and makes a base-to-site round trip of
+cost $2\,d(x_0^r, x_i)$. There is no communication, so robots may
+select the same site in the same round. The purpose of Model 1 is to
+quantify the cost of no coordination at all and to serve as a floor
+against which every other model is measured.
+
+\subsection{Model 2: Unconstrained-Energy Auction}
+
+In Model 2 the robots share full information and execute a sequential
+single-item (SSI) auction. Each robot $r$ computes a bid for every
+unvisited site $i$ using its current position $\mathrm{pos}_r$
+(initially $x_0^r$):
+\[
+  b_{r,i} = \frac{p_i}{d(\mathrm{pos}_r, x_i)}.
+\]
+The pair $(r^*, i^*) = \arg\max_{r,i} b_{r,i}$ wins the first auction
+slot; both $r^*$ and $i^*$ are then removed and the auction repeats
+until all robots have assignments. Winners travel one-way to their
+assigned sites---there is no base return and no energy limit---and
+their positions update for the next round. Model 2 is a strong
+baseline but \emph{not} an algorithmic lower bound, because the greedy
+SSI order can accept chains that a smarter global planner would
+reject. In the energy sweep of Chapter~V the multi-sortie planner
+Model 4* actually overtakes Model 2 for large $E$, confirming that
+Model 2 is not an omniscient best.
+
+\subsection{Model 3: Auction with Single-Node Sorties}
+
+In Model 3 the SSI auction runs at base each round, restricted to
+energy-feasible candidates satisfying $2\,d(x_0^r, x_i) \leq E$. Each
+robot executes one round-trip sortie per iteration. This model
+exposes the \emph{energy penalty}: a single sortie spends most of its
+budget on the two base legs, leaving little for productive search. A
+robot with $E = 14$ and an assigned site at distance $5$ spends $10$
+units on travel and wastes the remaining $4$. The next model addresses
+exactly this waste.
+
+\subsection{Model 4 and Model 4*: Multi-Node Sorties}
+
+In Model 4, after the auction assigns an initial (anchor) site to
+each robot, a \emph{greedy chain extension} appends additional sites
+to each robot's tour while the remaining energy permits. Let
+$\mathrm{pos}_r$ be the robot's current position (updated after each
+hop) and $\mathcal{C}$ the set of sites already claimed by any robot's
+chain. The next extension site for robot $r$ is
+\begin{equation}\label{eq:chain}
+  j^* = \argmax_{j \notin \mathcal{C}} \; \frac{p_j}{d(\mathrm{pos}_r, x_j)},
+  \quad \text{subject to} \quad d(\mathrm{pos}_r, x_j) + d(x_j, x_0^r) \leq E^r_{\mathrm{rem}},
+\end{equation}
+where $E^r_{\mathrm{rem}}$ is the robot's remaining energy. Extensions
+proceed in round-robin order across robots until no more sites can be
+appended. Model 4* uses the same structure as Model 4 but replaces
+$p/d$ with $p/d^2$ in both the initial auction and the chain extension.
+
+The cost-foreclosure argument for the quadratic penalty is as follows.
+A sortie that anchors at distance $d$ consumes $2d$ of the budget on
+its base legs alone, leaving $E - 2d$ for chain hops. The number of
+chain hops possible is approximately $(E - 2d) / d_{\mathrm{hop}}$,
+which is a linear function of $d$ with negative slope. The
+\emph{product} of (anchor probability) and (expected total progress of
+the sortie) therefore favors a superlinear penalty on $d$, which the
+bid $p/d^2$ approximates.
+
+Algorithm~\ref{alg:m4} gives pseudocode for one iteration of
+Model 4 / 4*. The outer loop repeats until the target is found.
+
+\begin{algorithm}[ht]
+\caption{Model 4 / 4* iteration.}\label{alg:m4}
+\begin{algorithmic}[1]
+\Require sites $\mathcal{N}$, prior $\mathbf{p}$, bases $\mathcal{B}$, energy $E$, bid $\phi(p, d)$
+\State $\mathcal{A} \gets \{i \in \mathcal{N} : \exists r, 2\,d(x_0^r, x_i) \leq E\}$
+\State \textbf{auction:} for each $r$, solve $(r, i^r) \gets \argmax \phi(p_i, d(x_0^r, x_i))$ via SSI over $\mathcal{A}$
+\State $\mathcal{C} \gets \{i^r : r = 1,\ldots,R\}$
+\For{each robot $r$}
+  \State $\mathrm{pos}_r \gets x_{i^r}$; $E^r_{\mathrm{rem}} \gets E - d(x_0^r, x_{i^r})$
+\EndFor
+\While{any robot can extend its chain}
+  \For{each robot $r$ in round-robin order}
+    \State $j^* \gets \argmax_{j \notin \mathcal{C}} \phi(p_j, d(\mathrm{pos}_r, x_j))$ s.t.\ $d(\mathrm{pos}_r, x_j) + d(x_j, x_0^r) \leq E^r_{\mathrm{rem}}$
+    \If{$j^*$ exists}
+      \State append $j^*$ to robot $r$'s tour; $\mathcal{C} \gets \mathcal{C} \cup \{j^*\}$
+      \State $\mathrm{pos}_r \gets x_{j^*}$; $E^r_{\mathrm{rem}} \gets E^r_{\mathrm{rem}} - d(\mathrm{pos}_r, x_{j^*})$
+    \EndIf
+  \EndFor
+\EndWhile
+\State execute all tours; if any robot finds $\tau$ return success
+\State Bayesian update on $\mathbf{p}$ using visited sites; repeat
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Hungarian Baselines}
+
+The Hungarian algorithm~\cite{Kuhn1955} computes the globally
+minimum-cost assignment of robots to tasks in $O(n^3)$. This thesis
+evaluates two Hungarian variants as centralized baselines.
+
+The first variant, H$_d$, minimizes total base-to-site distance with
+edge cost $c_{r,i} = d(x_0^r, x_i)$. It \emph{ignores} the prior.
+This tests whether distance-optimal assignment alone suffices.
+
+The second variant, H$_{p/d}$, gives the Hungarian solver the same
+probability information that the distributed auction uses, with edge
+cost $c_{r,i} = -p_i / d(x_0^r, x_i)$ (negated to convert the
+maximum-bid problem to a minimum-cost problem). Comparing M3 to H$_d$
+and H$_{p/d}$ jointly disentangles two previously conflated effects:
+the role of probability-awareness in the bid function versus the role
+of centralization in the allocation mechanism.
+
+\section{Theoretical Analysis}
+
+This section derives upper bounds on the expected FCR of each model
+in closed form, expressed in terms of the instance parameters
+$(n, R, E, L)$ and the geometric constants $d_{\mathrm{avg}}$ and
+$d_{\mathrm{hop}}$.
+
+\begin{lemma}[Expected Rounds under Coordination]\label{lem:rounds}
+If $R$ robots check $R$ distinct sites per round, then for any prior
+$\mathbf{p}$ the expected number of rounds to find the target
+satisfies
+\[
+  \mathbb{E}[K] \;\leq\; \frac{1}{n}\sum_{i=1}^{n}\left\lceil \frac{i}{R} \right\rceil \;=\; \frac{n + R}{2R} + O(1/n).
+\]
+\end{lemma}
+
+\begin{proof}
+Let $\sigma$ be the search order induced by the auction (sites visited
+round by round in decreasing bid). The target at $\sigma$-rank $i$ is
+found in round $\lceil i/R \rceil$. Therefore the expected number of
+rounds is $\sum_{i=1}^n \Pr[\sigma\text{-rank of target} = i] \cdot
+\lceil i/R \rceil$, and this sum is maximized by the uniform
+distribution $p_i \equiv 1/n$. Summing
+$\frac{1}{n}\sum_{i=1}^n \lceil i/R \rceil$ in blocks of $R$ yields
+the stated closed form after an $O(1/n)$ correction. When the prior
+concentrates on high-probability sites, the auction checks those
+first, and the expected rounds are strictly smaller; the bound is
+therefore conservative for non-uniform priors.
+\end{proof}
+
+\begin{theorem}[Model 1 Bound]\label{thm:m1}
+Let $P = 1 - (1 - 1/n)^R$ be the per-round success probability, and
+let $\mathbb{E}[K_1] = 1/P$. Then
+\[
+  \mathbb{E}[\mathrm{FCR}_1] \leq \frac{(2\,\mathbb{E}[K_1] - 1) \cdot d_{\mathrm{avg}}}{d_{\mathrm{opt}}}.
+\]
+\end{theorem}
+
+\begin{proof}
+Each of $R$ robots independently picks the target with probability
+$1/n$. The probability that none succeeds in a round is $(1 - 1/n)^R$,
+so per-round success probability is $P$ and the number of rounds is
+geometric with $\mathbb{E}[K_1] = 1/P$. The finder makes $K_1 - 1$
+round trips, each of expected cost $2\,d_{\mathrm{avg}}$, and one
+final one-way trip of expected cost $d_{\mathrm{avg}}$, giving
+$\mathbb{E}[D_f] \leq (2\,\mathbb{E}[K_1] - 1) \cdot d_{\mathrm{avg}}$.
+\end{proof}
+
+\begin{theorem}[Model 2 Bound]\label{thm:m2}
+$
+  \mathbb{E}[\mathrm{FCR}_2] \leq \mathbb{E}[K] \cdot d_{\mathrm{hop}} / d_{\mathrm{opt}}.
+$
+\end{theorem}
+
+\begin{proof}
+Under coordination, Lemma~\ref{lem:rounds} gives $\mathbb{E}[K]$ as
+the expected number of auction rounds. Robots in Model 2 move
+node to node (no base return), and we approximate the expected
+distance between consecutive auction winners by the characteristic
+inter-site spacing $d_{\mathrm{hop}} = L/\sqrt{n}$. The finder
+accumulates at most $\mathbb{E}[K]$ such hops.
+\end{proof}
+
+\begin{theorem}[Model 3 Bound]\label{thm:m3}
+$
+  \mathbb{E}[\mathrm{FCR}_3] \leq (2\,\mathbb{E}[K] - 1) \cdot d_{\mathrm{avg}} / d_{\mathrm{opt}}.
+$
+\end{theorem}
+
+\begin{proof}
+Model 3 has the same round-trip structure as Model 1 (base $\to$ site
+$\to$ base), but the auction ensures that $R$ distinct sites are
+visited per round, so the coordinated $\mathbb{E}[K]$ of
+Lemma~\ref{lem:rounds} replaces the geometric $\mathbb{E}[K_1]$ of
+Theorem~\ref{thm:m1}.
+\end{proof}
+
+\begin{theorem}[Model 4 Bound]\label{thm:m4}
+Define the expected number of sites per sortie as
+\[
+  S = \max\!\big(1,\; 1 + \lfloor (E - 2\,d_{\mathrm{avg}}) / d_{\mathrm{hop}} \rfloor\big),
+\]
+reflecting one anchor site at expected base-leg cost $2\,d_{\mathrm{avg}}$
+plus as many hop extensions as the remaining budget allows. Then
+\[
+  \mathbb{E}[\mathrm{FCR}_4] \leq \frac{E \cdot \mathbb{E}[K_4]}{d_{\mathrm{opt}}},
+  \quad \mathbb{E}[K_4] \leq \frac{1}{n} \sum_{i=1}^n \left\lceil \frac{i}{RS} \right\rceil.
+\]
+\end{theorem}
+
+\begin{proof}
+A sortie anchored at site $s_1$ spends $d(x_0^r, x_{s_1}) + d(x_{s_k}, x_0^r)$
+on the first and last legs, whose expected sum is approximately
+$2\,d_{\mathrm{avg}}$. The remaining energy $E - 2\,d_{\mathrm{avg}}$
+supports $\lfloor (E - 2\,d_{\mathrm{avg}})/d_{\mathrm{hop}}\rfloor$
+hops of cost $d_{\mathrm{hop}}$ each, giving $S$ total sites. With $R$
+robots each visiting $S$ sites, $RS$ sites are eliminated per round,
+so by Lemma~\ref{lem:rounds} applied with block size $RS$ the
+expected number of rounds is at most
+$\frac{1}{n}\sum_{i=1}^n \lceil i / (RS) \rceil$. Each sortie costs at
+most $E$, so the finder's expected travel is at most
+$E \cdot \mathbb{E}[K_4]$.
+\end{proof}
+
+\begin{corollary}[Improvement Factor]\label{cor:improvement}
+Model 4 reduces the expected number of rounds by a factor of $S$
+relative to Model 3 whenever $S$ sites remain reachable per sortie.
+As $E \to \infty$, $S \to \infty$ and Model 4's per-round site
+throughput approaches that of the unconstrained node-to-node regime
+of Model 2.
+\end{corollary}
+
+\end{doublespacing}
