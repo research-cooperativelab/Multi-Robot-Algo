@@ -22,26 +22,18 @@ Spring 2026
 \begin{doublespacing}
 \noindent
 This thesis studies the multi-robot search and rescue problem in which
-$R$ robots must locate a target hidden among $n$ candidate sites in a
-two-dimensional environment. Each site carries a prior probability of
-containing the target, and each robot operates from a base station with
-a finite energy budget $E$. Four algorithmic models that systematically
-vary energy capacity and coordination mechanism are formulated and
-evaluated using the Finder Competitive Ratio (FCR), a metric that
-measures how far the finding robot travels relative to an omniscient
-optimum. For each model, theoretical upper bounds on the expected FCR
-are derived and validated through 500 Monte Carlo trials with parameter
-sweeps over energy budgets and fleet sizes. The results show that
-auction-based coordination yields a 6.6-fold improvement over
-uncoordinated search; that probability-aware distributed auctions
-outperform a centralized distance-optimal (Hungarian) assignment by
-5.7 percent, with the effect attributable to the bid function rather
-than to centralization; that multi-node sorties recover 92 percent of
-the gap between energy-constrained and unconstrained performance; and
-that a bid function $p_i/d^2$ that penalizes distance quadratically
-improves upon the standard $p_i/d$ by 4.2 percent under energy
-constraints. The theoretical bounds hold across all trials, and the
-experimental rankings are stable under variation in the filtering
-thresholds used to exclude degenerate instances.
+$R$ robots must locate a target hidden among $n$ candidate sites, each
+carrying a prior probability $p_i$ of containing the target, under a
+finite per-robot energy budget $E$. Four algorithmic models that
+systematically vary coordination and energy assumptions are formulated
+and evaluated by the Finder Competitive Ratio (FCR), the ratio of the
+finding robot's travel distance to the omniscient optimum. Theoretical
+upper bounds are derived for each model and validated over 500 Monte
+Carlo trials with parameter sweeps. Auction-based coordination yields
+a 6.6-fold improvement over random search; a bid function $p_i/d^2$
+that penalizes distance quadratically outperforms the standard $p_i/d$
+by 4.2 percent under energy constraints, motivated by a
+cost-foreclosure argument; and multi-node sorties close 92 percent of
+the gap between energy-constrained and unconstrained performance.
 \end{doublespacing}
 \clearpage

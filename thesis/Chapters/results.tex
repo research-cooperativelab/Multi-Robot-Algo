@@ -54,13 +54,20 @@ difference is not a matter of statistical noise---with 500 trials
 and the reported standard deviations, the two means are separated by
 many standard errors. H1 is supported.
 
-\textbf{Hypothesis H2 (probability-awareness dominates centralization).}
-M3 (FCR $= 6.41$) outperforms the distance-only Hungarian baseline H$_d$
-(FCR $= 6.80$) by 5.7 percent. The second Hungarian variant H$_{p/d}$,
-which is given access to the same probability-weighted costs as the
-auction, tracks M3 to within statistical noise. The gap between H$_d$
-and M3 is therefore attributable to the bid function and not to the
-allocation mechanism. H2 is supported.
+\textbf{Hypothesis H2 (probability-aware bids beat distance-only
+centralized assignment).} M3 (FCR $= 6.41$) outperforms the
+distance-only Hungarian baseline H$_d$ (FCR $= 6.80$) by 5.7 percent,
+supporting H2 directly. The follow-up question of whether the gap is
+attributable to the \emph{bid function} (probability-weighted vs.\
+distance-only) or to the \emph{allocation mechanism} (distributed SSI
+vs.\ centralized Hungarian) requires running the probability-weighted
+Hungarian variant H$_{p/d}$ as an ablation; this variant is described
+as an extension to the baseline in Chapter~IV but is not yet
+implemented, and running it is the primary near-term experimental
+follow-up for this thesis. The conjecture---supported by the
+consistency of the $1/d$ bid's FCR with H$_d$'s in
+Figure~\ref{fig:bids}---is that H$_{p/d}$ would approach M3 and thereby
+attribute the gap to the bid function.
 
 \textbf{Hypothesis H3 (multi-site sorties recover most of the energy
 penalty).} The gap M3 $-$ M2 $= 6.41 - 2.83 = 3.58$ in FCR is the
@@ -163,17 +170,25 @@ Two filters were applied during instance generation. The first,
 $d_{\mathrm{opt}} \geq 1.0$, excludes instances in which the target
 happens to lie nearly on top of a base and the optimal travel cost is
 essentially zero. Without the filter, FCR explodes regardless of
-algorithm quality, and the signal being measured becomes a function of
-instance geometry rather than algorithmic choice. The second filter,
-$2\,d_{\mathrm{opt}} \leq E$, excludes instances that no single-sortie
-algorithm could ever solve and that would therefore be unfairly
-penalized.
-
-To verify that the filters do not bias the results, a sensitivity
-check was run at lower threshold values of $0.5$ and $2.0$ in place
-of $1.0$. The \emph{relative} ranking of the models (M4* $\leq$ M4
-$\leq$ M2 $\leq$ M3 $\leq$ H$_d$ $\leq$ M1) is preserved at every
-threshold; only the absolute FCRs shift.
+algorithm quality, and the signal being measured becomes a function
+of instance geometry rather than algorithmic choice. This filter
+removes roughly 7 percent of generated instances, and it introduces
+a well-defined \emph{selection bias}: the reported averages describe
+performance on instances where some algorithmic choice matters, not
+on the full generated distribution. Two steps mitigate the bias.
+First, the median FCR is reported in Table~\ref{tab:main} alongside
+the mean to characterize the distribution without the influence of
+the remaining right tail; the medians and means support the same
+ranking. Second, a sensitivity check was run at threshold values of
+$0.5$ and $2.0$ in place of $1.0$, and the relative ranking of the
+models (M4* $\leq$ M4 $\leq$ M2 $\leq$ M3 $\leq$ H$_d$ $\leq$ M1) is
+preserved at every threshold; only the absolute FCRs shift. The
+second filter, $2\,d_{\mathrm{opt}} \leq E$, excludes instances that
+no single-sortie algorithm could ever solve and that would therefore
+be unfairly penalized. In a real deployment, a target trivially
+close to a base is an easy case that no algorithm needs to optimize
+for; excluding it concentrates the evaluation on the instances where
+algorithmic choice actually matters.
 
 \subsection{On the Choice of Greedy Chain Extension}
 
@@ -205,16 +220,28 @@ deployments.
 \subsection{Simplifying Assumptions}
 
 The model assumes perfect sensors, flat Euclidean terrain, and a
-uniform energy budget across robots. Relaxing any of these is a
-direction for future work. Introducing a detection probability
-$p_{\mathrm{det}} < 1$ multiplies expected rounds by roughly
-$1/p_{\mathrm{det}}$; the bounds of Chapter~IV generalize by replacing
-$R$ with $R \cdot p_{\mathrm{det}}$ in Lemma~\ref{lem:rounds}. For
-non-Euclidean environments, Euclidean distances would be replaced by
-shortest-path costs through an obstacle graph; the auction mechanism
-is agnostic to how distances are computed. Heterogeneous energy
-budgets introduce per-robot feasibility thresholds that complicate
-the auction's candidate filtering but do not change the structure of
-the algorithm.
+uniform energy budget across robots. The perfect-sensor assumption
+is the most consequential of these: in a real collapsed-structure
+deployment, dust, occlusion, and rubble produce \emph{false
+negatives}, and a robot can leave a site where the target is present
+and report ``not here.'' A false negative corrupts the Bayesian
+renormalization of Chapter~III because the update sets $p_i
+\leftarrow 0$ for a visited site that should still carry residual
+mass, so the posterior over-concentrates on the unvisited sites and
+the true target may be permanently excluded. The remedy is
+straightforward: for a known detection probability $p_{\mathrm{det}}
+< 1$ the update becomes $p_i \leftarrow (1 - p_{\mathrm{det}}) p_i$
+rather than zero, leaving residual mass proportional to the miss
+rate. Expected rounds then scale by roughly $1/p_{\mathrm{det}}$, and
+the bounds of Chapter~IV generalize by replacing $R$ with $R \cdot
+p_{\mathrm{det}}$ in Lemma~\ref{lem:rounds}. A revisit policy
+triggered when the posterior concentrates back toward a visited site
+would recover any target missed on an earlier pass. For non-Euclidean
+environments, Euclidean distances would be replaced by shortest-path
+costs through an obstacle graph; the auction mechanism is agnostic
+to how distances are computed. Heterogeneous energy budgets
+introduce per-robot feasibility thresholds that complicate the
+auction's candidate filtering but do not change the structure of the
+algorithm.
 
 \end{doublespacing}

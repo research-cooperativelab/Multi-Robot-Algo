@@ -21,16 +21,18 @@ stations at positions $x_0^r \in [0, L]^2$ for $r = 1, \ldots, R$; and
 $\mathbf{p}$.
 \end{definition}
 
-Distances are Euclidean. The position of the target is written
-$x_\tau$. A robot inspects a site by physically visiting it; a
-visit reveals whether the target is present with certainty (the
-perfect-sensor assumption, discussed in Chapter~VI as a limitation to
-relax in future work). After each search round, robots return to base,
-share their observations---specifically, the list of sites they
-visited and did not find the target at---and update the joint prior
-by Bayesian renormalization. For a set $\mathcal{V}$ of visited sites
-from the current round, each visited site gets $p_i \leftarrow 0$ and
-the remaining probabilities are renormalized:
+Distances are Euclidean. The arena side length $L > 0$ is a fixed
+constant of the instance (throughout the experiments $L = 10$). The
+position of the target is written $x_\tau$. A robot inspects a site
+by physically visiting it; a visit reveals whether the target is
+present with certainty (the perfect-sensor assumption, discussed in
+Chapter~VI as a limitation to relax in future work). After each
+search round, all robots return to base and share their observations,
+so $\mathcal{V}$ below denotes the \emph{union} of sites visited by
+any robot in the round, not a single robot's track. The joint prior
+is then updated by Bayesian renormalization: each $i \in \mathcal{V}$
+gets $p_i \leftarrow 0$, and the remaining probabilities are
+renormalized:
 \[
   p_i' = \frac{p_i}{1 - \sum_{j \in \mathcal{V}} p_j}, \quad i \notin \mathcal{V}.
 \]

@@ -10,8 +10,20 @@ capacity and communication assumptions. Theoretical upper bounds on
 the expected finder competitive ratio were derived for each model and
 validated by Monte Carlo simulation over 500 trials per configuration.
 
-Four findings emerged, each corresponding to one of the research
-hypotheses stated in Chapter~III.
+The headline contribution is the identification of a bid function
+$p_i / d^2$ that outperforms the conventional $p_i / d$ under energy
+constraints, justified by a \emph{cost-foreclosure} argument: a
+distant anchor site not only costs proportionally more energy but
+also shrinks the remaining chain-extension budget by the same amount,
+so the effective marginal cost of distance is superlinear. The result
+is practical in two senses. It is a one-line change in the bid
+function of any auction-based multi-robot search system, and the
+argument behind it is generic---it applies wherever a fixed resource
+budget must be allocated between a committed first action and a
+sequence of optional follow-ups.
+
+Four findings emerged overall, each corresponding to one of the
+research hypotheses stated in Chapter~III.
 
 \begin{enumerate}
 \item Auction-based coordination yields a $6.6\times$ improvement in
