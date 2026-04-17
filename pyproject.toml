@@ -1,0 +1,75 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "searchfcr"
+version = "0.1.0"
+description = "Benchmark for budgeted multi-robot search with probability-aware auctions"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Fozhan Babaeiyan Ghamsari" },
+    { name = "Oscar Morales-Ponce" },
+]
+keywords = [
+    "multi-robot",
+    "search-and-rescue",
+    "auction",
+    "competitive-ratio",
+    "benchmark",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/foojanbabaeeian/Multi-Robot-Algo"
+Source = "https://github.com/foojanbabaeeian/Multi-Robot-Algo"
+Issues = "https://github.com/foojanbabaeeian/Multi-Robot-Algo/issues"
+
+[project.scripts]
+searchfcr = "searchfcr.cli:main"
+
+# --- Hatch build config -----------------------------------------------------
+# Include main.py at the package root as a data file so ``pip install`` still
+# ships the single source of truth alongside the package.
+
+[tool.hatch.build.targets.wheel]
+packages = ["searchfcr"]
+# main.py sits next to the package; include it in the wheel so installed
+# installs can locate it via the _main_import shim.
+force-include = { "main.py" = "main.py" }
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "searchfcr",
+    "tests",
+    "main.py",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
