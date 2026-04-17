@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, thesis-and-paper-draft]
+  pull_request:
+    branches: [main, thesis-and-paper-draft]
+
+jobs:
+  tests:
+    name: pytest (Python ${{ matrix.python-version }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package + dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest -v --tb=short
+
+      - name: Quick benchmark smoke test
+        run: |
+          python -m searchfcr list-models
+          python -m searchfcr bench --suite default --trials 20
+
+  reproduce:
+    name: reproduce_thesis.py --quick
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Reproduce thesis figures (quick)
+        run: python reproduce_thesis.py --quick
+
+      - name: Archive regenerated figures
+        uses: actions/upload-artifact@v4
+        with:
+          name: thesis-figures
+          path: thesis/figures/*.png
+          retention-days: 30

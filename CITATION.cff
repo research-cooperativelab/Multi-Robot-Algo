@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use SearchFCR in your research, please cite it as below."
+title: "SearchFCR: A Benchmark for Budgeted Multi-Robot Search with Probability-Aware Auctions"
+version: 0.1.0
+date-released: 2026-04-17
+license: MIT
+repository-code: "https://github.com/foojanbabaeeian/Multi-Robot-Algo"
+authors:
+  - family-names: Babaeiyan Ghamsari
+    given-names: Fozhan
+    affiliation: "California State University, Long Beach"
+    email: fozhan.babaeiyanghamsari01@student.csulb.edu
+  - family-names: Morales-Ponce
+    given-names: Oscar
+    affiliation: "California State University, Long Beach"
+    email: oscar.moralesponce@csulb.edu
+keywords:
+  - multi-robot systems
+  - search and rescue
+  - auction-based coordination
+  - competitive ratio
+  - sequential single-item auction
+  - energy-constrained planning
+  - benchmark
+
+preferred-citation:
+  type: thesis
+  title: "On the Numerical Analysis of Multi-Robot Search and Rescue Algorithms in Unknown Environments"
+  authors:
+    - family-names: Babaeiyan Ghamsari
+      given-names: Fozhan
+  year: 2026
+  institution:
+    name: "California State University, Long Beach"
+  thesis-type: "Honors thesis"
+  url: "https://github.com/foojanbabaeeian/Multi-Robot-Algo"
