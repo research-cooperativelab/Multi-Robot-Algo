@@ -2,105 +2,280 @@
 
 \begin{doublespacing}
 
-In the minutes and hours after a building collapses, collapsed-structure
-entry is dangerous for human rescuers and a high-stakes information
-problem: a survivor is somewhere in a rubble field and the probability
-that they are in any particular void pocket is unevenly distributed.
-Small autonomous robots---aerial drones, crawling ground units, or
-tethered probes---can be deployed into the structure to search. When
-several robots are available, the question becomes not merely
-\emph{where should a robot look} but \emph{how should a team of robots
-divide the search}. Poor coordination causes robots to check the same
-locations and to burn their finite batteries before checking the most
-likely ones. Good coordination \emph{on the right mathematical
-foundations} can cut search distance dramatically, and it is those
-foundations that this thesis studies.
+\section{A Rescue Scenario}
 
-This thesis addresses the following question. Given a team of $R$
-battery-powered robots, a set of $n$ candidate survivor locations with
-non-uniform prior probabilities, and a worst-case metric of efficiency,
-what combination of communication assumptions, bid functions, and
-routing decisions minimizes the distance a robot travels before finding
-the target? The answer, which this thesis develops formally and
-validates numerically, is that the bottleneck is not fleet size or
-battery capacity in isolation but the bid function that robots use to
-decide which site to visit next, together with their ability to chain
-several sites into a single energy-feasible tour.
+Imagine a five-story apartment building has just collapsed after a
+major earthquake. The debris covers an area of roughly half a city
+block. Somewhere inside, a person is trapped in a void pocket under a
+slab of concrete. The fire department arrives, but the structure is
+unstable and they cannot send people in safely. Instead they deploy
+three small autonomous drones---rugged, battery-powered, each one
+about the size of a shoebox. Each drone is launched from a truck
+parked on the street, and each drone's battery will last for roughly
+fifteen minutes of flight time before it has to return to the truck
+to swap batteries.
 
-\section{Motivation}
+From previous search-and-rescue experience, the rescuers already
+have a rough idea of where in the rubble survivors are most likely to
+be found: near stairwells, around load-bearing walls, under furniture
+that might have created a void pocket. Collectively the rescuers
+identify about thirty such ``candidate sites.'' Each site has a prior
+probability associated with it---some sites are very likely to hold
+the trapped person (near a bathroom, say, where someone might have
+taken shelter), and some are unlikely but non-zero (under the
+collapsed roof).
 
-Urban search-and-rescue (USAR) robotics has matured from tele-operated
-single-unit deployments toward teams of semi-autonomous robots. Field
-reports from deployments at the World Trade Center~\cite{Casper2003},
-the Fukushima Daiichi plant, and several recent earthquakes consistently
-identify two practical pain points: robots exhaust their batteries
-before finishing their search, and multiple robots redundantly cover
-the same ground when communication links drop. The two problems are
-related. Under strict energy budgets, each wasted sortie---that is,
-each excursion that checks a site of low prior probability or revisits
-a site that a teammate already cleared---is a larger fraction of the
-total searchable volume. Coordination quality therefore matters more
-as energy grows scarcer, not less, which inverts the intuition that
-a ``self-sufficient'' robot with enough battery can simply brute-force
-the problem.
+The three drones need to check these thirty sites, one by one, until
+they find the trapped person. The question this thesis asks is
+simple to state: \emph{what strategy should the drones use to find
+the person as fast as possible?} ``Fast'' here means short total
+travel distance, because distance is what drains the battery and
+delays the rescue.
 
-From a theoretical standpoint, multi-robot search sits at the
-intersection of three literatures that have mostly evolved in
-isolation. Competitive-ratio analysis, originating from the
-cow-path problem~\cite{BaezaYates1993}, gives precise guarantees on
-online search on simple topologies but assumes a single searcher on a
-half-line. Market-based auction coordination~\cite{Dias2006} gives
-practical scalability but traditionally assumes unlimited mobility and
-therefore ignores energy. Energy-constrained exploration~\cite{Betke1995}
-studies fuel-limited traversal but typically without auction
-coordination. This thesis unifies all three into a single framework:
-competitive-ratio upper bounds on auction-coordinated search under
-finite energy.
+The question sounds simple, but it hides four separate subproblems
+that interact in surprising ways:
+
+\begin{enumerate}
+\item \emph{Which drone should check which site?} If the three
+drones all rush toward the most probable site, two of them waste a
+trip. If they don't coordinate at all, they will sometimes end up
+checking the same site twice.
+
+\item \emph{How should a drone decide where to go next?} The obvious
+answer is ``the nearest site,'' but the nearest site might have a
+very low probability of actually holding the survivor. A site a
+little farther away with a much higher probability is usually a
+better bet.
+
+\item \emph{How should a drone use its limited battery?} A drone
+that flies to a site, checks it, and flies back to the truck has
+used up battery mostly on travel, not on searching. If instead it
+chains together several sites in one trip before returning, it
+searches far more effectively. But chaining too many sites risks
+running out of battery mid-flight.
+
+\item \emph{What if communication between the drones drops out?} In
+a real disaster site, radios fail. If the drones cannot talk to each
+other while in flight, coordination has to happen back at the truck,
+which changes everything about how decisions get made.
+\end{enumerate}
+
+This thesis answers all four questions, using a mix of formal
+mathematical analysis and computer simulation.
+
+\section{What This Thesis Shows, in One Paragraph}
+
+The main result is the following. Of all the factors that affect how
+fast the drones find the survivor, the single most important one is
+\emph{how they decide which site to go to next}. The conventional
+choice is to rank sites by ``probability divided by distance,''
+meaning a site with twice the probability at twice the distance
+ranks the same as one with half the probability right next door.
+This thesis shows that under battery constraints the right rule is
+instead ``probability divided by distance \emph{squared}.'' The
+quadratic penalty on distance makes distant sites look twice as bad
+as the standard rule would suggest, and this is exactly correct when
+battery is scarce, because going to a far site costs you not just
+that trip's battery but also the opportunity to chain several
+closer sites afterward. Empirically, the new bid function improves
+average search time by about four percent on top of an already
+well-optimized baseline---a small number, but one that comes for
+free from a one-line change to the algorithm.
+
+Several other findings fall out of the same analysis. Coordination
+via an auction mechanism improves search time by 6.6$\times$ over
+robots choosing independently---so communication, not fleet size, is
+the main lever. Allowing drones to chain multiple sites per flight
+recovers 92\% of the performance gap between battery-constrained and
+battery-unlimited operation. These results are all formally backed
+by upper bounds on the worst-case search distance that are proved in
+Chapter~IV and verified over 500 simulation trials per configuration
+in Chapter~V.
+
+\section{Key Terms at First Encounter}
+
+Before diving in, a few technical terms appear throughout the thesis
+and deserve a plain-language definition. They are introduced
+informally here and formally in Chapter~III.
+
+\begin{description}[leftmargin=2em,style=nextline]
+\item[Robot.] An autonomous battery-powered agent that can travel to
+a point in space, check whether the target is there, and return. In
+the running example, ``robot'' means a drone, but the same algorithms
+work for any kind of mobile agent: ground robots, underwater vehicles,
+or even teams of humans.
+
+\item[Site.] One of the $n$ candidate locations the robots might
+check. Each site has a fixed position in a two-dimensional search
+area and a prior probability of containing the target.
+
+\item[Prior probability.] How likely a site is to contain the target,
+before any searching happens. Priors come from domain knowledge---a
+structural engineer's assessment of which voids are survivable, a
+search dog's indication, etc. Priors always sum to one across all
+sites, because the target is somewhere.
+
+\item[Target.] The object the robots are trying to find. In the
+running example, a survivor; in other applications, a lost hiker, a
+chemical leak, or a piece of evidence.
+
+\item[Base.] The location each robot returns to for recharging. In
+the running example, the fire truck. Different robots can have
+different bases; the algorithm does not assume they all share one.
+
+\item[Sortie.] A single round trip by one robot: base $\rightarrow$
+one or more sites $\rightarrow$ base. A sortie is limited by the
+robot's battery energy budget $E$.
+
+\item[Auction.] A formal protocol the robots use to decide who goes
+where. Each robot computes a ``bid'' for each site---a numerical
+score saying how attractive that site is to that robot---and the
+highest bidder wins the site. Auctions in this thesis are always
+\emph{sequential single-item} (SSI) auctions: one site is auctioned
+at a time, the winner is assigned, and the process repeats until all
+robots have an assignment.
+
+\item[Bid function.] The mathematical formula that turns a (site
+probability, site distance) pair into a bid. The thesis studies
+several: $p$ alone (only consider probability), $1/d$ alone (only
+consider distance), $p/d$ (the classical choice), $p/d^2$ (the one
+this thesis recommends), and a few others.
+
+\item[Finder Competitive Ratio (FCR).] The main performance metric
+of the thesis. It is the total distance traveled by the robot that
+actually finds the target, divided by the straight-line distance
+from the nearest base to the target. An FCR of 1.0 means the robot
+flew directly to the survivor without ever going the wrong way; an
+FCR of 10.0 means the robot wandered ten times as far as strictly
+necessary. Lower is better. FCR is formally defined in Chapter~III
+and illustrated with a worked example in Figure~\ref{fig:fcr-explained}.
+\end{description}
+
+\section{Why This Problem is Not Already Solved}
+
+A reader with some background might reasonably ask: surely search
+robots have been studied for decades, and surely someone has solved
+this already? The answer is that the problem has been studied from
+three different angles, each in isolation, and no prior work puts all
+three together. Chapter~II explains the three strands in detail; in
+brief:
+
+\begin{itemize}
+\item \textbf{Competitive search theory}, starting with the cow-path
+problem~\cite{BaezaYates1993}, produces elegant worst-case
+guarantees, but the geometries it studies are one-dimensional
+(``walk along a line looking for a cow'') and the battery is
+unlimited.
+\item \textbf{Market-based multi-robot coordination} (auctions)
+scales to large teams and works well in practice, but the standard
+treatment assumes robots can fly as far as they want.
+\item \textbf{Energy-constrained exploration} studies fuel-limited
+robots, but typically without formal competitive-ratio guarantees
+and without auction-based coordination.
+\end{itemize}
+
+Putting all three together---finite battery, auction coordination,
+and a competitive-ratio performance guarantee, in a two-dimensional
+arena---is the contribution of this thesis.
+
+\section{Motivation from the Field}
+
+The problem is not hypothetical. Urban search-and-rescue (USAR)
+robotics has matured over the last two decades from tele-operated
+single-unit deployments (one human piloting one robot over a tether)
+toward teams of semi-autonomous robots. Field reports from
+deployments at the World Trade Center collapse~\cite{Casper2003},
+from the Fukushima Daiichi nuclear accident response, and from
+several recent earthquake responses consistently identify two
+practical pain points.
+
+The first is \emph{battery}. Real rescue robots exhaust their
+batteries before finishing their search, and the time spent swapping
+batteries is time survivors do not have. Algorithms that waste any
+portion of a battery are therefore not merely inefficient---they can
+cost lives.
+
+The second is \emph{duplicated effort}. When two robots cover the
+same rubble without coordination (typically because a radio link
+dropped), every minute of one robot's work was wasted from the
+team's perspective. Poor coordination causes robots to check the
+same locations and to burn their finite batteries before checking
+the most likely ones.
+
+The two pain points are related. Under strict energy budgets, each
+wasted sortie---each excursion that checks a site of low prior
+probability or revisits a site that a teammate already cleared---is
+a larger fraction of the total searchable volume. Coordination
+quality therefore matters \emph{more} as energy grows scarcer, not
+less, which inverts the naive intuition that a ``self-sufficient''
+robot with enough battery can simply brute-force the problem. Giving
+each robot a bigger battery does not remove the need for good
+coordination; it just shifts the failure mode.
 
 \section{Scope and Contributions}
 
-The scope of this work is algorithmic and simulation-based. Four
+The scope of this thesis is algorithmic and simulation-based. Four
 algorithmic models that span the energy--communication design space
-are formulated, closed-form upper bounds on their expected finder
-competitive ratio are derived, and the bounds are validated by 500
-Monte Carlo trials per configuration on identical instances with
-sweeps over the energy budget $E$ and the fleet size $R$. Physical
-robot deployment is not in scope and is left as future work.
+are formulated, closed-form upper bounds on their expected Finder
+Competitive Ratio (FCR) are derived, and the bounds are validated
+through 500 Monte Carlo trials per configuration on identical
+instances, with parameter sweeps over the energy budget $E$ and the
+fleet size $R$. Physical robot deployment is not in scope and is
+left as future work, discussed in Chapter~VI.
 
-The specific contributions of this thesis are as follows.
+The specific contributions of this thesis are as follows:
 
 \begin{enumerate}
-\item Formalization of four search models (M1 random, M2 unconstrained
-auction, M3 single-sortie auction, M4/M4* multi-sortie auction) that
-systematically vary the two operational dimensions---energy and
-communication---and derivation of an expected-FCR upper bound for each.
-\item An ablation on the Hungarian centralized assignment baseline that
-disentangles two previously conflated effects: probability-aware bidding
-versus centralized allocation. Probability-awareness is shown to be the
+\item A formalization of four search models---M1 (random), M2
+(unconstrained-energy auction), M3 (single-sortie auction), and
+M4/M4* (multi-sortie auction)---that systematically vary the two
+operational dimensions of energy and communication, together with a
+closed-form expected-FCR upper bound for each.
+
+\item An ablation on the Hungarian centralized assignment baseline
+that isolates two previously conflated effects: the value of using
+probability-aware bids versus the value of centralized allocation.
+The new experimental result shows that probability-awareness is the
 dominant factor.
-\item Identification of a bid function $p_i/d^2$ that empirically
-outperforms the standard $p_i/d$ bid under energy constraints, together
-with a cost-foreclosure argument that justifies the quadratic distance
-penalty.
-\item Validation of all four bounds across 500 trials, with parameter
-sweeps over $E \in [8, 30]$ and $R \in [1, 6]$ showing the stability of
-the ranking and the diminishing-returns behavior of fleet size.
+
+\item Identification of a bid function $p_i / d^2$ that
+\emph{empirically outperforms} the conventional $p_i / d$ bid under
+energy constraints, together with a \emph{cost-foreclosure} argument
+that justifies why the distance penalty should be superlinear: a
+distant anchor site not only costs proportionally more energy to
+reach, it also shrinks the remaining energy budget available for
+chain extensions by the same amount. This is the primary
+contribution of the thesis.
+
+\item Validation of all four upper bounds across 500 Monte Carlo
+trials, and parameter sweeps over $E \in [8, 30]$ and $R \in [1, 6]$
+showing the stability of the model ranking and the
+diminishing-returns behavior of fleet size.
 \end{enumerate}
 
-\section{Thesis Organization}
+\section{How to Read This Thesis}
 
-The remainder of the thesis is organized as follows. Chapter~II reviews
-the related work in competitive search theory, auction-based
-coordination, and probabilistic and energy-constrained search, and
-positions the present contribution relative to each. Chapter~III states
-the formal problem, defines the finder competitive ratio, and
-introduces the sortie model and the geometric constants used in the
-bounds. Chapter~IV presents the four algorithmic models and the
-Hungarian baselines, together with the theoretical upper bounds on the
-expected FCR. Chapter~V describes the experimental setup and reports
-the main comparison results, the bounds verification, and the
-parameter sweeps, and discusses the filtering thresholds and the
-simplifying assumptions. Chapter~VI concludes with a summary of
-findings and a discussion of future work.
+The chapters build on each other but can be read at different
+depths. Readers without a multi-robot systems background may wish to
+start with Chapter~II's literature primers, skim the formal
+Chapter~III only for the definitions of FCR and the sortie model,
+and focus on Chapter~V's results, revisiting Chapter~IV only for
+specific theorems as needed. Readers with a robotics background may
+prefer the reverse order: the formal problem and algorithms in
+Chapters~III--IV, then the experimental validation in Chapter~V.
+
+Chapter~II reviews the related work in competitive search theory,
+auction-based coordination, and probabilistic and energy-constrained
+search, and positions the present contribution relative to each.
+Chapter~III states the formal problem, defines the Finder
+Competitive Ratio, and introduces the sortie model and the geometric
+constants used in the bounds. Chapter~IV presents the four
+algorithmic models and the Hungarian baselines, together with the
+theoretical upper bounds on the expected FCR. Chapter~V describes
+the experimental setup and reports the main comparison results, the
+bounds verification, and the parameter sweeps, and discusses the
+filtering thresholds and the simplifying assumptions. Chapter~VI
+concludes with a summary of findings and a discussion of future
+work.
 
 \end{doublespacing}

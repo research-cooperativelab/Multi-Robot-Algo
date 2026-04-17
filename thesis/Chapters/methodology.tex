@@ -40,6 +40,15 @@ is shown graphically in Figure~\ref{fig:model-tree}.
 
 \subsection{Model 1: Random Baseline}
 
+\paragraph{The idea.} Model 1 is deliberately a bad algorithm, chosen
+to measure how much a team loses when its members cannot coordinate.
+Each robot, on its own, picks a site at random (weighted by how
+likely the site is to hold the target) and makes a round trip to
+check it. Because the robots do not talk to each other, two robots
+may independently pick the same site and check it twice. This is
+the ``no-coordination floor''---the baseline against which every
+smarter model is measured.
+
 In Model 1 each of the $R$ robots independently samples an unvisited
 site from the normalized prior and makes a base-to-site round trip of
 cost $2\,d(x_0^r, x_i)$. There is no communication, so robots may
@@ -48,6 +57,21 @@ quantify the cost of no coordination at all and to serve as a floor
 against which every other model is measured.
 
 \subsection{Model 2: Unconstrained-Energy Auction}
+
+\paragraph{The idea.} Model 2 is the other extreme from Model 1:
+robots share full information and pretend battery is not a problem.
+The auction is the coordination mechanism. Each robot advertises a
+bid for every unvisited site, reflecting how attractive that site is
+from its current position (a nearby high-probability site gets a
+high bid; a far low-probability site gets a low one). The auction
+matches robots to sites greedily by bid, so two robots never
+accidentally go to the same place. Movement is ``straight line from
+where I am now to the next site''---no returning to base between
+visits---because the battery is imagined to be infinite. Model 2
+therefore tells us what is possible when the only constraint is
+coordination. The gap between M1 and M2 is the cost of not
+coordinating. The gap between M2 and the battery-constrained models
+that come next (M3, M4, M4*) is the cost of the battery.
 
 In Model 2 the robots share full information and execute a sequential
 single-item (SSI) auction. Each robot $r$ computes a bid for every
@@ -69,6 +93,19 @@ Model 2 is not an omniscient best.
 
 \subsection{Model 3: Auction with Single-Node Sorties}
 
+\paragraph{The idea.} Model 3 turns the battery back on. Now each
+robot has a fixed energy budget $E$ and must return to base after
+each site visit. The auction runs at base at the start of every
+round: robots share what they have learned so far, bid on
+energy-feasible sites, and get assigned one site each. Then they
+fly to their assigned site, check it, and fly back to recharge.
+Model 3 exposes what this thesis calls the \emph{energy penalty}. A
+robot with energy $E = 14$ that is assigned a site at distance $5$
+spends $10$ units on the flight there and back, wasting the
+remaining $4$ units of battery on nothing useful. Those $4$ units
+of waste, summed over many sorties across many rounds, are
+substantial. Model 4 is designed to reclaim them.
+
 In Model 3 the SSI auction runs at base each round, restricted to
 energy-feasible candidates satisfying $2\,d(x_0^r, x_i) \leq E$. Each
 robot executes one round-trip sortie per iteration. This model
@@ -79,6 +116,28 @@ units on travel and wastes the remaining $4$. The next model addresses
 exactly this waste.
 
 \subsection{Model 4 and Model 4*: Multi-Node Sorties}
+
+\paragraph{The idea.} The fix for Model 3's wasted battery is to let
+a robot chain several sites into one flight before returning to
+base. The auction still runs at base to pick each robot's \emph{first}
+site for the round---this is called the \emph{anchor} site. After
+that, while the robot has battery remaining, it picks its next site
+greedily: of the unvisited sites still reachable given the current
+position and the energy that would be needed to return to base, go
+to the one with the highest bid. Chain until no more sites are
+reachable, then fly home. The result is much better battery
+utilization---a sortie under Model 4 typically visits five or six
+sites instead of one.
+
+Model 4* is Model 4 with one single change: the bid function. Where
+Model 4 uses the classical $p_i / d$ bid (``rank sites by
+probability per unit distance''), Model 4* uses $p_i / d^2$
+(``rank sites by probability per unit distance-squared''). The
+difference is subtle on paper but significant in effect. Under the
+quadratic rule, a site twice as far away looks four times less
+attractive instead of twice less, which makes the robot prefer
+short chains over long ones. The intuition for why this matters is
+the \emph{cost-foreclosure argument} expanded below.
 
 In Model 4, after the auction assigns an initial (anchor) site to
 each robot, a \emph{greedy chain extension} appends additional sites
@@ -164,6 +223,19 @@ in closed form, expressed in terms of the instance parameters
 $(n, R, E, L)$ and the geometric constants $d_{\mathrm{avg}}$ and
 $d_{\mathrm{hop}}$.
 
+\paragraph{Why Lemma~\ref{lem:rounds} is the right starting point.}
+Every bound derived in this chapter is built around an estimate of
+how many \emph{rounds} the algorithm takes to find the target. A
+round is one iteration of the auction-plus-execute loop---so if a
+search takes five rounds, the robot team has run the auction five
+times. Once we know how many rounds the algorithm takes on
+average, converting to total distance traveled by the finder is a
+matter of multiplying by the cost of one round (which depends on
+the movement pattern of the specific model). Lemma~\ref{lem:rounds}
+gives the round count in closed form under coordination---that is,
+assuming the $R$ robots check $R$ distinct sites every round, which
+is exactly what the auction guarantees.
+
 \begin{lemma}[Expected Rounds under Coordination]\label{lem:rounds}
 If $R$ robots check $R$ distinct sites per round, then for any prior
 $\mathbf{p}$ the expected number of rounds to find the target
@@ -186,6 +258,16 @@ concentrates on high-probability sites, the auction checks those
 first, and the expected rounds are strictly smaller; the bound is
 therefore conservative for non-uniform priors.
 \end{proof}
+
+\paragraph{What Theorem~\ref{thm:m1} says in words.} For the
+uncoordinated baseline M1, the probability that some robot picks the
+target in any given round is small (one in $n$ per robot,
+independent across robots). The number of rounds before one of them
+gets lucky is therefore governed by a geometric distribution, whose
+mean is the reciprocal of the per-round success probability. Every
+round before the last one costs a round trip (cost $2\,d_\mathrm{avg}$),
+and the final round costs a one-way trip to the target. The bound
+is the sum of those costs divided by the optimal cost.
 
 \begin{theorem}[Model 1 Bound]\label{thm:m1}
 Let $P = 1 - (1 - 1/n)^R$ be the per-round success probability, and
@@ -233,6 +315,17 @@ visited per round, so the coordinated $\mathbb{E}[K]$ of
 Lemma~\ref{lem:rounds} replaces the geometric $\mathbb{E}[K_1]$ of
 Theorem~\ref{thm:m1}.
 \end{proof}
+
+\paragraph{What Theorem~\ref{thm:m4} says in words.} In Model 4
+each round is a \emph{multi-site sortie} rather than a single-site
+trip, so a round costs (at most) the full energy budget $E$ rather
+than twice the distance to one site. The bound for the
+\emph{number} of sites checked per round is $S$, counting one anchor
+site plus some number of chain hops. With $R$ robots each checking
+$S$ sites per round, the team covers $RS$ sites per round, and the
+expected number of rounds to find the target falls by a factor of
+$S$ compared to Model 3. The worst-case total travel is $E$ per
+round times the expected number of rounds.
 
 \begin{theorem}[Model 4 Bound]\label{thm:m4}
 Define the expected number of sites per sortie as

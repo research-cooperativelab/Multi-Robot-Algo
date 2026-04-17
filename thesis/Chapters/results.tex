@@ -54,6 +54,18 @@ auction-based coordination alone produces a large improvement. The
 difference is not a matter of statistical noise---with 500 trials
 and the reported standard deviations, the two means are separated by
 many standard errors. H1 is supported.
+
+\emph{Why this matters.} The comparison of M1 and M2 is the
+simplest way to quantify the value of communication. Both models
+have the same fleet size, the same sites, the same priors, the same
+targets---the only thing they differ in is whether the robots talk
+to each other. A $6.6\times$ improvement from talking alone is
+substantial. It reinforces Chrobak et al.'s theoretical result that
+the \emph{mode} of communication matters more than the \emph{number}
+of robots: adding communication to a team of three beats adding
+more robots to a silent team. For a real-world deployment, this
+means a radio system that keeps working in a rubble pile is more
+valuable than spare drones.
 Figure~\ref{fig:m1-vs-m4star} shows what this improvement looks like
 on a single instance: the uncoordinated M1 team repeatedly re-visits
 the same regions and takes FCR 53.65, while M4* on the same instance
@@ -93,7 +105,17 @@ $3.11$ recovers
 $(6.41 - 3.11)/(6.41 - 2.83) = 92\%$ of that gap. The mechanism is
 visible in the iteration count: M3 takes $4.81$ iterations on average
 while M4 takes $1.38$, because each M4 sortie visits approximately
-$5.3$ sites. H3 is supported.
+$5.3$ sites.
+
+\emph{Why this matters.} The gap between M3 and M2 represents what
+a battery costs you relative to a hypothetical world with no battery
+constraint at all. Most of that cost is \emph{recoverable} through
+smarter scheduling: the robots do not need a bigger battery, they
+need a planner that chains sites into longer flights before returning
+to base. In practical terms, a rescue drone team does not need to
+solve the hard problem of longer-lasting batteries---they can get
+most of the way to battery-unlimited performance just by changing
+the software that decides where to fly next. H3 is supported.
 
 \textbf{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
 improves over Model 4 by a further $4.2$ percent. Figure~\ref{fig:bids}
@@ -102,6 +124,17 @@ $p/d^2 > p/d > 1/d > p\,e^{-d/E} > p$. The distance-only bid $1/d$
 produces an FCR of approximately $6.79$, matching the Hungarian
 baseline H$_d$ at $6.80$---a consistency check that corroborates both
 implementations. H4 is supported.
+
+\emph{Why this matters.} The $4.2\%$ improvement is a small number,
+but the change that produced it is also small: a single character
+in the bid formula, squaring the distance in the denominator. The
+mechanism, the \emph{cost-foreclosure argument} from Chapter~IV, is
+general and applies wherever the budget for an action is fixed:
+committing to a far-away first step not only costs more upfront, it
+also eats into the budget available for follow-up steps. The
+recommendation for practitioners is concrete and low-risk: if your
+multi-robot search system currently bids with $p / d$, replace the
+distance in the denominator with $d^2$, redeploy, and measure.
 
 \begin{figure}[ht]
   \centering

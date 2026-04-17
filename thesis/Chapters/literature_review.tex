@@ -4,11 +4,32 @@
 
 Multi-robot search and rescue draws on three largely independent
 research traditions: online competitive search theory, market-based
-multi-robot task allocation, and energy-constrained graph exploration.
-This chapter reviews each in turn, identifies the gap they leave when
-taken together, and positions the present work inside that gap.
+multi-robot task allocation, and energy-constrained graph
+exploration. This chapter reviews each in turn, identifies the gap
+they leave when taken together, and positions the present work
+inside that gap. A reader without a background in any of the three
+may find it useful to read the \emph{primer} at the start of each
+section for a plain-language explanation before moving on to the
+formal review.
 
 \section{Competitive Search Theory}
+
+\paragraph{Primer.} The field of \emph{online algorithms} studies
+decisions that have to be made with incomplete information. A
+classic textbook example is the following. You are standing at the
+origin of an infinite straight road. A cow you are looking for is
+somewhere on this road, either to your left or to your right, at an
+unknown distance. You can walk in either direction and will
+recognize the cow when you reach it, but you cannot see her from
+afar. How should you search so that you do not walk much farther
+than strictly necessary? If you always happen to guess the correct
+direction first, you walk exactly the distance to the cow; if you
+guess wrong, you have to backtrack. ``Competitive search theory''
+proves how good any strategy can possibly be in the worst case,
+measured as a ratio to the distance an all-knowing agent would
+walk. This ratio is called the \emph{competitive ratio}. It is the
+same idea the Finder Competitive Ratio (FCR) in this thesis
+captures, but in two dimensions and with many searchers.
 
 Competitive analysis measures an online algorithm by the worst-case
 ratio of its cost to the cost an omniscient offline algorithm would
@@ -42,6 +63,24 @@ integrated energy constraints.
 
 \section{Market-Based Multi-Robot Coordination}
 
+\paragraph{Primer.} How should several robots divide a pile of
+tasks? One approach is to have a central computer solve an
+optimization problem and hand each robot its assignment. A different
+approach, inspired by how markets work in economics, is to let the
+robots \emph{bid} for tasks. Each robot computes how much it
+``wants'' each task (based on how close the task is, how hard it
+looks, how well the robot is suited for it, and so on), the robots
+exchange bids with each other, and the highest bidder wins each
+task. Market-based coordination is popular in robotics because it
+is simple, it scales to large teams without a bottleneck, and it
+gracefully tolerates robots dropping in and out of the team. The
+particular auction mechanism this thesis uses is \emph{sequential
+single-item (SSI)} auctions: tasks are sold one at a time, the
+highest bidder wins each one, and the process repeats until all
+robots have assignments for the current round. SSI auctions are a
+well-studied compromise between the simplicity of a one-shot
+assignment and the flexibility of a fully iterative market.
+
 Gerkey and Matari\'{c}~\cite{Gerkey2004} introduced the multi-robot
 task allocation (MRTA) taxonomy that classifies problems by three
 axes: single-task versus multi-task robots, single-robot versus
@@ -66,6 +105,26 @@ expected to be able to reach any assigned task, which does not match
 the energy-constrained sortie regime that this thesis studies.
 
 \section{Energy-Constrained and Probabilistic Search}
+
+\paragraph{Primer.} The two ideas combined in this section are, on
+the one hand, that a real robot runs out of battery, and on the
+other, that not every location is equally likely to hold what the
+robot is searching for. The energy-constrained branch of robotics
+research treats the battery as a hard constraint: a robot must
+plan every excursion knowing that at some point it has to return
+to base to recharge, which fundamentally changes what strategies
+are available. The probabilistic branch treats the target
+location as a random variable---some sites are more likely to
+contain it than others---and asks how the robot should allocate its
+search effort across the possibilities. A famous classical result
+in this area is \emph{Stone's rule}~\cite{Stone1975}: optimal
+search effort should be allocated in proportion to (probability
+of target being there) divided by (cost of searching there). This
+is the direct ancestor of the $p/d$ bid function in this thesis,
+with $p$ the probability and $d$ the search cost (distance). The
+novel $p/d^2$ bid that the thesis recommends is a modification of
+Stone's rule tailored to the situation where battery is the binding
+constraint.
 
 The third strand of related work concerns search under finite energy
 and under probabilistic priors. Betke, Rivest, and
