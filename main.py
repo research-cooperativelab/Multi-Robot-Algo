@@ -669,12 +669,12 @@ def model_hungarian_pd_single(instance, energy):
         })
 
         if found:
-            return {'model': 'Hungarian_pd', 'found_by': finder,
+            return {'model': 'Hungarian (E, p/d)', 'found_by': finder,
                     'robot_dists': dict(robot_dists),
                     'optimal_dist': opt, 'iterations': iteration,
                     'round_data': round_data}
 
-    return {'model': 'Hungarian_pd', 'found_by': None,
+    return {'model': 'Hungarian (E, p/d)', 'found_by': None,
             'robot_dists': dict(robot_dists),
             'optimal_dist': opt, 'iterations': iteration,
             'round_data': round_data}
@@ -1076,7 +1076,7 @@ def run_all_models(n, R, L, E, n_trials=500, seed=42):
         'M1 Random (∞E)':              lambda inst: model_1_random_infinite(inst),
         'M2 Auction (∞E, N2N)':        lambda inst: model_2_auction_infinite(inst),
         'Hungarian (E, min-dist)':     lambda inst: model_hungarian_single(inst, E),
-        'Hungarian_pd':                lambda inst: model_hungarian_pd_single(inst, E),
+        'Hungarian (E, p/d)':                lambda inst: model_hungarian_pd_single(inst, E),
         'M3 Auction Single (E, p/d)':  lambda inst: model_3_auction_single(inst, E, bid_p_over_d),
         'M4 Auction Multi (E, p/d)':   lambda inst: model_4_auction_multi(inst, E, bid_p_over_d),
         'M4* Auction Multi (E, p/d²)': lambda inst: model_4_auction_multi(inst, E, bid_p_over_d2),
@@ -1248,14 +1248,18 @@ SHORT = {
 }
 
 def setup_style():
+    # Fonts bumped up for thesis readability: the thesis is printed at 12pt
+    # body font in a single-column layout, so figure text needs to match.
+    # Override these with SAR_SIM_FIG_FONT_SCALE if a paper rebuild wants smaller.
+    scale = float(os.environ.get('SAR_SIM_FIG_FONT_SCALE', '1.0'))
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 10,
-        'axes.labelsize': 11,
-        'axes.titlesize': 11,
-        'xtick.labelsize': 9,
-        'ytick.labelsize': 9,
-        'legend.fontsize': 8,
+        'font.size': 11 * scale,
+        'axes.labelsize': 12 * scale,
+        'axes.titlesize': 12 * scale,
+        'xtick.labelsize': 10 * scale,
+        'ytick.labelsize': 10 * scale,
+        'legend.fontsize': 9 * scale,
         'legend.framealpha': 0.92,
         'lines.linewidth': 2.0,
         'lines.markersize': 6,
@@ -1484,6 +1488,15 @@ def plot_iterations_comparison(results, save_path):
 # 9. MAIN — Full Experimental Pipeline
 
 if __name__ == '__main__':
+    # Windows consoles default to cp1252, which cannot encode the infinity
+    # symbol used in model names below. Force UTF-8 on stdout/stderr.
+    import sys as _sys
+    try:
+        _sys.stdout.reconfigure(encoding='utf-8')
+        _sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass  # Python < 3.7 or non-reconfigurable stream; user will see a cleaner error
+
     parser = argparse.ArgumentParser(
         description='Unified Multi-Robot Search Simulation (Paper Pipeline)')
     parser.add_argument('--nodes', type=int, default=30)
