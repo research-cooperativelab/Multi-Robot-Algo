@@ -22,8 +22,27 @@ argument behind it is generic---it applies wherever a fixed resource
 budget must be allocated between a committed first action and a
 sequence of optional follow-ups.
 
-Four findings emerged overall, each corresponding to one of the
-research hypotheses stated in Chapter~III.
+Three further experimental results strengthen and extend the main
+findings. First, the $p/d^2$ advantage over $p/d$ persists across
+prior-misspecification noise levels up to $\sigma = 1.0$; the
+absolute margin in M4*'s favour \emph{grows} with noise, from $0.13$
+FCR units on clean priors to $0.49$ units at moderate noise. Second,
+the $p/d^2$ advantage also persists under three non-Euclidean cost
+models (Manhattan distance, heterogeneous robot speeds, obstacle
+detour penalties); the foreclosure argument is therefore robust to
+the specific metric used. Third, the thesis identifies a named
+finding called the \emph{Target-Delay Anomaly}: post-processing a
+greedy $p/d^2$ chain with a standard 2-opt tour-length optimizer
+\emph{worsens} finder FCR by 6.58 percent despite shortening the
+tour, because 2-opt reorders sites by geometry and so dilutes the
+probability-weighted prefix that a finder-centric metric rewards.
+This is a non-obvious conclusion: the standard robotics pipeline of
+``build a tour, then polish it'' is not neutral but actively
+harmful under Bayesian priors and finder-centric objectives.
+
+Four headline findings plus three extensions emerged, each
+corresponding to one of the research hypotheses stated in
+Chapter~III.
 
 \begin{enumerate}
 \item Auction-based coordination yields a $6.6\times$ improvement in
