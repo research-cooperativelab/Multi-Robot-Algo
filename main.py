@@ -831,9 +831,11 @@ def model_4_auction_multi_2opt(instance, energy, bid_func=bid_p_over_d):
         visited = set()
         prob_cap = 0.0
         sites_per_robot = {}
+        tour_per_robot = {}
 
         for r, tour in robot_tours.items():
             sites_per_robot[r] = len(tour)
+            tour_per_robot[r] = [node for node, _ in tour]
             for node, d in tour:
                 robot_dists[r] += d
                 visited.add(node)
@@ -857,6 +859,7 @@ def model_4_auction_multi_2opt(instance, energy, bid_func=bid_p_over_d):
             'entropy_after': H_after, 'prob_captured': prob_cap,
             'sites_visited': len(visited), 'found_target': found,
             'sites_per_robot': dict(sites_per_robot),
+            'tour_per_robot': dict(tour_per_robot),
         })
 
         if found:
