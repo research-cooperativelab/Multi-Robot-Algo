@@ -23,6 +23,19 @@ M4 & $E$ & at base & Base $\to$ tour $\to$ base & Auction \\
 \end{tabular}
 \end{table}
 
+The four models are designed to answer the question ``how much does
+each additional capability help?'' Moving from M1 to M2 isolates the
+value of communication and coordination. Moving from M2 to M3 isolates
+the cost of a finite energy budget. Moving from M3 to M4 isolates the
+value of chaining several sites into a single sortie. The relationship
+is shown graphically in Figure~\ref{fig:model-tree}.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_model_tree.png}
+  \caption{The four models ordered by what each adds. M4* (the bid function $p_i/d^2$ variant of M4) is the primary contribution of the thesis.}\label{fig:model-tree}
+\end{figure}
+
 \section{Algorithmic Models}
 
 \subsection{Model 1: Random Baseline}
@@ -91,8 +104,16 @@ which is a linear function of $d$ with negative slope. The
 the sortie) therefore favors a superlinear penalty on $d$, which the
 bid $p/d^2$ approximates.
 
-Algorithm~\ref{alg:m4} gives pseudocode for one iteration of
-Model 4 / 4*. The outer loop repeats until the target is found.
+Figure~\ref{fig:m4star-walkthrough} shows one full iteration of Model
+4* on a small instance, and Algorithm~\ref{alg:m4} gives pseudocode
+for the same iteration. The outer loop repeats until the target is
+found.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_m4star_walkthrough.png}
+  \caption{Model 4* executing one iteration on a ten-site, three-robot instance. (A) Initial priors; site size is proportional to probability. (B) The SSI auction assigns each robot a first (anchor) site. (C) Greedy chain extensions fill the remaining energy budget. (D) After the round, visited sites are removed and the Bayesian posterior concentrates on the unvisited sites.}\label{fig:m4star-walkthrough}
+\end{figure}
 
 \begin{algorithm}[ht]
 \caption{Model 4 / 4* iteration.}\label{alg:m4}

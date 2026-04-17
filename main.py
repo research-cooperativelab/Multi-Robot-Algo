@@ -287,11 +287,13 @@ def model_1_random_infinite(instance):
 
         found, finder = False, None
         visited_this_round = set()
+        round_choices = {}  # robot -> chosen site id (for visualization)
 
         for r in range(n_robots):
             # Independent random choice (may collide with other robots)
             choice = random.choices(avail_list, weights=avail_weights, k=1)[0]
             d = euclidean_distance(bases[r], np_[choice])
+            round_choices[r] = choice
 
             if choice == target:
                 robot_dists[r] += d  # one-way (found it!)
@@ -312,6 +314,9 @@ def model_1_random_infinite(instance):
             'round': iteration, 'entropy_before': H_before,
             'entropy_after': H_after, 'prob_captured': prob_cap,
             'sites_visited': len(visited_this_round), 'found_target': found,
+            # tour_per_robot maps robot -> ordered list of visited site ids
+            # (each M1 tour has exactly one site since robots return to base).
+            'tour_per_robot': {r: [s] for r, s in round_choices.items()},
         })
 
         if found:
@@ -954,9 +959,11 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
         visited = set()
         prob_cap = 0.0
         sites_per_robot = {}
+        tour_per_robot = {}
 
         for r, tour in robot_tours.items():
             sites_per_robot[r] = len(tour)
+            tour_per_robot[r] = [node for node, _ in tour]
             for node, d in tour:
                 robot_dists[r] += d
                 visited.add(node)
@@ -980,6 +987,7 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
             'entropy_after': H_after, 'prob_captured': prob_cap,
             'sites_visited': len(visited), 'found_target': found,
             'sites_per_robot': dict(sites_per_robot),
+            'tour_per_robot': dict(tour_per_robot),
         })
 
         if found:

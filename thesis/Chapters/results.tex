@@ -54,6 +54,17 @@ auction-based coordination alone produces a large improvement. The
 difference is not a matter of statistical noise---with 500 trials
 and the reported standard deviations, the two means are separated by
 many standard errors. H1 is supported.
+Figure~\ref{fig:m1-vs-m4star} shows what this improvement looks like
+on a single instance: the uncoordinated M1 team repeatedly re-visits
+the same regions and takes FCR 53.65, while M4* on the same instance
+and same seed completes the search at FCR 3.02 with compact,
+non-overlapping tours.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_m1_vs_m4star.png}
+  \caption{The same 30-site, 3-robot instance solved by M1 (left) and M4* (right). Squares are robot bases; circles are candidate sites sized by prior probability; the green star is the target. M1 robots duplicate effort because they do not communicate. M4* robots chain nearby high-probability sites into short tours and find the target far sooner.}\label{fig:m1-vs-m4star}
+\end{figure}
 
 \textbf{Hypothesis H2 (probability-aware bids beat distance-only
 centralized assignment).} M3 (FCR $= 6.41$) outperforms the

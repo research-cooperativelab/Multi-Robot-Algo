@@ -62,7 +62,14 @@ underlying geometric difficulty of the instance. A team that happens
 to be assigned a target near one of the bases should not be rewarded
 for ``finding quickly''; FCR normalizes that away. An FCR of three
 means the finding robot traveled three times the distance an omniscient
-agent would have.
+agent would have. Figure~\ref{fig:fcr-explained} illustrates the
+definition on a small worked example.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_fcr_explanation.png}
+  \caption{The finder competitive ratio on a small example. A robot leaves base, checks two wrong sites (A, B), and finally reaches the target at site T. Its total travel $D_f$ divided by the straight-line base-to-target distance $d_{opt}$ gives $\mathrm{FCR} = 1.50$.}\label{fig:fcr-explained}
+\end{figure}
 
 \section{Sortie Model}
 
