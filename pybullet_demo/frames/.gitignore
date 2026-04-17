@@ -1,0 +1,6 @@
+# Runtime output -- recreated on every --record run.
+# The screenshots/ directory holds the committed, curated stills.
+frame_*.png
+M1/
+M4/
+M4star/
