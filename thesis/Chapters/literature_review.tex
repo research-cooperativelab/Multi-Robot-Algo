@@ -33,24 +33,21 @@ captures, but in two dimensions and with many searchers.
 
 Competitive analysis measures an online algorithm by the worst-case
 ratio of its cost to the cost an omniscient offline algorithm would
-incur on the same instance~\cite{Sleator1985}. The canonical
+incur on the same instance~\citep{Sleator1985}. The canonical
 instantiation of this idea for search is the \emph{cow-path problem}:
 a searcher stands at the origin of an infinite half-line, a target is
 somewhere on the line, and the cost is the distance traveled before
-the target is found. Baeza-Yates, Culberson, and
-Rawlins~\cite{BaezaYates1993} proved that a geometric doubling strategy
+the target is found. \citet{BaezaYates1993} proved that a geometric doubling strategy
 achieves a deterministic competitive ratio of 9 and that no
-deterministic strategy can do better. Kao, Reif, and
-Tate~\cite{Kao1996} showed that randomization brings the ratio down to
-approximately $4.59$. These results are important because they
+deterministic strategy can do better. \citet{Kao1996} showed that
+randomization brings the ratio down to approximately $4.59$. These results are important because they
 characterize the intrinsic cost of not knowing the target's location,
 independent of the specific algorithm chosen.
 
 Extensions to parallel search introduce multiple agents and ask how
-the ratio changes. L\'{o}pez-Ortiz and Schuierer~\cite{LopezOrtiz2004}
-gave competitive ratios for $p$ parallel searchers exploring $m$ rays
-emanating from a common origin. Chrobak, G\c{a}sieniec, Gorry, and
-Martin~\cite{Chrobak2015} studied group search on a line and proved a
+the ratio changes. \citet{LopezOrtiz2004} gave competitive ratios for
+$p$ parallel searchers exploring $m$ rays emanating from a common
+origin. \citet{Chrobak2015} studied group search on a line and proved a
 striking dichotomy: with wireless communication, two agents achieve
 ratio 3, while with only face-to-face (rendezvous) communication the
 ratio remains the single-searcher 9. That is, the \emph{mode} of
@@ -81,7 +78,7 @@ robots have assignments for the current round. SSI auctions are a
 well-studied compromise between the simplicity of a one-shot
 assignment and the flexibility of a fully iterative market.
 
-Gerkey and Matari\'{c}~\cite{Gerkey2004} introduced the multi-robot
+\citet{Gerkey2004} introduced the multi-robot
 task allocation (MRTA) taxonomy that classifies problems by three
 axes: single-task versus multi-task robots, single-robot versus
 multi-robot tasks, and instantaneous versus time-extended assignment.
@@ -91,8 +88,8 @@ is a single task, multiple robots may claim different sites in the
 same round, and the assignment is recomputed every round.
 
 Auction-based task allocation was popularized by the TraderBots
-architecture of Dias and Stentz~\cite{Dias2006} and the earlier market
-economy of Zlot et al.~\cite{Zlot2002}. Koenig et al.~\cite{Koenig2006}
+architecture of \citet{Dias2006} and the earlier market economy of
+\citet{Zlot2002}. \citet{Koenig2006}
 analyzed sequential single-item (SSI) auctions---in which items are
 auctioned one at a time and the globally highest bidder wins each
 item---and proved constant-factor approximation guarantees against
@@ -117,7 +114,7 @@ are available. The probabilistic branch treats the target
 location as a random variable---some sites are more likely to
 contain it than others---and asks how the robot should allocate its
 search effort across the possibilities. A famous classical result
-in this area is \emph{Stone's rule}~\cite{Stone1975}: optimal
+in this area is \emph{Stone's rule}~\citep{Stone1975}: optimal
 search effort should be allocated in proportion to (probability
 of target being there) divided by (cost of searching there). This
 is the direct ancestor of the $p/d$ bid function in this thesis,
@@ -127,11 +124,10 @@ Stone's rule tailored to the situation where battery is the binding
 constraint.
 
 The third strand of related work concerns search under finite energy
-and under probabilistic priors. Betke, Rivest, and
-Singh~\cite{Betke1995} introduced \emph{piecemeal learning}, in which
-a robot must periodically return to the origin and therefore can only
-execute bounded-length excursions. Das, Dereniowski, and
-Uznanski~\cite{Das2015} studied energy-constrained depth-first search
+and under probabilistic priors. \citet{Betke1995} introduced \emph{piecemeal learning}, in which a
+robot must periodically return to the origin and therefore can only
+execute bounded-length excursions. \citet{Das2015} studied
+energy-constrained depth-first search
 and proved that the number of robots required to explore a graph
 grows with the ratio of graph diameter to battery capacity. The common
 thread is that energy constraints fundamentally alter the structure of
@@ -139,12 +135,11 @@ optimal search strategies; a fuel-limited robot cannot use the same
 plans as a fuel-unlimited one.
 
 On the probabilistic side, Stone's classical \emph{Theory of Optimal
-Search}~\cite{Stone1975} established that search effort should be
+Search}~\citep{Stone1975} established that search effort should be
 allocated in proportion to the ratio of target probability to search
 cost. This is the theoretical basis for the $p_i / d$ bid function
 used in this thesis: it is Stone's rule evaluated locally at each
-decision point. Bourgault, Furukawa, and
-Durrant-Whyte~\cite{Bourgault2002} applied information-theoretic
+decision point. \citet{Bourgault2002} applied information-theoretic
 criteria (specifically mutual information) to coordinated target
 search and demonstrated experimentally that information-greedy
 policies outperform distance-greedy policies. The observation

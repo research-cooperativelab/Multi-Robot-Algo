@@ -52,8 +52,15 @@
 \DeclareOldFontCommand{\bf}{\normalfont\bfseries}{\mathbf}
 \newcommand{\argmax}{\operatornamewithlimits{argmax}}
 
-\usepackage[square,sort,comma,numbers]{natbib}
+% APA-style author-year inline citations per CSULB Honors requirements.
+% round  = parentheses around citations
+% authoryear = "(Author, Year)" format instead of numeric [1]
+% sort&compress = alphabetical order, compressed ranges
+\usepackage[round,authoryear,sort&compress]{natbib}
 \setlength{\bibsep}{\baselineskip}
+
+% Renames the "Bibliography" section heading to "REFERENCES" (CSULB spec).
+\renewcommand{\bibname}{REFERENCES}
 
 \makeatletter
 \renewcommand\chapterlinesformat[3]{\@hangfrom{#2}{\MakeUppercase{#3}}}
@@ -165,13 +172,22 @@
 \input{Chapters/results}
 \input{Chapters/conclusion}
 
+% References section — CSULB spec:
+% 1. Half-title page: just "REFERENCES" centered vertically.
+% 2. Full page: "REFERENCES" heading centered at 2" top margin, then
+%    entries below in APA format with hanging indent, single-spaced
+%    with blank line between entries.
 \clearpage
 \phantomsection
-\vspace*{\fill}\centering\normalsize \textbf{REFERENCES}\vspace*{\fill}
+\thispagestyle{empty}
+\vspace*{\fill}\begin{center}\normalsize\bfseries REFERENCES\end{center}\vspace*{\fill}
 \addcontentsline{toc}{chapter}{REFERENCES}
 \clearpage
 
-\bibliographystyle{ieeetr}
+% apalike = LaTeX's built-in APA-style bibliography (author, year) with
+% hanging indent and alphabetical ordering. Close match to APA 7th edition
+% for CSULB honors thesis purposes.
+\bibliographystyle{apalike}
 \bibliography{ref}
 
 \end{document}
