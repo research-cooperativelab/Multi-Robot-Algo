@@ -874,7 +874,7 @@ def model_4_auction_multi_2opt(instance, energy, bid_func=bid_p_over_d):
             'round_data': round_data}
 
 
-def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
+def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d, dist_fn=None):
     """
     MODEL 4: Finite energy, auction + greedy chain, multi-node sorties.
 
@@ -888,6 +888,11 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
     within 7.7% of brute-force optimal ordering.
 
     When bid_func=bid_p_over_d2, this becomes Model 4* (our contribution).
+
+    Optional dist_fn(p1, p2, r) overrides the distance metric with a
+    robot-aware callable (used by cost-sensitivity experiments to inject
+    Manhattan, heterogeneous-speed, or obstacle-penalty costs). When None,
+    falls back to the module-level euclidean_distance (default behavior).
     """
     np_ = instance['node_positions']
     probs = dict(instance['node_probs'])
@@ -895,6 +900,12 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
     target = instance['target']
     opt = instance['optimal_dist']
     n_robots = len(bases)
+
+    if dist_fn is None:
+        def _d(p1, p2, r=None):
+            return euclidean_distance(p1, p2)
+    else:
+        _d = dist_fn
 
     available = set(np_.keys())
     robot_dists = {r: 0.0 for r in range(n_robots)}
@@ -910,7 +921,7 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
         for r in range(n_robots):
             bids = []
             for n in available:
-                d = euclidean_distance(bases[r], np_[n])
+                d = _d(bases[r], np_[n], r)
                 if 2 * d <= energy and d > 0 and probs.get(n, 0) > 0:
                     bv = bid_func(probs[n], d, energy)
                     bids.append((n, bv, d))
@@ -940,8 +951,8 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
             for r in list(active):
                 best_node, best_bid, best_d = None, -1, 0
                 for n in available - all_claimed:
-                    d_to = euclidean_distance(robot_pos[r], np_[n])
-                    d_back = euclidean_distance(np_[n], bases[r])
+                    d_to = _d(robot_pos[r], np_[n], r)
+                    d_back = _d(np_[n], bases[r], r)
                     if d_to + d_back <= robot_rem[r] and d_to > 0 and probs.get(n, 0) > 0:
                         bv = bid_func(probs[n], d_to, energy)
                         if bv > best_bid:
@@ -979,7 +990,7 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
             else:
                 if tour:
                     last_node = tour[-1][0]
-                    robot_dists[r] += euclidean_distance(np_[last_node], bases[r])
+                    robot_dists[r] += _d(np_[last_node], bases[r], r)
 
         probs = bayesian_update(probs, visited)
         available -= visited
