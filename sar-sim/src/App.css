@@ -103,6 +103,142 @@
   margin: 0;
 }
 
+/* ── model description box (visible below picker) ─────────────────────────── */
+.model-desc-box {
+  background: #0f1623;
+  border: 1px solid #263045;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-desc-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #93c5fd;
+  letter-spacing: 0.02em;
+}
+
+.model-desc-text {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ── comparison picker ────────────────────────────────────────────────────── */
+.compare-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compare-pick-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.compare-select {
+  flex: 1;
+  background: #0f1117;
+  border: 1px solid #2d3a50;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  padding: 5px 7px;
+}
+
+.compare-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* ── comparison summary cells ─────────────────────────────────────────────── */
+.compare-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.compare-summary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: #141b2a;
+  border: 1px solid #263045;
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+
+/* ── comparison canvas layout ─────────────────────────────────────────────── */
+.compare-canvas-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.compare-canvas-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #141b2a;
+  border: 1px solid #263045;
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 320px;
+}
+
+.compare-canvas-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.compare-model-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  background: #1d4ed8;
+  border-radius: 5px;
+  padding: 2px 8px;
+}
+
+.compare-round {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-fcr {
+  font-size: 0.78rem;
+  color: #60a5fa;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1200px) {
+  .compare-canvas-row {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.empty-state.small {
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
 /* ── sliders ──────────────────────────────────────────────────────────────── */
 .slider-row {
   display: flex;

@@ -1,0 +1,59 @@
+\section{Robustness to Prior Misspecification}\label{sec:exp1-misspec}
+
+The experiments reported so far assume that the prior probabilities
+$p_i$ supplied to the auction are the same priors under which the
+target was drawn. In any real deployment these priors are
+\emph{estimates}---a structural engineer's assessment of survivable
+voids, a search dog's indication, a witness report---and are
+therefore noisy. A bid function that performs well on clean priors is
+not automatically useful if it collapses under realistic prior noise.
+This experiment asks whether $p/d^2$ continues to dominate $p/d$ when
+the priors the algorithm sees are corrupted versions of the priors
+under which the target was placed.
+
+For each of $500$ instances generated at the default configuration
+($n = 30$, $R = 3$, $E = 14$, $L = 10$), the target is first sampled
+from the true prior. The prior is then corrupted by independent
+multiplicative Gaussian noise at each site with standard deviation
+$\sigma \in \{0.0, 0.1, 0.2, 0.3, 0.5, 0.8, 1.0\}$, and the noisy
+prior is renormalised and passed to the algorithms. The same
+underlying instance (positions, bases, target) is used across all
+$\sigma$ values so the comparison is paired. Both Model~4 and
+Model~4* are evaluated on the noisy priors.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.88\textwidth]{fig_prior_misspec.png}
+  \caption{Mean and median finder competitive ratio for Model~4
+    ($p/d$ bid) and Model~4* ($p/d^2$ bid) as the standard deviation
+    $\sigma$ of the multiplicative prior noise increases. M4* has
+    lower FCR at every noise level tested, and the absolute margin in
+    its favour grows from $0.13$ at $\sigma = 0$ to $0.49$ at
+    $\sigma = 0.5$.}\label{fig:prior-misspec}
+\end{figure}
+
+Figure~\ref{fig:prior-misspec} plots the mean and median FCR for both
+models as a function of $\sigma$. Two observations stand out. First,
+\emph{M4* has lower FCR at every noise level tested.} The hypothesis
+was that the quadratic distance penalty would partly compensate for
+noisy probability signals by making the distance term dominate; the
+data supports this interpretation. Second, \emph{the absolute margin
+in favour of M4* grows with noise}: at $\sigma = 0$ the gap is
+$3.11 - 2.98 = 0.13$ FCR units; at $\sigma = 0.5$ the gap is
+$3.82 - 3.34 = 0.49$ units; at $\sigma = 1.0$ the gap settles around
+$0.43$ units. In percent terms M4 degrades $22.8\%$ from $\sigma = 0$
+to $\sigma = 0.5$ and M4* degrades $28.1\%$, so the relative
+degradation is slightly worse for M4* --- but because M4* starts
+from a lower baseline its absolute performance still dominates
+throughout.
+
+The practical reading of this result is cautionary in one direction
+and confirming in the other. It is \emph{not} the case that $p/d^2$
+is a ``noise-proof'' bid function: the absolute FCR of M4* rises
+substantially as the priors degrade. Rather, the result is that
+$p/d^2$ is a \emph{better use of the same information} than $p/d$ at
+every level of prior quality we tested. A deployment faced with
+uncertain priors should prefer $p/d^2$, not because it makes the
+priors reliable but because it wastes less of the limited energy
+budget on sites whose high observed probability turns out to be
+noise.

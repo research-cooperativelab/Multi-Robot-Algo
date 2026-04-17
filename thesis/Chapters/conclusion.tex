@@ -1,0 +1,118 @@
+\chapter{CONCLUSIONS AND FUTURE WORK}\label{ch:conclusion}
+
+\begin{doublespacing}
+
+\section{Summary of Findings}
+
+This thesis has presented a unified framework for analyzing multi-robot
+search and rescue across four algorithmic models that vary energy
+capacity and communication assumptions. Theoretical upper bounds on
+the expected finder competitive ratio were derived for each model and
+validated by Monte Carlo simulation over 500 trials per configuration.
+
+The headline contribution is the identification of a bid function
+$p_i / d^2$ that outperforms the conventional $p_i / d$ under energy
+constraints, justified by a \emph{cost-foreclosure} argument: a
+distant anchor site not only costs proportionally more energy but
+also shrinks the remaining chain-extension budget by the same amount,
+so the effective marginal cost of distance is superlinear. The result
+is practical in two senses. It is a one-line change in the bid
+function of any auction-based multi-robot search system, and the
+argument behind it is generic---it applies wherever a fixed resource
+budget must be allocated between a committed first action and a
+sequence of optional follow-ups.
+
+Three further experimental results strengthen and extend the main
+findings. First, the $p/d^2$ advantage over $p/d$ persists across
+prior-misspecification noise levels up to $\sigma = 1.0$; the
+absolute margin in M4*'s favour \emph{grows} with noise, from $0.13$
+FCR units on clean priors to $0.49$ units at moderate noise. Second,
+the $p/d^2$ advantage also persists under three non-Euclidean cost
+models (Manhattan distance, heterogeneous robot speeds, obstacle
+detour penalties); the foreclosure argument is therefore robust to
+the specific metric used. Third, the thesis identifies a named
+finding called the \emph{Target-Delay Anomaly}: post-processing a
+greedy $p/d^2$ chain with a standard 2-opt tour-length optimizer
+\emph{worsens} finder FCR by 6.58 percent despite shortening the
+tour, because 2-opt reorders sites by geometry and so dilutes the
+probability-weighted prefix that a finder-centric metric rewards.
+This is a non-obvious conclusion: the standard robotics pipeline of
+``build a tour, then polish it'' is not neutral but actively
+harmful under Bayesian priors and finder-centric objectives.
+
+Four headline findings plus three extensions emerged, each
+corresponding to one of the research hypotheses stated in
+Chapter~III.
+
+\begin{enumerate}
+\item Auction-based coordination yields a $6.6\times$ improvement in
+finder competitive ratio over random uncoordinated search, confirming
+that the communication mode---not the fleet size---is the dominant
+determinant of search efficiency, consistent with the theoretical
+prediction of \citet{Chrobak2015}.
+\item Probability-aware distributed auctions outperform a centralized
+distance-optimal Hungarian baseline by $5.7$ percent. An ablation in
+which the Hungarian solver is given the same probability-weighted
+costs as the auction eliminates the gap, demonstrating that the
+benefit is attributable to the bid function rather than to
+centralization.
+\item Multi-node sorties recover $92$ percent of the gap between the
+energy-constrained single-sortie algorithm and the
+unconstrained-energy auction baseline. A single greedy chain extension
+per sortie visits $\sim\!5.3$ sites on average at the default setting,
+cutting the iteration count from $4.81$ to $1.38$.
+\item A bid function $p_i / d^2$ that penalizes distance quadratically
+improves on the standard $p_i / d$ bid by $4.2$ percent under energy
+constraints. The result is justified by a cost-foreclosure argument:
+distant anchor sites not only cost more energy but also shorten the
+chain of future extensions, so the effective cost of distance is
+superlinear.
+\end{enumerate}
+
+All four theoretical bounds held empirically across every trial. The
+bounds on Models~1 and~2 are relatively tight; the Model~4 bound is
+loose because the analytical estimate of sites per sortie
+underestimates what the greedy chain actually achieves.
+
+\section{Future Work}
+
+Several directions for extending this work are natural.
+
+\textbf{Alternative objectives.} Finder competitive ratio measures
+only the finding robot's distance; it says nothing about the other
+robots' energy expenditure. Minimax workload balancing, total-fleet
+distance, or time-to-last-cleared-site are alternative objectives that
+would favor different bid functions. A systematic study of the
+trade-off among these objectives on a common benchmark is an open
+problem.
+
+\textbf{Tighter Model 4 bound.} The looseness of the Model 4 bound
+comes from the pessimistic estimate $S = 1 + \lfloor (E -
+2\,d_{\mathrm{avg}}) / d_{\mathrm{hop}} \rfloor$. A more refined
+analysis would compute the expected length of a greedy chain under the
+prior distribution, not the worst-case length under a uniform
+distribution, and could plausibly produce a bound within a factor of
+two of the empirical mean.
+
+\textbf{Fleet-size scaling conjecture.} The robot sweep suggests that
+coordinated models achieve FCR $= O(1)$ as $R \to \infty$ while
+uncoordinated models achieve only FCR $= \Omega(R^{-1})$. A formal
+proof of this conjecture would strengthen the case for coordination
+as the primary design lever.
+
+\textbf{Relaxing assumptions.} Perfect sensors, flat terrain, and
+uniform energy budgets are idealizations. Detection probability less
+than one, shortest-path distance over an obstacle graph, and per-robot
+energy heterogeneity are realistic generalizations. The auction
+mechanism adapts to each of these without modification; what changes
+is the structure of the bounds.
+
+\textbf{Physical deployment.} The simulation validates the algorithms
+under the stated assumptions, but physical deployment introduces
+additional concerns: sensor noise, communication loss, obstacle
+avoidance, and motor control variability. Porting the algorithms to a
+small team of UAVs or ground robots and measuring FCR on physical
+instances would provide the strongest test of the framework and is
+the logical next step.
+
+\end{doublespacing}

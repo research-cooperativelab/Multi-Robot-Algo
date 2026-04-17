@@ -287,11 +287,13 @@ def model_1_random_infinite(instance):
 
         found, finder = False, None
         visited_this_round = set()
+        round_choices = {}  # robot -> chosen site id (for visualization)
 
         for r in range(n_robots):
             # Independent random choice (may collide with other robots)
             choice = random.choices(avail_list, weights=avail_weights, k=1)[0]
             d = euclidean_distance(bases[r], np_[choice])
+            round_choices[r] = choice
 
             if choice == target:
                 robot_dists[r] += d  # one-way (found it!)
@@ -312,6 +314,9 @@ def model_1_random_infinite(instance):
             'round': iteration, 'entropy_before': H_before,
             'entropy_after': H_after, 'prob_captured': prob_cap,
             'sites_visited': len(visited_this_round), 'found_target': found,
+            # tour_per_robot maps robot -> ordered list of visited site ids
+            # (each M1 tour has exactly one site since robots return to base).
+            'tour_per_robot': {r: [s] for r, s in round_choices.items()},
         })
 
         if found:
@@ -585,20 +590,20 @@ def model_hungarian_single(instance, energy):
             'round_data': round_data}
 
 
-def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
+def model_hungarian_pd_single(instance, energy):
     """
-    MODEL 4: Finite energy, auction + greedy chain, multi-node sorties.
+    HUNGARIAN p/d VARIANT: Finite energy, centralized probability-weighted
+    assignment, single-node sorties.
 
-    Phase 1: SSI auction assigns first node to each robot.
-    Phase 2: Greedy round-robin tour extension — each robot adds the
-             best p/d (or p/d²) node reachable within remaining energy.
-    Phase 3: Execute tours; finder stops mid-tour if target found.
-    Bayesian updates between sortie rounds.
+    Same structure as model_hungarian_single, but the Hungarian cost for
+    an energy-feasible (robot r, site j) pair is c[r, j] = -probs[j]/d
+    (negated because scipy's linear_sum_assignment minimizes). This
+    isolates the effect of the bid function (p/d vs. 1/d) from the
+    allocation mechanism (distributed SSI vs. centralized Hungarian).
 
-    The greedy chain is equivalent to Smith's WSPT rule and comes
-    within 7.7% of brute-force optimal ordering.
-
-    When bid_func=bid_p_over_d2, this becomes Model 4* (our contribution).
+    Purpose: ablation for Hypothesis H2 — if H_pd ≈ M3, the gap between
+    M3 and H_d is attributable to the bid function; if H_pd > M3,
+    distributed SSI sequencing contributes additional benefit.
     """
     np_ = instance['node_positions']
     probs = dict(instance['node_probs'])
@@ -616,12 +621,307 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
         iteration += 1
         H_before = entropy(probs)
 
-        # Phase 1: SSI Auction for first node
+        robot_list = list(range(n_robots))
+        avail_list = [n for n in available
+                      if any(2 * euclidean_distance(bases[r], np_[n]) <= energy
+                             for r in robot_list)]
+        if not avail_list:
+            break
+
+        nr, nn = len(robot_list), len(avail_list)
+        cost = np.full((nr, nn), 1e9)
+        for i, r in enumerate(robot_list):
+            for j, node in enumerate(avail_list):
+                d = euclidean_distance(bases[r], np_[node])
+                p = probs.get(node, 0)
+                if 2 * d <= energy and d > 0 and p > 0:
+                    cost[i, j] = -p / d
+
+        if nn < nr:
+            cost = np.hstack([cost, np.full((nr, nr - nn), 1e9)])
+
+        row_ind, col_ind = linear_sum_assignment(cost)
+        assigned = {}
+        for i, j in zip(row_ind, col_ind):
+            if j < nn and cost[i, j] < 1e8:
+                d = euclidean_distance(bases[robot_list[i]], np_[avail_list[j]])
+                assigned[robot_list[i]] = (avail_list[j], d)
+
+        if not assigned:
+            break
+
+        found, finder = False, None
+        visited = set()
+        prob_cap = 0.0
+
+        for r, (n, d) in assigned.items():
+            visited.add(n)
+            prob_cap += probs.get(n, 0)
+            if n == target:
+                robot_dists[r] += d
+                found, finder = True, r
+            else:
+                robot_dists[r] += 2 * d
+
+        probs = bayesian_update(probs, visited)
+        available -= visited
+        H_after = entropy(probs) if available else 0
+
+        round_data.append({
+            'round': iteration, 'entropy_before': H_before,
+            'entropy_after': H_after, 'prob_captured': prob_cap,
+            'sites_visited': len(visited), 'found_target': found,
+        })
+
+        if found:
+            return {'model': 'Hungarian (E, p/d)', 'found_by': finder,
+                    'robot_dists': dict(robot_dists),
+                    'optimal_dist': opt, 'iterations': iteration,
+                    'round_data': round_data}
+
+    return {'model': 'Hungarian (E, p/d)', 'found_by': None,
+            'robot_dists': dict(robot_dists),
+            'optimal_dist': opt, 'iterations': iteration,
+            'round_data': round_data}
+
+
+def two_opt(tour, base_pos, node_positions):
+    """
+    Standard 2-opt local search on an ordered tour of site ids.
+
+    The total tour length INCLUDES base → first site and last site → base.
+    Iterate over all i<j, try reversing tour[i:j+1], accept the reversal
+    if total length strictly decreases. Repeat until no improving swap.
+
+    Args:
+        tour: list of site ids (ordered)
+        base_pos: (x, y) of the robot base
+        node_positions: dict {site_id: (x, y)}
+
+    Returns: 2-opt-improved ordered list of site ids.
+    """
+    def tour_length(t):
+        if not t:
+            return 0.0
+        total = euclidean_distance(base_pos, node_positions[t[0]])
+        for k in range(len(t) - 1):
+            total += euclidean_distance(node_positions[t[k]],
+                                        node_positions[t[k + 1]])
+        total += euclidean_distance(node_positions[t[-1]], base_pos)
+        return total
+
+    if len(tour) < 2:
+        return list(tour)
+
+    best = list(tour)
+    best_len = tour_length(best)
+    improved = True
+    while improved:
+        improved = False
+        n = len(best)
+        for i in range(n - 1):
+            for j in range(i + 1, n):
+                if j - i == 0:
+                    continue
+                candidate = best[:i] + best[i:j + 1][::-1] + best[j + 1:]
+                cand_len = tour_length(candidate)
+                if cand_len + 1e-12 < best_len:
+                    best = candidate
+                    best_len = cand_len
+                    improved = True
+                    break
+            if improved:
+                break
+    return best
+
+
+def model_4_auction_multi_2opt(instance, energy, bid_func=bid_p_over_d):
+    """
+    MODEL 4 with 2-opt post-processing: SSI auction + greedy chain,
+    then 2-opt re-orders each robot's tour before execution.
+
+    Identical to model_4_auction_multi, except that after the greedy
+    chain builds each robot's tour, two_opt() reorders the tour to
+    minimize total length (base → tour → base). This tests whether
+    sequencing sub-optimality in the greedy chain translates into FCR.
+    """
+    np_ = instance['node_positions']
+    probs = dict(instance['node_probs'])
+    bases = instance['bases']
+    target = instance['target']
+    opt = instance['optimal_dist']
+    n_robots = len(bases)
+
+    available = set(np_.keys())
+    robot_dists = {r: 0.0 for r in range(n_robots)}
+    round_data = []
+    iteration = 0
+
+    while available:
+        iteration += 1
+        H_before = entropy(probs)
+
+        # Phase 1: SSI auction for first node
         robot_bids = {}
         for r in range(n_robots):
             bids = []
             for n in available:
                 d = euclidean_distance(bases[r], np_[n])
+                if 2 * d <= energy and d > 0 and probs.get(n, 0) > 0:
+                    bv = bid_func(probs[n], d, energy)
+                    bids.append((n, bv, d))
+            bids.sort(key=lambda x: x[1], reverse=True)
+            robot_bids[r] = bids
+
+        if all(len(b) == 0 for b in robot_bids.values()):
+            break
+        first_assigned = run_auction(robot_bids)
+        if not first_assigned:
+            break
+
+        # Phase 2: greedy chain extension (same as model_4_auction_multi)
+        all_claimed = set(n for n, d in first_assigned.values())
+        robot_tours_nodes = {}
+        robot_rem = {}
+        robot_pos = {}
+
+        for r, (node, dist) in first_assigned.items():
+            robot_tours_nodes[r] = [node]
+            robot_pos[r] = np_[node]
+            robot_rem[r] = energy - dist
+
+        active = set(first_assigned.keys())
+        while active:
+            progress = False
+            for r in list(active):
+                best_node, best_bid, best_d = None, -1, 0
+                for n in available - all_claimed:
+                    d_to = euclidean_distance(robot_pos[r], np_[n])
+                    d_back = euclidean_distance(np_[n], bases[r])
+                    if d_to + d_back <= robot_rem[r] and d_to > 0 and probs.get(n, 0) > 0:
+                        bv = bid_func(probs[n], d_to, energy)
+                        if bv > best_bid:
+                            best_bid, best_d, best_node = bv, d_to, n
+                if best_node is None:
+                    active.discard(r)
+                else:
+                    robot_tours_nodes[r].append(best_node)
+                    all_claimed.add(best_node)
+                    robot_rem[r] -= best_d
+                    robot_pos[r] = np_[best_node]
+                    progress = True
+            if not progress:
+                break
+
+        # Phase 2b: 2-opt reorder each robot's tour
+        robot_tours = {}
+        for r, tour_nodes in robot_tours_nodes.items():
+            optimized = two_opt(tour_nodes, bases[r], np_)
+            # Build tour with (node, dist_from_prev) legs starting from base
+            tour = []
+            prev_pos = bases[r]
+            for node in optimized:
+                d_leg = euclidean_distance(prev_pos, np_[node])
+                tour.append((node, d_leg))
+                prev_pos = np_[node]
+            robot_tours[r] = tour
+
+        # Phase 3: execute tours
+        found, finder = False, None
+        visited = set()
+        prob_cap = 0.0
+        sites_per_robot = {}
+        tour_per_robot = {}
+
+        for r, tour in robot_tours.items():
+            sites_per_robot[r] = len(tour)
+            tour_per_robot[r] = [node for node, _ in tour]
+            for node, d in tour:
+                robot_dists[r] += d
+                visited.add(node)
+                prob_cap += probs.get(node, 0)
+                if node == target:
+                    found, finder = True, r
+                    break
+            if found and r == finder:
+                pass
+            else:
+                if tour:
+                    last_node = tour[-1][0]
+                    robot_dists[r] += euclidean_distance(np_[last_node], bases[r])
+
+        probs = bayesian_update(probs, visited)
+        available -= visited
+        H_after = entropy(probs) if available else 0
+
+        round_data.append({
+            'round': iteration, 'entropy_before': H_before,
+            'entropy_after': H_after, 'prob_captured': prob_cap,
+            'sites_visited': len(visited), 'found_target': found,
+            'sites_per_robot': dict(sites_per_robot),
+            'tour_per_robot': dict(tour_per_robot),
+        })
+
+        if found:
+            return {'model': 'M4_2opt', 'found_by': finder,
+                    'robot_dists': dict(robot_dists),
+                    'optimal_dist': opt, 'iterations': iteration,
+                    'round_data': round_data}
+
+    return {'model': 'M4_2opt', 'found_by': None,
+            'robot_dists': dict(robot_dists),
+            'optimal_dist': opt, 'iterations': iteration,
+            'round_data': round_data}
+
+
+def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d, dist_fn=None):
+    """
+    MODEL 4: Finite energy, auction + greedy chain, multi-node sorties.
+
+    Phase 1: SSI auction assigns first node to each robot.
+    Phase 2: Greedy round-robin tour extension — each robot adds the
+             best p/d (or p/d²) node reachable within remaining energy.
+    Phase 3: Execute tours; finder stops mid-tour if target found.
+    Bayesian updates between sortie rounds.
+
+    The greedy chain is equivalent to Smith's WSPT rule and comes
+    within 7.7% of brute-force optimal ordering.
+
+    When bid_func=bid_p_over_d2, this becomes Model 4* (our contribution).
+
+    Optional dist_fn(p1, p2, r) overrides the distance metric with a
+    robot-aware callable (used by cost-sensitivity experiments to inject
+    Manhattan, heterogeneous-speed, or obstacle-penalty costs). When None,
+    falls back to the module-level euclidean_distance (default behavior).
+    """
+    np_ = instance['node_positions']
+    probs = dict(instance['node_probs'])
+    bases = instance['bases']
+    target = instance['target']
+    opt = instance['optimal_dist']
+    n_robots = len(bases)
+
+    if dist_fn is None:
+        def _d(p1, p2, r=None):
+            return euclidean_distance(p1, p2)
+    else:
+        _d = dist_fn
+
+    available = set(np_.keys())
+    robot_dists = {r: 0.0 for r in range(n_robots)}
+    round_data = []
+    iteration = 0
+
+    while available:
+        iteration += 1
+        H_before = entropy(probs)
+
+        # Phase 1: SSI Auction for first node
+        robot_bids = {}
+        for r in range(n_robots):
+            bids = []
+            for n in available:
+                d = _d(bases[r], np_[n], r)
                 if 2 * d <= energy and d > 0 and probs.get(n, 0) > 0:
                     bv = bid_func(probs[n], d, energy)
                     bids.append((n, bv, d))
@@ -651,8 +951,8 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
             for r in list(active):
                 best_node, best_bid, best_d = None, -1, 0
                 for n in available - all_claimed:
-                    d_to = euclidean_distance(robot_pos[r], np_[n])
-                    d_back = euclidean_distance(np_[n], bases[r])
+                    d_to = _d(robot_pos[r], np_[n], r)
+                    d_back = _d(np_[n], bases[r], r)
                     if d_to + d_back <= robot_rem[r] and d_to > 0 and probs.get(n, 0) > 0:
                         bv = bid_func(probs[n], d_to, energy)
                         if bv > best_bid:
@@ -673,9 +973,11 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
         visited = set()
         prob_cap = 0.0
         sites_per_robot = {}
+        tour_per_robot = {}
 
         for r, tour in robot_tours.items():
             sites_per_robot[r] = len(tour)
+            tour_per_robot[r] = [node for node, _ in tour]
             for node, d in tour:
                 robot_dists[r] += d
                 visited.add(node)
@@ -688,7 +990,7 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
             else:
                 if tour:
                     last_node = tour[-1][0]
-                    robot_dists[r] += euclidean_distance(np_[last_node], bases[r])
+                    robot_dists[r] += _d(np_[last_node], bases[r], r)
 
         probs = bayesian_update(probs, visited)
         available -= visited
@@ -699,6 +1001,7 @@ def model_4_auction_multi(instance, energy, bid_func=bid_p_over_d):
             'entropy_after': H_after, 'prob_captured': prob_cap,
             'sites_visited': len(visited), 'found_target': found,
             'sites_per_robot': dict(sites_per_robot),
+            'tour_per_robot': dict(tour_per_robot),
         })
 
         if found:
@@ -795,13 +1098,15 @@ def run_all_models(n, R, L, E, n_trials=500, seed=42):
         'M1 Random (∞E)':              lambda inst: model_1_random_infinite(inst),
         'M2 Auction (∞E, N2N)':        lambda inst: model_2_auction_infinite(inst),
         'Hungarian (E, min-dist)':     lambda inst: model_hungarian_single(inst, E),
+        'Hungarian (E, p/d)':                lambda inst: model_hungarian_pd_single(inst, E),
         'M3 Auction Single (E, p/d)':  lambda inst: model_3_auction_single(inst, E, bid_p_over_d),
         'M4 Auction Multi (E, p/d)':   lambda inst: model_4_auction_multi(inst, E, bid_p_over_d),
         'M4* Auction Multi (E, p/d²)': lambda inst: model_4_auction_multi(inst, E, bid_p_over_d2),
     }
 
+    model_names = list(models.keys())
     results = {}
-    for name in ALL_MODEL_NAMES:
+    for name in model_names:
         func = models[name]
         fcrs, iters_list, fails = [], [], 0
         entropy_per_round = []
@@ -965,14 +1270,18 @@ SHORT = {
 }
 
 def setup_style():
+    # Fonts bumped up for thesis readability: the thesis is printed at 12pt
+    # body font in a single-column layout, so figure text needs to match.
+    # Override these with SAR_SIM_FIG_FONT_SCALE if a paper rebuild wants smaller.
+    scale = float(os.environ.get('SAR_SIM_FIG_FONT_SCALE', '1.0'))
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 10,
-        'axes.labelsize': 11,
-        'axes.titlesize': 11,
-        'xtick.labelsize': 9,
-        'ytick.labelsize': 9,
-        'legend.fontsize': 8,
+        'font.size': 11 * scale,
+        'axes.labelsize': 12 * scale,
+        'axes.titlesize': 12 * scale,
+        'xtick.labelsize': 10 * scale,
+        'ytick.labelsize': 10 * scale,
+        'legend.fontsize': 9 * scale,
         'legend.framealpha': 0.92,
         'lines.linewidth': 2.0,
         'lines.markersize': 6,
@@ -1201,6 +1510,15 @@ def plot_iterations_comparison(results, save_path):
 # 9. MAIN — Full Experimental Pipeline
 
 if __name__ == '__main__':
+    # Windows consoles default to cp1252, which cannot encode the infinity
+    # symbol used in model names below. Force UTF-8 on stdout/stderr.
+    import sys as _sys
+    try:
+        _sys.stdout.reconfigure(encoding='utf-8')
+        _sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass  # Python < 3.7 or non-reconfigurable stream; user will see a cleaner error
+
     parser = argparse.ArgumentParser(
         description='Unified Multi-Robot Search Simulation (Paper Pipeline)')
     parser.add_argument('--nodes', type=int, default=30)

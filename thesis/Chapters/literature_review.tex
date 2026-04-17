@@ -1,0 +1,170 @@
+\chapter{LITERATURE REVIEW}\label{ch:lit}
+
+\begin{doublespacing}
+
+Multi-robot search and rescue draws on three largely independent
+research traditions: online competitive search theory, market-based
+multi-robot task allocation, and energy-constrained graph
+exploration. This chapter reviews each in turn, identifies the gap
+they leave when taken together, and positions the present work
+inside that gap. A reader without a background in any of the three
+may find it useful to read the \emph{primer} at the start of each
+section for a plain-language explanation before moving on to the
+formal review.
+
+\section{Competitive Search Theory}
+
+\paragraph{Primer.} The field of \emph{online algorithms} studies
+decisions that have to be made with incomplete information. A
+classic textbook example is the following. You are standing at the
+origin of an infinite straight road. A cow you are looking for is
+somewhere on this road, either to your left or to your right, at an
+unknown distance. You can walk in either direction and will
+recognize the cow when you reach it, but you cannot see her from
+afar. How should you search so that you do not walk much farther
+than strictly necessary? If you always happen to guess the correct
+direction first, you walk exactly the distance to the cow; if you
+guess wrong, you have to backtrack. ``Competitive search theory''
+proves how good any strategy can possibly be in the worst case,
+measured as a ratio to the distance an all-knowing agent would
+walk. This ratio is called the \emph{competitive ratio}. It is the
+same idea the Finder Competitive Ratio (FCR) in this thesis
+captures, but in two dimensions and with many searchers.
+
+Competitive analysis measures an online algorithm by the worst-case
+ratio of its cost to the cost an omniscient offline algorithm would
+incur on the same instance~\citep{Sleator1985}. The canonical
+instantiation of this idea for search is the \emph{cow-path problem}:
+a searcher stands at the origin of an infinite half-line, a target is
+somewhere on the line, and the cost is the distance traveled before
+the target is found. \citet{BaezaYates1993} proved that a geometric doubling strategy
+achieves a deterministic competitive ratio of 9 and that no
+deterministic strategy can do better. \citet{Kao1996} showed that
+randomization brings the ratio down to approximately $4.59$. These results are important because they
+characterize the intrinsic cost of not knowing the target's location,
+independent of the specific algorithm chosen.
+
+Extensions to parallel search introduce multiple agents and ask how
+the ratio changes. \citet{LopezOrtiz2004} gave competitive ratios for
+$p$ parallel searchers exploring $m$ rays emanating from a common
+origin. \citet{Chrobak2015} studied group search on a line and proved a
+striking dichotomy: with wireless communication, two agents achieve
+ratio 3, while with only face-to-face (rendezvous) communication the
+ratio remains the single-searcher 9. That is, the \emph{mode} of
+communication matters more than the number of searchers. This
+observation motivates the first finding of the present work: that
+coordination alone, not the number of robots, accounts for the bulk of
+the improvement over random search. The competitive-ratio literature
+has, however, focused on one-dimensional geometries and has not
+integrated energy constraints.
+
+\section{Market-Based Multi-Robot Coordination}
+
+\paragraph{Primer.} How should several robots divide a pile of
+tasks? One approach is to have a central computer solve an
+optimization problem and hand each robot its assignment. A different
+approach, inspired by how markets work in economics, is to let the
+robots \emph{bid} for tasks. Each robot computes how much it
+``wants'' each task (based on how close the task is, how hard it
+looks, how well the robot is suited for it, and so on), the robots
+exchange bids with each other, and the highest bidder wins each
+task. Market-based coordination is popular in robotics because it
+is simple, it scales to large teams without a bottleneck, and it
+gracefully tolerates robots dropping in and out of the team. The
+particular auction mechanism this thesis uses is \emph{sequential
+single-item (SSI)} auctions: tasks are sold one at a time, the
+highest bidder wins each one, and the process repeats until all
+robots have assignments for the current round. SSI auctions are a
+well-studied compromise between the simplicity of a one-shot
+assignment and the flexibility of a fully iterative market.
+
+\citet{Gerkey2004} introduced the multi-robot
+task allocation (MRTA) taxonomy that classifies problems by three
+axes: single-task versus multi-task robots, single-robot versus
+multi-robot tasks, and instantaneous versus time-extended assignment.
+In this taxonomy, the present problem is
+\emph{single-task, multi-robot, instantaneous} (ST-MR-IA): each site
+is a single task, multiple robots may claim different sites in the
+same round, and the assignment is recomputed every round.
+
+Auction-based task allocation was popularized by the TraderBots
+architecture of \citet{Dias2006} and the earlier market economy of
+\citet{Zlot2002}. \citet{Koenig2006}
+analyzed sequential single-item (SSI) auctions---in which items are
+auctioned one at a time and the globally highest bidder wins each
+item---and proved constant-factor approximation guarantees against
+centralized optima for several objective functions. SSI auctions are
+attractive because they are simple, communication-efficient, and
+produce provably near-optimal assignments. This thesis adopts SSI as
+the basic coordination primitive. The market-based literature has,
+however, historically studied mobility as unconstrained: a robot is
+expected to be able to reach any assigned task, which does not match
+the energy-constrained sortie regime that this thesis studies.
+
+\section{Energy-Constrained and Probabilistic Search}
+
+\paragraph{Primer.} The two ideas combined in this section are, on
+the one hand, that a real robot runs out of battery, and on the
+other, that not every location is equally likely to hold what the
+robot is searching for. The energy-constrained branch of robotics
+research treats the battery as a hard constraint: a robot must
+plan every excursion knowing that at some point it has to return
+to base to recharge, which fundamentally changes what strategies
+are available. The probabilistic branch treats the target
+location as a random variable---some sites are more likely to
+contain it than others---and asks how the robot should allocate its
+search effort across the possibilities. A famous classical result
+in this area is \emph{Stone's rule}~\citep{Stone1975}: optimal
+search effort should be allocated in proportion to (probability
+of target being there) divided by (cost of searching there). This
+is the direct ancestor of the $p/d$ bid function in this thesis,
+with $p$ the probability and $d$ the search cost (distance). The
+novel $p/d^2$ bid that the thesis recommends is a modification of
+Stone's rule tailored to the situation where battery is the binding
+constraint.
+
+The third strand of related work concerns search under finite energy
+and under probabilistic priors. \citet{Betke1995} introduced \emph{piecemeal learning}, in which a
+robot must periodically return to the origin and therefore can only
+execute bounded-length excursions. \citet{Das2015} studied
+energy-constrained depth-first search
+and proved that the number of robots required to explore a graph
+grows with the ratio of graph diameter to battery capacity. The common
+thread is that energy constraints fundamentally alter the structure of
+optimal search strategies; a fuel-limited robot cannot use the same
+plans as a fuel-unlimited one.
+
+On the probabilistic side, Stone's classical \emph{Theory of Optimal
+Search}~\citep{Stone1975} established that search effort should be
+allocated in proportion to the ratio of target probability to search
+cost. This is the theoretical basis for the $p_i / d$ bid function
+used in this thesis: it is Stone's rule evaluated locally at each
+decision point. \citet{Bourgault2002} applied information-theoretic
+criteria (specifically mutual information) to coordinated target
+search and demonstrated experimentally that information-greedy
+policies outperform distance-greedy policies. The observation
+generalizes to the present work.
+
+\section{Gap and Positioning}
+
+Taken together, the three literatures leave a gap. Competitive-ratio
+analysis gives worst-case bounds but assumes unrealistic
+one-dimensional geometries and does not model energy. Market-based
+coordination scales to many robots but assumes unbounded mobility.
+Energy-constrained exploration models batteries but does not use
+auctions or compute competitive ratios. No prior work unifies all
+three into a single framework that asks: what is the expected
+competitive ratio of an auction-coordinated multi-robot search team
+under a finite energy budget?
+
+The present thesis fills that gap. It formulates four algorithmic
+models that systematically vary the energy and communication
+assumptions, derives expected-FCR upper bounds for each model under
+realistic two-dimensional instance distributions, and validates the
+bounds by Monte Carlo simulation. In addition, it studies the choice
+of bid function---a design decision that the existing auction
+literature has largely left to practical convention---and identifies
+a bid function that is provably motivated by and empirically optimal
+under energy constraints.
+
+\end{doublespacing}

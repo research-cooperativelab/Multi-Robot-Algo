@@ -1,0 +1,193 @@
+\documentclass[12pt,oneside,letterpaper,chapterprefix=on,numbers=noenddot]{scrbook}
+
+\usepackage{todonotes}
+\usepackage{dirtytalk}
+
+% CSULB thesis margins: 1.5" left, 1" right/top/bottom.
+% First page of each chapter gets an extra 1" of vertical space before the
+% chapter title, producing the required 2" top on chapter opening pages.
+\usepackage[left=1.5in,right=1in,top=1in,bottom=1in,includefoot,heightrounded]{geometry}
+\usepackage[T1]{fontenc}   % required for non-English accents (e.g. the ogonek in "Gąsieniec")
+\usepackage{mathptmx}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\setlength{\parindent}{0.25in}
+\usepackage[document]{ragged2e}
+\setlength{\RaggedRightParindent}{\parindent}
+\usepackage{comment}
+\pagestyle{plain}
+\usepackage[justification=raggedright,singlelinecheck=false,labelsep=period]{caption}
+\setkomafont{captionlabel}{\bfseries}
+\setkomafont{caption}{\bfseries}
+\setcapindent{0pt}
+\usepackage{graphicx}
+\graphicspath{{../figures/}{figures/}}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+\usepackage{algorithm}
+\makeatletter
+\renewcommand{\ALG@name}{ALGORITHM}
+\captionsetup[algorithm]{labelfont=bf,labelsep=period,font=bf}
+\makeatother
+\usepackage{algpseudocode}
+\algdef{SE}[DOWHILE]{Do}{DoWhile}{\algorithmicdo}[1]{\algorithmicwhile\ #1}
+
+\newtheoremstyle{csulb}
+  {\topsep}{\topsep}{\normalfont}{0.25in}{\itshape}{{\normalfont :\ } }{0pt}
+  {\thmname{#1} \thmnumber{#2}}
+\theoremstyle{csulb}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{problem}{Problem}
+
+\DeclareOldFontCommand{\bf}{\normalfont\bfseries}{\mathbf}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+% APA-style author-year inline citations per CSULB Honors requirements.
+% round  = parentheses around citations
+% authoryear = "(Author, Year)" format instead of numeric [1]
+% sort&compress = alphabetical order, compressed ranges
+\usepackage[round,authoryear,sort&compress]{natbib}
+\setlength{\bibsep}{\baselineskip}
+
+% Renames the "Bibliography" section heading to "REFERENCES" (CSULB spec).
+\renewcommand{\bibname}{REFERENCES}
+
+\makeatletter
+\renewcommand\chapterlinesformat[3]{\@hangfrom{#2}{\MakeUppercase{#3}}}
+\makeatother
+\renewcommand\chapterlineswithprefixformat[3]{\MakeUppercase{#2#3}}
+
+\usepackage{chngcntr}
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+
+\let\raggedchapter\centering
+% 1in beforeskip + 1in top page margin = 2" to chapter title (CSULB rule).
+% 0.25in afterskip between chapter title and first paragraph.
+\RedeclareSectionCommand[beforeskip=1in,afterskip=0.25in]{chapter}
+\setkomafont{disposition}{\bfseries\normalsize}
+\setkomafont{chapter}{\normalsize}
+\let\raggedsection\centering
+\setkomafont{section}{\normalsize}
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{section}
+\setkomafont{subsection}{\normalsize}
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{subsection}
+
+\usepackage{etoolbox}
+\AtBeginEnvironment{figure}{\setlength{\RaggedRightParindent}{0em}}
+\AtBeginEnvironment{table}{\setlength{\RaggedRightParindent}{0em}}
+\AtBeginEnvironment{algorithm}{\setlength{\RaggedRightParindent}{0em}}
+
+\usepackage{tocloft}
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{0pt}
+\renewcommand*\contentsname{TABLE OF CONTENTS}
+\renewcommand{\cfttoctitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftaftertoctitle}{\hspace*{\fill}}
+\KOMAoptions{toc=chapterentrydotfill}
+\setkomafont{chapterentry}{}
+\addtokomafont{chapterentrypagenumber}{\mdseries}
+\RedeclareSectionCommand[tocnumwidth=3.5em]{chapter}
+
+\setlength{\cftbeforelottitleskip}{0pt}
+\setlength{\cftafterlottitleskip}{0pt}
+\renewcommand*\listtablename{LIST OF TABLES}
+\renewcommand{\cftlottitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftafterlottitle}{\hspace*{\fill}}
+\setlength{\cfttabindent}{0.25in}
+
+\setlength{\cftbeforeloftitleskip}{0pt}
+\setlength{\cftafterloftitleskip}{0pt}
+\renewcommand*\listfigurename{LIST OF FIGURES}
+\renewcommand{\cftloftitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftafterloftitle}{\hspace*{\fill}}
+\setlength{\cftfigindent}{0.25in}
+\newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
+\addtocontents{lof}{\protect\noaddvspace}
+\addtocontents{lot}{\protect\noaddvspace}
+
+\renewenvironment{proof}{\indent{\em Proof}:}{}
+
+\usepackage[page,toc,title]{appendix}
+\renewcommand{\appendixtocname}{APPENDICES}
+\renewcommand{\appendixpagename}{\vspace*{\fill}\centering\normalsize APPENDICES\vspace*{\fill}}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks,citecolor=black,linkcolor=black,urlcolor=black}
+
+\usepackage[english]{babel}
+\addto\captionsenglish{\renewcommand{\contentsname}{TABLE OF CONTENTS}}
+\addto\captionsenglish{\renewcommand{\listfigurename}{LIST OF FIGURES}}
+\addto\captionsenglish{\renewcommand{\listtablename}{LIST OF TABLES}}
+\captionsetup{figurename=FIGURE,tablename=TABLE}
+
+\begin{document}
+
+\frontmatter
+% Front matter uses lowercase Roman numerals (scrbook default under
+% \frontmatter). Title page is counted as page i but prints no number
+% per CSULB rules; \mainmatter restarts Arabic numbering at 1 below.
+
+\pagenumbering{roman}
+\input{Chapters/title}
+\input{Chapters/signature}
+
+\input{Chapters/abstract}
+\input{Chapters/acknowledgments}
+
+\begin{doublespacing}
+  \clearpage
+  \tableofcontents
+  \renewcommand{\autodot}{.}
+
+  \clearpage
+  \phantomsection
+  \listoftables
+  \addcontentsline{toc}{chapter}{LIST OF TABLES}
+
+  \clearpage
+  \phantomsection
+  \listoffigures
+  \addcontentsline{toc}{chapter}{LIST OF FIGURES}
+\end{doublespacing}
+
+\mainmatter
+\pagenumbering{arabic}      % body pages: Arabic numerals starting at 1
+\RaggedRight                 % CSULB rule: no right-justification in body
+
+\input{Chapters/introduction}
+\input{Chapters/literature_review}
+\input{Chapters/problem_formulation}
+\input{Chapters/methodology}
+\input{Chapters/results}
+\input{Chapters/conclusion}
+
+% References section — CSULB spec:
+% 1. Half-title page: just "REFERENCES" centered vertically.
+% 2. Full page: "REFERENCES" heading centered at 2" top margin, then
+%    entries below in APA format with hanging indent, single-spaced
+%    with blank line between entries.
+\clearpage
+\phantomsection
+\thispagestyle{empty}
+\vspace*{\fill}\begin{center}\normalsize\bfseries REFERENCES\end{center}\vspace*{\fill}
+\addcontentsline{toc}{chapter}{REFERENCES}
+\clearpage
+
+% apalike = LaTeX's built-in APA-style bibliography (author, year) with
+% hanging indent and alphabetical ordering. Close match to APA 7th edition
+% for CSULB honors thesis purposes.
+\bibliographystyle{apalike}
+\bibliography{ref}
+
+\end{document}

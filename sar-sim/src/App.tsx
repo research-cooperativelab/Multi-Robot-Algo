@@ -15,12 +15,27 @@ const DEFAULT_PARAMS: SimParams = {
 
 const MODEL_OPTIONS: SimParams['model'][] = ['M1', 'M2', 'M3', 'M4', 'M4*']
 
-const MODEL_DESC: Record<SimParams['model'], string> = {
-  M1:  'Random — no coordination, infinite energy',
-  M2:  'Auction + node-to-node, infinite energy',
-  M3:  'Auction + single-node sorties, finite energy',
-  M4:  'Auction + multi-node chain (p/d), finite energy',
-  'M4*': 'Auction + multi-node chain (p/d²) — best performer',
+const MODEL_DESC: Record<SimParams['model'], { title: string; text: string }> = {
+  M1: {
+    title: 'Random — no coordination',
+    text: 'Each rescuer picks a spot to search on their own, without talking to the others. They sometimes check the same rubble twice while other areas go unexplored.',
+  },
+  M2: {
+    title: 'Unconstrained-energy auction',
+    text: 'The rescuers have unlimited battery and walk straight from one site to the next. Every round they bid against each other to pick who checks what — the team picks the highest-value target first.',
+  },
+  M3: {
+    title: 'Single-node sortie (limited battery)',
+    text: 'Each rescuer must return to base to recharge after visiting a single site. Most of each trip is spent on travel to and from base; little budget is left for actual search.',
+  },
+  M4: {
+    title: 'Multi-node sortie with p/d bid',
+    text: 'Rescuers chain several sites into a single trip before returning. They pick the next site by weighing probability of the target being there against distance.',
+  },
+  'M4*': {
+    title: 'Multi-node sortie with p/d² bid',
+    text: 'Same as M4, but the rescuers penalise distance twice as hard. A site twice as far away counts as four times as expensive. This finds survivors faster under tight battery budgets.',
+  },
 }
 
 // ── SliderRow ──────────────────────────────────────────────────────────────────
@@ -54,6 +69,17 @@ function SliderRow({
   )
 }
 
+// ── ModelDescription ───────────────────────────────────────────────────────────
+function ModelDescription({ model }: { model: SimParams['model'] }) {
+  const desc = MODEL_DESC[model]
+  return (
+    <div className="model-desc-box">
+      <div className="model-desc-heading">{model} · {desc.title}</div>
+      <p className="model-desc-text">{desc.text}</p>
+    </div>
+  )
+}
+
 // ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
   const [params,    setParams]    = useState<SimParams>(DEFAULT_PARAMS)
@@ -64,6 +90,15 @@ export default function App() {
   const [playing,   setPlaying]   = useState(false)
   const [showTgt,   setShowTgt]   = useState(false)
   const playRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ── comparison mode state ────────────────────────────────────────────────────
+  const [compareMode, setCompareMode] = useState(false)
+  const [leftModel,   setLeftModel]   = useState<SimParams['model']>('M1')
+  const [rightModel,  setRightModel]  = useState<SimParams['model']>('M4*')
+  const [leftResult,  setLeftResult]  = useState<SimResult | null>(null)
+  const [rightResult, setRightResult] = useState<SimResult | null>(null)
+  const [leftStepIdx, setLeftStepIdx] = useState(0)
+  const [rightStepIdx, setRightStepIdx] = useState(0)
 
   // ── helpers ──────────────────────────────────────────────────────────────────
   const setParam = <K extends keyof SimParams>(k: K, v: SimParams[K]) =>
@@ -100,7 +135,7 @@ export default function App() {
     if (playing && stepIdx >= totalRounds - 1) stopPlay()
   }, [playing, stepIdx, totalRounds, stopPlay])
 
-  // ── run simulation ────────────────────────────────────────────────────────────
+  // ── single-model simulation ──────────────────────────────────────────────────
   const runSimulation = async () => {
     stopPlay()
     setLoading(true)
@@ -128,6 +163,64 @@ export default function App() {
     }
   }
 
+  // ── comparison simulation ────────────────────────────────────────────────────
+  const runComparison = async () => {
+    stopPlay()
+    setLoading(true)
+    setError(null)
+    setLeftResult(null)
+    setRightResult(null)
+    setLeftStepIdx(0)
+    setRightStepIdx(0)
+    setShowTgt(false)
+    try {
+      const fetchOne = async (m: SimParams['model']): Promise<SimResult> => {
+        const res = await fetch('/api/simulate', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ ...params, model: m }),
+        })
+        if (!res.ok) {
+          const msg = await res.text()
+          throw new Error(`Server error ${res.status} (model ${m}): ${msg}`)
+        }
+        return res.json() as Promise<SimResult>
+      }
+      const [left, right] = await Promise.all([fetchOne(leftModel), fetchOne(rightModel)])
+      setLeftResult(left)
+      setRightResult(right)
+      setLeftStepIdx(0)
+      setRightStepIdx(0)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── comparison step helpers ──────────────────────────────────────────────────
+  const leftTotal  = leftResult?.rounds.length ?? 0
+  const rightTotal = rightResult?.rounds.length ?? 0
+  const leftRound:  RoundState | null = leftResult?.rounds[leftStepIdx]  ?? null
+  const rightRound: RoundState | null = rightResult?.rounds[rightStepIdx] ?? null
+
+  const advanceBoth = () => {
+    setLeftStepIdx(s  => (s  < leftTotal  - 1 ? s + 1 : s))
+    setRightStepIdx(s => (s < rightTotal - 1 ? s + 1 : s))
+  }
+  const resetBoth = () => {
+    setLeftStepIdx(0)
+    setRightStepIdx(0)
+  }
+  const jumpEndBoth = () => {
+    setLeftStepIdx(Math.max(0, leftTotal - 1))
+    setRightStepIdx(Math.max(0, rightTotal - 1))
+  }
+
+  const canAdvanceEither =
+    (leftResult  != null && leftStepIdx  < leftTotal  - 1) ||
+    (rightResult != null && rightStepIdx < rightTotal - 1)
+
   // ── derived stats for info panel ──────────────────────────────────────────────
   const targetFoundStep = result?.rounds.findIndex(r => r.target_found) ?? -1
 
@@ -140,22 +233,66 @@ export default function App() {
         <h1 className="app-title">SAR Simulation</h1>
         <p className="app-subtitle">Multi-robot search &amp; rescue</p>
 
-        {/* model selector */}
+        {/* comparison toggle */}
         <section className="panel">
-          <h2 className="panel-title">Model</h2>
-          <div className="model-buttons">
-            {MODEL_OPTIONS.map(m => (
-              <button
-                key={m}
-                className={`model-btn ${params.model === m ? 'active' : ''}`}
-                onClick={() => setParam('model', m)}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-          <p className="model-desc">{MODEL_DESC[params.model]}</p>
+          <h2 className="panel-title">Mode</h2>
+          <label className="toggle-label">
+            <input
+              type="checkbox"
+              checked={compareMode}
+              onChange={e => {
+                setCompareMode(e.target.checked)
+                setError(null)
+              }}
+            />
+            Comparison mode (side-by-side)
+          </label>
         </section>
+
+        {/* model selector(s) */}
+        {!compareMode ? (
+          <section className="panel">
+            <h2 className="panel-title">Model</h2>
+            <div className="model-buttons">
+              {MODEL_OPTIONS.map(m => (
+                <button
+                  key={m}
+                  className={`model-btn ${params.model === m ? 'active' : ''}`}
+                  onClick={() => setParam('model', m)}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <ModelDescription model={params.model} />
+          </section>
+        ) : (
+          <section className="panel">
+            <h2 className="panel-title">Models</h2>
+            <div className="compare-pick-row">
+              <label className="compare-pick-label">Left</label>
+              <select
+                className="compare-select"
+                value={leftModel}
+                onChange={e => setLeftModel(e.target.value as SimParams['model'])}
+              >
+                {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <ModelDescription model={leftModel} />
+            <div className="compare-pick-row">
+              <label className="compare-pick-label">Right</label>
+              <select
+                className="compare-select"
+                value={rightModel}
+                onChange={e => setRightModel(e.target.value as SimParams['model'])}
+              >
+                {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <ModelDescription model={rightModel} />
+          </section>
+        )}
 
         {/* parameters */}
         <section className="panel">
@@ -173,7 +310,8 @@ export default function App() {
             min={1} max={8}
             onChange={v => setParam('n_robots', v)}
           />
-          {(params.model === 'M3' || params.model === 'M4' || params.model === 'M4*') && (
+          {(compareMode ||
+            params.model === 'M3' || params.model === 'M4' || params.model === 'M4*') && (
             <SliderRow
               label="Energy (E)"
               value={params.energy}
@@ -204,16 +342,16 @@ export default function App() {
         {/* run button */}
         <button
           className={`run-btn ${loading ? 'loading' : ''}`}
-          onClick={runSimulation}
+          onClick={compareMode ? runComparison : runSimulation}
           disabled={loading}
         >
-          {loading ? 'Running…' : '▶  Run Simulation'}
+          {loading ? 'Running…' : (compareMode ? '▶  Run Both' : '▶  Run Simulation')}
         </button>
 
         {error && <div className="error-box">{error}</div>}
 
-        {/* info panel */}
-        {result && (
+        {/* info panel (single mode) */}
+        {!compareMode && result && (
           <section className="panel info-panel">
             <h2 className="panel-title">Results</h2>
             <div className="info-grid">
@@ -280,8 +418,34 @@ export default function App() {
           </section>
         )}
 
+        {/* compact comparison summary */}
+        {compareMode && (leftResult || rightResult) && (
+          <section className="panel info-panel">
+            <h2 className="panel-title">Comparison</h2>
+            <div className="compare-summary">
+              {[
+                { side: 'Left',  res: leftResult,  idx: leftStepIdx,  total: leftTotal },
+                { side: 'Right', res: rightResult, idx: rightStepIdx, total: rightTotal },
+              ].map(({ side, res, idx, total }) => (
+                <div key={side} className="compare-summary-cell">
+                  <div className="info-label">{side} · {res?.model ?? '—'}</div>
+                  <div className="info-value">
+                    Round {total > 0 ? idx + 1 : 0} / {total}
+                  </div>
+                  <div className="info-value highlight">
+                    FCR: {res?.final_fcr != null ? res.final_fcr.toFixed(2) : '—'}
+                  </div>
+                  <div className={`info-value ${res?.found ? 'good' : 'bad'}`}>
+                    {res ? (res.found ? '✓ found' : '✗ not found') : '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* show/hide target toggle */}
-        {result && (
+        {(result || leftResult || rightResult) && (
           <label className="toggle-label">
             <input
               type="checkbox"
@@ -295,78 +459,162 @@ export default function App() {
 
       {/* ── canvas area ── */}
       <main className="canvas-area">
-        {result ? (
-          <>
-            <SimCanvas
-              instance={result.instance}
-              round={currentRound}
-              stepIndex={stepIdx}
-              showTarget={showTgt || (currentRound?.target_found ?? false)}
-            />
-
-            {/* step controls */}
-            <div className="step-controls">
-              <button
-                className="step-btn"
-                onClick={() => { stopPlay(); setStepIdx(clampStep(0)) }}
-                disabled={stepIdx === 0}
-                title="First round"
-              >⏮</button>
-
-              <button
-                className="step-btn"
-                onClick={() => { stopPlay(); setStepIdx(s => clampStep(s - 1)) }}
-                disabled={stepIdx === 0}
-                title="Previous round"
-              >◀ Prev</button>
-
-              <button
-                className="step-btn play-btn"
-                onClick={playing ? stopPlay : startPlay}
-                disabled={stepIdx >= totalRounds - 1 && !playing}
-                title={playing ? 'Pause' : 'Play through rounds'}
-              >
-                {playing ? '⏸ Pause' : '▶ Play'}
-              </button>
-
-              <button
-                className="step-btn"
-                onClick={() => { stopPlay(); setStepIdx(s => clampStep(s + 1)) }}
-                disabled={stepIdx >= totalRounds - 1}
-                title="Next round"
-              >Next ▶</button>
-
-              <button
-                className="step-btn"
-                onClick={() => { stopPlay(); setStepIdx(clampStep(totalRounds - 1)) }}
-                disabled={stepIdx >= totalRounds - 1}
-                title="Last round"
-              >⏭</button>
-            </div>
-
-            {/* round progress bar */}
-            <div className="progress-bar-wrap">
-              <input
-                type="range"
-                className="progress-bar"
-                min={0}
-                max={Math.max(0, totalRounds - 1)}
-                value={stepIdx}
-                onChange={e => { stopPlay(); setStepIdx(Number(e.target.value)) }}
+        {!compareMode ? (
+          result ? (
+            <>
+              <SimCanvas
+                instance={result.instance}
+                round={currentRound}
+                stepIndex={stepIdx}
+                showTarget={showTgt || (currentRound?.target_found ?? false)}
               />
-              <span className="progress-label">
-                Round {stepIdx + 1} / {totalRounds}
-                {currentRound?.target_found && (
-                  <span className="found-badge"> ★ Target found!</span>
-                )}
-              </span>
+
+              {/* step controls */}
+              <div className="step-controls">
+                <button
+                  className="step-btn"
+                  onClick={() => { stopPlay(); setStepIdx(clampStep(0)) }}
+                  disabled={stepIdx === 0}
+                  title="First round"
+                >⏮</button>
+
+                <button
+                  className="step-btn"
+                  onClick={() => { stopPlay(); setStepIdx(s => clampStep(s - 1)) }}
+                  disabled={stepIdx === 0}
+                  title="Previous round"
+                >◀ Prev</button>
+
+                <button
+                  className="step-btn play-btn"
+                  onClick={playing ? stopPlay : startPlay}
+                  disabled={stepIdx >= totalRounds - 1 && !playing}
+                  title={playing ? 'Pause' : 'Play through rounds'}
+                >
+                  {playing ? '⏸ Pause' : '▶ Play'}
+                </button>
+
+                <button
+                  className="step-btn"
+                  onClick={() => { stopPlay(); setStepIdx(s => clampStep(s + 1)) }}
+                  disabled={stepIdx >= totalRounds - 1}
+                  title="Next round"
+                >Next ▶</button>
+
+                <button
+                  className="step-btn"
+                  onClick={() => { stopPlay(); setStepIdx(clampStep(totalRounds - 1)) }}
+                  disabled={stepIdx >= totalRounds - 1}
+                  title="Last round"
+                >⏭</button>
+              </div>
+
+              {/* round progress bar */}
+              <div className="progress-bar-wrap">
+                <input
+                  type="range"
+                  className="progress-bar"
+                  min={0}
+                  max={Math.max(0, totalRounds - 1)}
+                  value={stepIdx}
+                  onChange={e => { stopPlay(); setStepIdx(Number(e.target.value)) }}
+                />
+                <span className="progress-label">
+                  Round {stepIdx + 1} / {totalRounds}
+                  {currentRound?.target_found && (
+                    <span className="found-badge"> ★ Target found!</span>
+                  )}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">🤖</div>
+              <p>Configure parameters and click<br /><strong>Run Simulation</strong> to start.</p>
             </div>
-          </>
+          )
         ) : (
-          <div className="empty-state">
-            <div className="empty-icon">🤖</div>
-            <p>Configure parameters and click<br /><strong>Run Simulation</strong> to start.</p>
-          </div>
+          // ── comparison mode canvas area ──
+          (leftResult || rightResult) ? (
+            <>
+              <div className="compare-canvas-row">
+                {[
+                  {
+                    key: 'left',
+                    res: leftResult,
+                    round: leftRound,
+                    idx: leftStepIdx,
+                    total: leftTotal,
+                  },
+                  {
+                    key: 'right',
+                    res: rightResult,
+                    round: rightRound,
+                    idx: rightStepIdx,
+                    total: rightTotal,
+                  },
+                ].map(({ key, res, round, idx, total }) => (
+                  <div key={key} className="compare-canvas-cell">
+                    <div className="compare-canvas-header">
+                      <span className="compare-model-tag">{res?.model ?? '—'}</span>
+                      <span className="compare-round">
+                        Round {total > 0 ? idx + 1 : 0} / {total}
+                      </span>
+                      <span className="compare-fcr">
+                        FCR: {res?.final_fcr != null ? res.final_fcr.toFixed(2) : '—'}
+                        {round?.target_found && (
+                          <span className="found-badge"> ★</span>
+                        )}
+                      </span>
+                    </div>
+                    {res ? (
+                      <SimCanvas
+                        instance={res.instance}
+                        round={round}
+                        stepIndex={idx}
+                        showTarget={showTgt || (round?.target_found ?? false)}
+                        size={460}
+                      />
+                    ) : (
+                      <div className="empty-state small"><p>—</p></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* step controls (shared) */}
+              <div className="step-controls">
+                <button
+                  className="step-btn"
+                  onClick={resetBoth}
+                  disabled={leftStepIdx === 0 && rightStepIdx === 0}
+                  title="First round (both)"
+                >⏮</button>
+
+                <button
+                  className="step-btn"
+                  onClick={advanceBoth}
+                  disabled={!canAdvanceEither}
+                  title="Next round (both)"
+                >Next ▶</button>
+
+                <button
+                  className="step-btn"
+                  onClick={jumpEndBoth}
+                  disabled={!canAdvanceEither}
+                  title="Last round (both)"
+                >⏭</button>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">🤖</div>
+              <p>
+                Pick two models and click<br />
+                <strong>Run Both</strong> to compare them on the same seed.
+              </p>
+            </div>
+          )
         )}
       </main>
     </div>

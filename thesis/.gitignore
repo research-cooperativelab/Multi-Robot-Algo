@@ -1,0 +1,15 @@
+# LaTeX build artifacts — regenerated on every compile
+*.aux
+*.bbl
+*.blg
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# PDF is a build product; don't commit unless the thesis is finalized
+main.pdf

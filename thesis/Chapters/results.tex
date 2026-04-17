@@ -1,0 +1,333 @@
+\chapter{EXPERIMENTAL EVALUATION}\label{ch:results}
+
+\begin{doublespacing}
+
+This chapter reports the Monte Carlo experiments that test the four
+research hypotheses of Chapter~III and verify the theoretical bounds
+of Chapter~IV.
+
+\section{Experimental Setup}
+
+All experiments are conducted on a common instance generator. Site
+positions are drawn uniformly at random in the square $[0, L]^2$ with
+$L = 10$. Prior probabilities are drawn from
+$\mathrm{Uniform}(0.1, 1.0)$ and normalized to sum to one. Robot bases
+are drawn uniformly at random in the same square. The target site is
+then drawn according to the normalized prior, subject to two filters:
+the optimal distance must satisfy $d_{\mathrm{opt}} \geq 1.0$ to avoid
+degenerate ratios in which the target happens to lie essentially on
+top of a base, and the reachability constraint
+$2\,d_{\mathrm{opt}} \leq E$ is imposed to ensure that at least one
+robot can reach the target within its energy budget. The default
+parameters are $n = 30$ sites, $R = 3$ robots, and $E = 14$ units of
+energy; 500 trials are run on identical instances across all models to
+enable paired comparisons.
+
+\section{Main Results}
+
+\begin{table}[ht]
+\centering
+\caption{Finder competitive ratio over 500 trials at the default setting ($n = 30$, $R = 3$, $E = 14$, $L = 10$).}\label{tab:main}
+\vspace{2pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Mean FCR} & \textbf{Median} & \textbf{Std} & \textbf{Iterations} \\
+\midrule
+M1 Random ($\infty$E)                  & 18.55 & 14.59 & 17.12 & 5.25 \\
+M2 Auction ($\infty$E, node-to-node)   &  2.83 &  1.98 &  2.53 & 4.82 \\
+H$_d$ Hungarian ($E$, distance)        &  6.80 &  6.60 &  3.60 & 5.71 \\
+H$_{p/d}$ Hungarian ($E$, $p/d$)       &  6.31 &  5.19 &  4.69 & --- \\
+M3 Auction Single ($E$, $p/d$)         &  6.41 &  5.13 &  4.83 & 4.81 \\
+M4 Auction Multi ($E$, $p/d$)          &  3.11 &  2.21 &  2.22 & 1.38 \\
+M4* Auction Multi ($E$, $p/d^2$)       &  2.98 &  2.19 &  1.97 & 1.38 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:main} reports the main comparison. Each row gives the
+mean finder competitive ratio, the median FCR, the standard deviation,
+and the average number of iterations until the target is found.
+
+\textbf{Hypothesis H1 (communication dominates fleet size).} The
+ratio of M1's FCR (18.55) to M2's (2.83) is 6.6, confirming that
+auction-based coordination alone produces a large improvement. The
+difference is not a matter of statistical noise---with 500 trials
+and the reported standard deviations, the two means are separated by
+many standard errors. H1 is supported.
+
+\emph{Why this matters.} The comparison of M1 and M2 is the
+simplest way to quantify the value of communication. Both models
+have the same fleet size, the same sites, the same priors, the same
+targets---the only thing they differ in is whether the robots talk
+to each other. A $6.6\times$ improvement from talking alone is
+substantial. It reinforces Chrobak et al.'s theoretical result that
+the \emph{mode} of communication matters more than the \emph{number}
+of robots: adding communication to a team of three beats adding
+more robots to a silent team. For a real-world deployment, this
+means a radio system that keeps working in a rubble pile is more
+valuable than spare drones.
+Figure~\ref{fig:m1-vs-m4star} shows what this improvement looks like
+on a single instance: the uncoordinated M1 team repeatedly re-visits
+the same regions and takes FCR 53.65, while M4* on the same instance
+and same seed completes the search at FCR 3.02 with compact,
+non-overlapping tours.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_m1_vs_m4star.png}
+  \caption{The same 30-site, 3-robot instance solved by M1 (left) and M4* (right). Squares are robot bases; circles are candidate sites sized by prior probability; the green star is the target. M1 robots duplicate effort because they do not communicate. M4* robots chain nearby high-probability sites into short tours and find the target far sooner.}\label{fig:m1-vs-m4star}
+\end{figure}
+
+\textbf{Hypothesis H2 (probability-aware bids beat distance-only
+centralized assignment).} M3 (FCR $= 6.41$) outperforms the
+distance-only Hungarian baseline H$_d$ (FCR $= 6.80$) by 5.7 percent,
+supporting H2 directly. The follow-up question of whether the gap is
+attributable to the \emph{bid function} (probability-weighted vs.\
+distance-only) or to the \emph{allocation mechanism} (distributed SSI
+vs.\ centralized Hungarian) is answered by the probability-weighted
+Hungarian ablation H$_{p/d}$ reported in Table~\ref{tab:main}. Across
+500 trials at the default setting, H$_{p/d}$ achieves a mean FCR of
+$6.3128$ (median $5.1854$), which is statistically indistinguishable
+from M3's $6.4054$ (median $5.1283$): H$_{p/d}$ is marginally better
+than M3 on the mean (a $1.4$ percent difference) and marginally worse
+on the median ($0.1$ percent), both within trial-to-trial noise.
+Centralizing the allocation therefore contributes essentially nothing
+once the bid function is probability-aware; the $5.7$ percent gap
+between H$_d$ and M3 is attributable almost entirely to the bid
+function. This corroborates the consistency of the $1/d$ bid's FCR
+with H$_d$'s shown in Figure~\ref{fig:bids} and closes the ablation
+that Chapter~IV identified as the primary near-term follow-up.
+
+\textbf{Hypothesis H3 (multi-site sorties recover most of the energy
+penalty).} The gap M3 $-$ M2 $= 6.41 - 2.83 = 3.58$ in FCR is the
+energy penalty under single-sortie constraints. Model 4's FCR of
+$3.11$ recovers
+$(6.41 - 3.11)/(6.41 - 2.83) = 92\%$ of that gap. The mechanism is
+visible in the iteration count: M3 takes $4.81$ iterations on average
+while M4 takes $1.38$, because each M4 sortie visits approximately
+$5.3$ sites.
+
+\emph{Why this matters.} The gap between M3 and M2 represents what
+a battery costs you relative to a hypothetical world with no battery
+constraint at all. Most of that cost is \emph{recoverable} through
+smarter scheduling: the robots do not need a bigger battery, they
+need a planner that chains sites into longer flights before returning
+to base. In practical terms, a rescue drone team does not need to
+solve the hard problem of longer-lasting batteries---they can get
+most of the way to battery-unlimited performance just by changing
+the software that decides where to fly next. H3 is supported.
+
+\textbf{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
+improves over Model 4 by a further $4.2$ percent. Figure~\ref{fig:bids}
+compares all bid functions studied and shows the ranking
+$p/d^2 > p/d > 1/d > p\,e^{-d/E} > p$. The distance-only bid $1/d$
+produces an FCR of approximately $6.79$, matching the Hungarian
+baseline H$_d$ at $6.80$---a consistency check that corroborates both
+implementations. H4 is supported.
+
+\emph{Why this matters.} The $4.2\%$ improvement is a small number,
+but the change that produced it is also small: a single character
+in the bid formula, squaring the distance in the denominator. The
+mechanism, the \emph{cost-foreclosure argument} from Chapter~IV, is
+general and applies wherever the budget for an action is fixed:
+committing to a far-away first step not only costs more upfront, it
+also eats into the budget available for follow-up steps. The
+recommendation for practitioners is concrete and low-risk: if your
+multi-robot search system currently bids with $p / d$, replace the
+distance in the denominator with $d^2$, redeploy, and measure.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{fig_bid_variants.png}
+  \caption{Bid function comparison within Model 3, 500 trials. The $p/d^2$ bid achieves the lowest FCR.}\label{fig:bids}
+\end{figure}
+
+\section{Bounds Verification}
+
+\begin{table}[ht]
+\centering
+\caption{Theoretical bounds versus empirical FCR; tightness is the ratio empirical/bound.}\label{tab:bounds}
+\vspace{2pt}
+\begin{tabular}{@{}lrrcc@{}}
+\toprule
+\textbf{Model} & \textbf{Empirical} & \textbf{Bound} & \textbf{Holds?} & \textbf{Tightness} \\
+\midrule
+M1 Random & 18.55 & 34.09 & \checkmark & 0.54 \\
+M2 Auction &  2.83 &  3.34 & \checkmark & 0.85 \\
+M3 Single  &  6.41 & 17.32 & \checkmark & 0.37 \\
+M4 Multi   &  3.11 & 13.87 & \checkmark & 0.22 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All four bounds hold across 500 trials (Table~\ref{tab:bounds}). The
+Model 2 bound is the tightest at $0.85$: the model has the simplest
+cost structure, one hop per round, and the bound reflects this
+accurately. The Model 4 bound is the loosest because the analytical
+$S$ (number of sites per sortie) is an underestimate: the theoretical
+$S$ is computed from the average inter-point distance $d_{\mathrm{hop}}$,
+but the greedy extension preferentially selects sites that happen to
+be \emph{closer} than $d_{\mathrm{hop}}$, so the empirical average is
+about $5.3$ sites per sortie at $E = 14$. Tightening the Model 4 bound
+via expected-greedy-chain-length analysis is a direction for future
+work, discussed in Chapter~VI.
+
+\section{Parameter Sweeps}
+
+\subsection{Energy Sweep}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{fig_energy_sweep.png}
+  \caption{FCR as a function of energy budget $E$ at $R = 3$. Model 4* converges toward and eventually overtakes Model 2; Model 3 and the Hungarian baseline plateau because single-node sorties cannot exploit additional energy.}\label{fig:energy}
+\end{figure}
+
+As the energy budget $E$ is swept from $8$ to $30$ (Figure~\ref{fig:energy}),
+Model 4*'s FCR decreases from $3.18$ to $2.67$, eventually surpassing
+Model 2 ($2.83$). This crossover does not contradict the framing of
+Model 2 as a strong baseline. Model 2 is not an algorithmic lower bound.
+Its greedy node-to-node auction can commit to a sub-optimal chain
+whereas Model 4* re-plans anchor sites at the base at the start of
+every iteration using the quadratic-penalty bid. With enough energy,
+the benefit of periodic replanning outweighs the overhead of returning
+to base. Model 3 and the Hungarian baseline H$_d$ both plateau near
+$6.5$--$7.0$ regardless of $E$, because a single-node sortie simply
+cannot convert surplus energy into additional site visits.
+
+\subsection{Robot Sweep}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{fig_robot_sweep.png}
+  \caption{FCR as a function of fleet size $R$ at $E = 14$. Diminishing returns are visible beyond $R = 4$.}\label{fig:robots}
+\end{figure}
+
+Figure~\ref{fig:robots} sweeps fleet size from $R = 1$ to $R = 6$. At
+$R = 1$, the gap between M3 and M4* is largest ($12.97$ versus $5.44$),
+because a single robot cannot divide the search load and a single-node
+sortie wastes the most budget proportionally. By $R = 6$, Model 4*
+($2.04$) approaches Model 2 ($2.14$). The FCRs of all coordinated
+models appear to stabilize as $R$ grows, which is consistent with the
+hypothesis that coordination quality is the dominant determinant of
+search efficiency rather than raw fleet size---a theoretically open
+question discussed in Chapter~VI.
+
+\input{Chapters/_exp1_snippet}
+
+\input{Chapters/_exp2_snippet}
+
+\input{Chapters/_exp3_snippet}
+
+\section{Discussion}
+
+\subsection{On the $d_{\mathrm{opt}}$ Filters}
+
+Two filters were applied during instance generation. The first,
+$d_{\mathrm{opt}} \geq 1.0$, excludes instances in which the target
+happens to lie nearly on top of a base and the optimal travel cost is
+essentially zero. Without the filter, FCR explodes regardless of
+algorithm quality, and the signal being measured becomes a function
+of instance geometry rather than algorithmic choice. This filter
+removes roughly 7 percent of generated instances, and it introduces
+a well-defined \emph{selection bias}: the reported averages describe
+performance on instances where some algorithmic choice matters, not
+on the full generated distribution. Two steps mitigate the bias.
+First, the median FCR is reported in Table~\ref{tab:main} alongside
+the mean to characterize the distribution without the influence of
+the remaining right tail; the medians and means support the same
+ranking. Second, a full sensitivity sweep over
+$d_{\mathrm{opt}} \in \{0.0, 0.5, 1.0, 2.0\}$ was run at 500 trials
+per threshold. The mean FCRs are reported below:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}crrrrrr@{}}
+\toprule
+$d_{\min}$ & M1 & M2 & M3 & M4 & M4* & H$_d$ \\
+\midrule
+0.0 & 24.29 & 2.89 & 6.19 & 3.11 & 2.92 & 6.47 \\
+0.5 & 20.52 & 2.93 & 6.28 & 3.15 & 2.94 & 6.55 \\
+1.0 & 18.55 & 2.83 & 6.41 & 3.11 & 2.98 & 6.80 \\
+2.0 & 14.94 & 2.72 & 6.90 & 3.22 & 3.16 & 7.92 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The relative ranking
+M2 $<$ M4* $<$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at every
+threshold; only the absolute FCRs shift. M1's mean shrinks as the
+threshold increases because removing trivially-close targets reduces
+the right tail of the FCR distribution; the ratio-based models
+M3 and H$_d$ instead rise as the threshold increases, because the
+average $d_{\mathrm{opt}}$ in the denominator grows more slowly than
+the finder's distance on harder instances. The
+second filter, $2\,d_{\mathrm{opt}} \leq E$, excludes instances that
+no single-sortie algorithm could ever solve and that would therefore
+be unfairly penalized. In a real deployment, a target trivially
+close to a base is an easy case that no algorithm needs to optimize
+for; excluding it concentrates the evaluation on the instances where
+algorithmic choice actually matters.
+
+\subsection{On the Choice of Greedy Chain Extension}
+
+The chain extension in Model 4 / 4* is greedy and $O(n)$ per hop.
+More sophisticated combinatorial tour optimizers---2-opt local search
+or Christofides' algorithm---could in principle produce shorter chains.
+Two reasons motivate the greedy choice in this thesis. First, the
+thesis targets real-time planning: each robot must decide its route
+before departing and cannot afford the quadratic or super-quadratic
+time of combinatorial methods. Second, the greedy chain is equivalent
+to Smith's WSPT scheduling rule~\citep{Smith2012} and is empirically
+within $7.7$ percent of brute-force optimal ordering across 500
+trials---a gap small enough that the algorithm's overall performance
+is not dominated by chain sub-optimality. \textbf{NOTE:} A 2-opt
+post-processing pass on M4* at the default config (500 trials)
+actually \emph{increases} mean FCR from $2.9835$ to $3.1798$
+($-6.58$ percent relative to the greedy chain). The mechanism is that
+2-opt minimizes \emph{total} tour length, which tends to reorder
+sites so the target is visited later in the tour, inflating the
+finder's distance. This shows that the finder-centric FCR rewards
+visiting high-probability sites early, which is exactly what the
+greedy probability-weighted chain does.
+
+\subsection{On When the Quadratic Penalty Is Less Suitable}
+
+The $p/d^2$ bid is motivated by a cost-foreclosure argument that
+applies when energy is scarce relative to inter-site distance. At the
+low-energy end of the sweep ($E = 8$), the gap between Model 4 and
+Model 4* narrows to $3$ percent, because all feasible tours are short
+regardless of bid function. In the limit of abundant energy, the same
+is true from the other direction: the chain-foreclosure effect that
+motivates the quadratic penalty diminishes, and the standard $p/d$
+bid performs comparably. The $p/d^2$ bid is therefore most useful in
+the intermediate regime that corresponds to typical real-world
+deployments.
+
+\subsection{Simplifying Assumptions}
+
+The model assumes perfect sensors, flat Euclidean terrain, and a
+uniform energy budget across robots. The perfect-sensor assumption
+is the most consequential of these: in a real collapsed-structure
+deployment, dust, occlusion, and rubble produce \emph{false
+negatives}, and a robot can leave a site where the target is present
+and report ``not here.'' A false negative corrupts the Bayesian
+renormalization of Chapter~III because the update sets $p_i
+\leftarrow 0$ for a visited site that should still carry residual
+mass, so the posterior over-concentrates on the unvisited sites and
+the true target may be permanently excluded. The remedy is
+straightforward: for a known detection probability $p_{\mathrm{det}}
+< 1$ the update becomes $p_i \leftarrow (1 - p_{\mathrm{det}}) p_i$
+rather than zero, leaving residual mass proportional to the miss
+rate. Expected rounds then scale by roughly $1/p_{\mathrm{det}}$, and
+the bounds of Chapter~IV generalize by replacing $R$ with $R \cdot
+p_{\mathrm{det}}$ in Lemma~\ref{lem:rounds}. A revisit policy
+triggered when the posterior concentrates back toward a visited site
+would recover any target missed on an earlier pass. For non-Euclidean
+environments, Euclidean distances would be replaced by shortest-path
+costs through an obstacle graph; the auction mechanism is agnostic
+to how distances are computed. Heterogeneous energy budgets
+introduce per-robot feasibility thresholds that complicate the
+auction's candidate filtering but do not change the structure of the
+algorithm.
+
+\end{doublespacing}

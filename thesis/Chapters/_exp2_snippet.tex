@@ -1,0 +1,81 @@
+\section{The Target-Delay Anomaly}\label{sec:target-delay}
+
+A natural engineering impulse, once the greedy chain of Model~4* is
+in place, is to polish each robot's tour with a standard tour-length
+optimizer such as 2-opt. Tours produced by greedy $p/d^2$ extension
+are locally good at each step but globally sub-optimal as traveling
+salesman tours; 2-opt will, on average, shorten them. Doing so
+\emph{hurts} the finder competitive ratio.
+
+At the default configuration ($n=30$, $R=3$, $E=14$, $L=10$; 500
+paired trials; seed~42), 2-opt post-processing reduces mean finder
+tour length from 12.601 to 12.025 units --- a mean reduction of
+0.576 units per tour, exactly as expected from a tour-length
+optimizer. Over the same 500 trials, mean finder competitive ratio
+\emph{rises} from 2.983 under the greedy chain to 3.180 under the
+2-opt chain, a 6.58 percent degradation. The effect is distributional
+rather than universal: 121 of the 500 trials (24.2\%) are strictly
+worse under 2-opt, 240 (48.0\%) are strictly better, and the
+remaining 139 (27.8\%) are unchanged. More trials are helped than
+hurt, but the trials that are hurt are hurt by enough to drag the
+mean upward.
+
+The mechanism is that 2-opt optimizes \emph{geometric} tour length,
+a quantity that is blind to the prior probability $p_i$ attached to
+each site. The greedy extension of Model~4* instead orders sites by
+$p/d^2$: at every step it prefers a site that is both nearby and
+high-probability. Because the target is drawn from the prior, it is
+more likely to fall in a high-probability site than a low-probability
+one, so the greedy chain tends to reach the target through a prefix
+that accumulates high-probability-weighted distance efficiently ---
+every leg of the prefix is either short or highly-rewarded by the
+prior. 2-opt reorders the same set of sites to minimize total tour
+length, but it does so without reference to the prior: sites are
+swapped into earlier or later positions according to their geometry
+alone. Two consequences follow. First, the rank at which the target
+appears in the tour is reshuffled (the mean rank shifts only slightly,
+from 3.270 to 3.244, but the distribution spreads: 2-opt has fewer
+trials with the target at rank~3 and more at rank~5 and 7 ---
+Figure~\ref{fig:target-delay}, left panel). Second, and more
+importantly, even when the target occupies the same rank under both
+orderings, the 2-opt prefix preceding it is composed of sites chosen
+for geometric efficiency rather than $p/d^2$ value, which typically
+lengthens the finder's distance-to-target. The scatter in
+Figure~\ref{fig:target-delay} (right panel) makes the anomaly visible:
+121 trials lie in the upper-right quadrant, where 2-opt shortened the
+overall tour yet increased finder distance. The overall correlation
+between tour-length reduction and FCR increase is weakly positive
+(Pearson $r = 0.09$), consistent with the interpretation that 2-opt
+and probability-weighted ordering are approximately orthogonal:
+shortening the tour neither systematically helps nor systematically
+hurts a finder-centric objective.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.95\textwidth]{fig_target_delay.png}
+  \caption{The Target-Delay Anomaly on 500 paired trials at the
+    default configuration. \textbf{Left:} histogram of the target's
+    rank within the finder's tour for Model~4* under greedy chain
+    extension (green) and the same tours post-processed with 2-opt
+    (red). Mean ranks are nearly identical (3.270 vs.\ 3.244); 2-opt
+    redistributes mass rather than shifting it wholesale. \textbf{Right:}
+    per-trial scatter of tour-length reduction against FCR increase.
+    Points in the upper-right quadrant are the anomaly: 2-opt made the
+    tour shorter but the finder slower (121 trials; lower-right: 157
+    trials where 2-opt helped both).}\label{fig:target-delay}
+\end{figure}
+
+The experiment supports a named conclusion we call the
+\emph{Target-Delay Anomaly}: for finder-centric evaluation
+metrics, \emph{greedy probability-weighted chaining dominates
+tour-length-optimized chaining}. The greedy chain approximates an
+ordering whose prefix is optimized jointly for proximity and prior
+mass, which is exactly what the FCR numerator rewards; 2-opt
+optimizes the total tour length, a quantity that is a different and
+generally orthogonal objective. The result implies that the standard
+robotics pipeline of ``build a tour, then polish it with 2-opt'' is
+not merely neutral but actively harmful in a multi-robot search
+setting with Bayesian priors and finder-centric objectives. It also
+provides a concrete reason to prefer the greedy $p/d^2$ chain of
+Chapter~III not merely as a real-time simplification but as the
+correct ordering under the search objective itself.

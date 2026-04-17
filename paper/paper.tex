@@ -1,0 +1,314 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage[T1]{fontenc}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}{Definition}
+
+\graphicspath{{../figures/}}
+
+\begin{document}
+
+\title{On the Numerical Analysis of Multi-Robot Search and Rescue Algorithms in Unknown Environments}
+
+\author{\IEEEauthorblockN{Fozhan Babaeiyan Ghamsari}
+\IEEEauthorblockA{\textit{Computer Engineering and Computer Science} \\
+\textit{California State University, Long Beach}\\
+Long Beach, USA \\
+fozhan.babaeiyanghamsari01@student.csulb.edu}
+\and
+\IEEEauthorblockN{Oscar Morales-Ponce}
+\IEEEauthorblockA{\textit{Computer Engineering and Computer Science} \\
+\textit{California State University, Long Beach}\\
+Long Beach, USA \\
+oscar.moralesponce@csulb.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+We study the multi-robot search and rescue problem in which $R$ robots must locate a target hidden among $n$ candidate sites, where each site $i$ has a prior probability $p_i$ of holding the target, each robot has a finite energy budget $E$, and $d$ denotes Euclidean distance. Four models---Random (M1), Unconstrained-Energy Auction (M2), Single-Sortie Auction (M3), and Multi-Sortie Auction (M4/M4*)---are evaluated by the Finder Competitive Ratio (FCR), the ratio of the finding robot's travel to the omniscient optimum. Upper bounds are derived and validated over 500 Monte Carlo trials. Auction-based coordination yields a 6.6$\times$ improvement over random search; a novel bid function $p_i/d^2$ with a cost-foreclosure justification outperforms the standard $p_i/d$ by 4.2\% under energy constraints; and multi-node sorties recover 92\% of the energy-penalty gap. A Hungarian distance-optimal baseline is also reported; a probability-weighted Hungarian variant is discussed as an ablation to disentangle bid function from allocation mechanism.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Search and Rescue, Competitive Ratio, Multi-Robot Systems, Auction-Based Allocation, Energy-Constrained Planning
+\end{IEEEkeywords}
+
+\section{Introduction}\label{sec:intro}
+
+After a natural disaster, autonomous robots can be deployed to search collapsed structures for survivors. A team of $R$~robots must cooperatively explore $n$~candidate sites---each carrying a prior probability~$p_i$ of containing the target---under constraints on battery life and inter-robot communication. The central question is: \emph{how should robots coordinate to minimize the distance traveled before locating the target?}
+
+We measure performance using the \emph{competitive ratio}, the worst-case ratio of an algorithm's travel cost to the cost an omniscient agent would incur knowing the target location. This metric is standard in online search theory because it factors out instance difficulty: a competitive ratio of~3 means the algorithm travels three times the optimal distance, whether the target happens to be nearby or far away. The classical \emph{cow-path problem}~\cite{BaezaYates1993} shows that a single searcher on a line achieves an optimal deterministic ratio of~9 (i.e., no deterministic strategy can guarantee fewer than~9 times the optimal distance), and that randomization improves this to roughly~4.59~\cite{Kao1996}. Chrobak et al.~\cite{Chrobak2015} proved that wireless communication between just two agents drops the ratio from~9 to~3, demonstrating that how robots share information matters more than how many there are.
+
+In practice, market-based auctions~\cite{Zlot2002,Dias2006} provide scalable coordination but typically assume unlimited mobility, while energy-constrained exploration~\cite{Betke1995,Das2015} studies fuel-limited traversal without auction coordination. No prior work unifies competitive ratio analysis, auction-based coordination, and energy constraints into a single framework. We bridge these threads by studying four models that systematically vary energy and communication assumptions (formalized in Section~\ref{sec:models}):
+\textbf{M1}~(Random---each robot independently picks a site, no communication),
+\textbf{M2}~(Unconstrained-Energy Auction---auction-coordinated robots move freely between sites with unlimited energy),
+\textbf{M3}~(Single-Sortie---auction-coordinated robots make one round trip per iteration under energy budget~$E$), and
+\textbf{M4/M4*}~(Multi-Sortie---auction-coordinated robots chain multiple sites into a single energy-feasible tour).
+M1 and M2 are deliberately idealized endpoints: M1 quantifies the cost of zero coordination, while M2 establishes a strong \emph{baseline} under unbounded energy. We note that M2 is not an algorithmic lower bound---M2 uses a greedy node-to-node auction that can accept sub-optimal chains, and so under large $E$ the multi-sortie planner M4* can actually overtake it (Section~\ref{sec:experiments}). Together the four models bracket the design space. The gap between M2 and M3 isolates the energy penalty, and the gap between M3 and M4 reveals how much intelligent tour planning can recover.
+
+\textbf{Contributions.}
+(1)~We formalize four models spanning the energy--communication design space and derive theoretical upper bounds on the expected FCR for each.
+(2)~We show empirically that probability-aware distributed auctions outperform a centralized distance-optimal (Hungarian) baseline by 5.7\%, and propose a probability-weighted Hungarian ablation to isolate bid function from allocation mechanism.
+(3)~We identify a $p/d^2$ bid function that is empirically optimal under energy constraints, and provide a cost-foreclosure argument for why a superlinear distance penalty is appropriate when sorties can chain multiple sites.
+(4)~We validate all bounds over 500 Monte Carlo trials with sweeps over energy ($E \in [8,30]$) and fleet size ($R \in [1,6]$).
+
+\section{Related Work}\label{sec:related}
+
+\textbf{Competitive search theory.}
+Baeza-Yates et al.~\cite{BaezaYates1993} formalized the cow-path problem, proving that the doubling strategy achieves an optimal deterministic competitive ratio of~9. L\'{o}pez-Ortiz and Schuierer~\cite{LopezOrtiz2004} extended this to $p$~parallel robots searching $m$~rays. Chrobak et al.~\cite{Chrobak2015} showed that wireless communication with two agents achieves ratio~3 while face-to-face communication cannot improve beyond~9---directly motivating our comparison across communication regimes.
+
+\textbf{Auction-based coordination.}
+Gerkey and Matari\'{c}~\cite{Gerkey2004} introduced the Multi-Robot Task Allocation (MRTA) taxonomy, a classification framework for how robots are assigned to tasks based on how many robots perform each task and whether assignments are made all at once or over time. In their framework, our problem is ``single-task, multi-robot, instantaneous assignment'' (ST-MR-IA): each site is one task, multiple robots bid, and assignments happen each round. Koenig et al.~\cite{Koenig2006} proved that Sequential Single-Item (SSI) auctions---in which tasks are auctioned one at a time and the globally highest bidder wins each---achieve constant-factor approximation guarantees. We adopt SSI as our core coordination mechanism throughout.
+
+\textbf{Energy-constrained and probabilistic search.}
+Betke et al.~\cite{Betke1995} established that energy constraints fundamentally alter exploration strategies, and Das et al.~\cite{Das2015} showed that coordination becomes more critical under energy scarcity. Stone~\cite{Stone1975} proved that search effort should be allocated proportional to target probability divided by search cost---the theoretical basis for our $p/d$ bid function. Bourgault et al.~\cite{Bourgault2002} applied information-theoretic criteria to multi-robot exploration.
+
+\section{Problem Formulation}\label{sec:formulation}
+
+\begin{definition}[Search Instance]
+An instance $\mathcal{I} = (\mathcal{N}, \mathbf{p}, \mathcal{B}, \tau)$ consists of $n$~candidate sites with positions $x_i \in [0,L]^2$, where $L$ is the side length of the square environment, and prior probabilities $\mathbf{p}$ satisfying $\sum_i p_i = 1$; a set of $R$~robot bases $\mathcal{B}$ with positions $x_0^r \in [0,L]^2$; and a hidden target $\tau \in \mathcal{N}$ drawn from~$\mathbf{p}$.
+\end{definition}
+
+All distances are Euclidean: $d(a,b) = \|a-b\|_2$ for any two points $a, b$ in the square search arena $[0,L]^2$, where $L>0$ is the arena side length (throughout our experiments $L = 10$). We write $x_\tau$ for the position of the target site. A robot inspects a site by physically visiting it; inspection reveals whether $\tau = i$ with certainty (the perfect-sensor assumption, relaxed in Section~\ref{sec:discussion}). After each round, all robots return to base and share their observations, so the set $\mathcal{V}$ below denotes the \emph{union} of sites visited by any robot in the round, not a single robot's track. The prior is then updated by Bayesian renormalization: each site $i \in \mathcal{V}$ receives $p_i \leftarrow 0$, and the remaining probabilities are rescaled as $p_i' = p_i / (1 - \sum_{j \in \mathcal{V}} p_j)$ for $i \notin \mathcal{V}$.
+
+\begin{definition}[Finder Competitive Ratio]
+Let $D_{\mathrm{opt}} = \min_r d(x_0^r, x_\tau)$ be the optimal cost---the shortest base-to-target distance across all robots. If robot~$f$ finds the target after traveling total distance $D_f$, the FCR is
+\begin{equation}
+  \mathrm{FCR} = D_f \,/\, D_{\mathrm{opt}}.
+  \label{eq:fcr}
+\end{equation}
+\end{definition}
+
+\textbf{Sortie model.}
+In energy-constrained models, a robot departs base, visits one or more sites, and returns to recharge---a \emph{sortie}. A multi-node sortie visiting sites $s_1, \ldots, s_k$ must satisfy $d(x_0^r, x_{s_1}) + \sum_{j=1}^{k-1} d(x_{s_j}, x_{s_{j+1}}) + d(x_{s_k}, x_0^r) \leq E$. If the target is discovered mid-tour, the finder stops immediately and pays only the distance traveled so far. We require each target to be reachable by at least one robot, i.e., $\min_r 2\,d(x_0^r, x_\tau) \leq E$.
+
+\textbf{Geometric constants.}
+Our bounds use the expected distance between two uniform random points in $[0,L]^2$, which is $d_{\mathrm{avg}} \approx 0.5214\,L$~\cite{Robbins1978}, and a characteristic inter-site spacing $d_{\mathrm{hop}} = L/\sqrt{n}$ obtained from a regular-grid approximation.
+
+\section{Algorithmic Models}\label{sec:models}
+
+We define four models (Table~\ref{tab:models}) plus a centralized baseline. Fig.~\ref{fig:sim} illustrates Model~4* executing on a concrete instance.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of the four algorithmic models.}\label{tab:models}
+\vspace{2pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+& \textbf{Energy} & \textbf{Comm.} & \textbf{Movement} & \textbf{Coord.} \\
+\midrule
+M1 & unbounded & None & Base$\to$node$\to$base & Random \\
+M2 & unbounded & Full & Node$\to$node & Auction \\
+M3 & $E$ & At base & Base$\to$node$\to$base & Auction \\
+M4 & $E$ & At base & Base$\to$tour$\to$base & Auction \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Model~1} (random baseline): each robot independently samples an unvisited site weighted by~$\mathbf{p}$ and makes a round trip costing $2\,d(x_0^r,x_i)$. Without communication, robots may visit the same site.
+
+\textbf{Model~2} (unconstrained-energy auction): robots compute bids $b_{r,i} = p_i / d(\mathrm{pos}_r, x_i)$ from their \emph{current position} $\mathrm{pos}_r$ (initially $x_0^r$) and run an SSI auction~\cite{Koenig2006}. In each auction round, the robot--site pair with the globally highest bid is assigned; that robot and site are then removed, and the process repeats until all robots have assignments. Winners travel one-way to the assigned site and update their position. There is no return-trip overhead and no energy limit.
+
+\textbf{Model~3} (energy-constrained, single sorties): the SSI auction runs at base over energy-feasible candidates satisfying $2\,d(x_0^r,x_i) \leq E$. Each robot executes a single-node round-trip sortie per iteration. In the sortie model, a robot with $E{=}14$ visiting a site at distance~5 spends 10~units on travel and wastes the remaining~4---motivating the multi-node extension.
+
+\textbf{Model~4 / 4*} (multi-node sorties): after the auction assigns a first site, a \emph{greedy chain extension} appends additional sites within the remaining energy budget. Let $\mathrm{pos}_r$ denote the current position of robot~$r$ (updated after each hop) and $\mathcal{C}$ the set of sites already claimed by any robot's chain. The next extension site is:
+\begin{equation}\label{eq:chain}
+  j^* = \arg\max_{j \notin \mathcal{C}} \frac{p_j}{d(\mathrm{pos}_r, x_j)}, \;\; d(\mathrm{pos}_r, x_j) {+} d(x_j, x_0^r) \leq E_{\mathrm{rem}}^r
+\end{equation}
+Extensions proceed in round-robin order across robots. Model~4* replaces $p/d$ with $p/d^2$ bids in \emph{both} the initial auction and the chain extension. The intuition behind this quadratic penalty is a cost-foreclosure argument: under a fixed energy budget, traveling to a site at distance~$d$ not only consumes energy proportional to~$d$ but also forecloses future chain extensions whose reachable-set shrinks roughly as the remaining budget. The effective marginal cost of distance is therefore superlinear, and the $p/d^2$ bid approximates this by penalizing far sites more aggressively, steering robots toward nearby clusters where they can visit more sites per sortie.
+
+\textbf{Hungarian baselines.} The Hungarian algorithm~\cite{Kuhn1955} computes the globally distance-optimal assignment each round. We evaluate two variants: (H$_d$) uses cost $c_{r,i} = d(x_0^r, x_i)$, purely distance-minimizing; and (H$_{p/d}$) uses cost $c_{r,i} = -p_i/d(x_0^r, x_i)$, giving the centralized optimizer access to the same probability information used by our distributed auction. Comparing M3 against H$_d$ isolates the value of probability-awareness; comparing M3 against H$_{p/d}$ isolates the value of distributed SSI sequencing versus one-shot centralized assignment.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.9\textwidth]{fig_simulation_snapshot_v2.png}
+  \caption{Step-by-step execution of Model~4* on a 10-site, 3-robot instance ($E{=}14$, seed=18), shown at reduced scale for visualization clarity. (a)~Initial instance with prior probabilities shown by circle size. (b)~SSI auction assigns first sites using $p/d^2$ bids. (c)~Greedy chain extensions fill remaining energy; inset shows energy utilization per robot. (d)~After iteration~1: 9/10 sites searched, Bayesian update concentrates probability on site~2. (e)~Iteration~2: Robot~1 visits site~2 and finds the target (FCR$=$3.26). (f)~Summary table.}\label{fig:sim}
+\end{figure*}
+
+\section{Theoretical Analysis}\label{sec:analysis}
+
+We derive upper bounds on the expected FCR for each model in terms of the instance parameters $(n, R, E, L)$ and the geometric constants from Section~\ref{sec:formulation}.
+
+\begin{lemma}[Expected Rounds under Coordination]\label{lem:rounds}
+If $R$ robots check $R$ distinct sites per round, then for any prior $\mathbf{p}$ the expected number of rounds to find the target satisfies
+\[
+  \mathbb{E}[K] \;\leq\; \frac{1}{n}\sum_{i=1}^{n} \left\lceil \frac{i}{R} \right\rceil \;=\; \frac{n+R}{2R} + O(1/n).
+\]
+Under the auction's probability-ordered visit sequence, the bound is tight when $p_i \equiv 1/n$ and strictly loose otherwise.
+\end{lemma}
+\begin{proof}
+Let $\sigma$ denote the search order induced by the auction (sites visited round-by-round in decreasing bid). The target at $\sigma$-rank~$i$ is found in round $\lceil i/R \rceil$. Therefore
+$\mathbb{E}[K] = \sum_{i=1}^{n} \Pr[\sigma\text{-rank of target} = i] \cdot \lceil i/R \rceil$.
+Summing over positions gives $\mathbb{E}[K] \leq \frac{1}{n}\sum_{i=1}^{n} \lceil i/R \rceil$ because the maximum-entropy prior $p_i \equiv 1/n$ is the distribution on $\sigma$-ranks that maximizes expected discovery round. Over each block of $R$ consecutive integers, the ceiling corrections average to $(R-1)/(2R)$; a short algebraic simplification yields $(n+R)/(2R) + O(1/n)$. When the prior concentrates on a small set of high-probability sites, the auction checks those first and expected rounds decrease, making the bound conservative.
+\end{proof}
+
+\begin{theorem}[Model~1 Bound]\label{thm:m1}
+With per-round success probability $P = 1 - (1 - 1/n)^{R}$ and $\mathbb{E}[K_1] = 1/P$:
+\begin{equation}
+  \mathbb{E}[\mathrm{FCR}_1] \leq \frac{(2\,\mathbb{E}[K_1]-1) \cdot d_{\mathrm{avg}}}{d_{\mathrm{opt}}}.
+\end{equation}
+\end{theorem}
+\begin{proof}
+Each of $R$ robots independently picks the target with probability $1/n$. The probability that none succeeds is $(1-1/n)^R$, so per-round success probability is $P$ and $\mathbb{E}[K_1] = 1/P$ by the geometric distribution. The finder makes $K_1-1$ round trips (cost $2\,d_{\mathrm{avg}}$ each) plus one final one-way trip ($d_{\mathrm{avg}}$), giving $\mathbb{E}[D_f] \leq (2\mathbb{E}[K_1]-1)\,d_{\mathrm{avg}}$.
+\end{proof}
+
+\begin{theorem}[Model~2 Bound]\label{thm:m2}
+$\mathbb{E}[\mathrm{FCR}_2] \leq \mathbb{E}[K] \cdot d_{\mathrm{hop}} \,/\, d_{\mathrm{opt}}.$
+\end{theorem}
+\begin{proof}
+By Lemma~\ref{lem:rounds}, $\mathbb{E}[K] \leq (n+R)/(2R) + O(1/n)$. Robots move node-to-node (no base return). Since sites are placed uniformly at random, we approximate the expected distance between consecutive auction winners by the characteristic inter-site spacing $d_{\mathrm{hop}} = L/\sqrt{n}$. The finder accumulates at most $\mathbb{E}[K]$ such hops.
+\end{proof}
+
+\begin{theorem}[Model~3 Bound]\label{thm:m3}
+$\mathbb{E}[\mathrm{FCR}_3] \leq (2\,\mathbb{E}[K]-1) \cdot d_{\mathrm{avg}} \,/\, d_{\mathrm{opt}}.$
+\end{theorem}
+\begin{proof}
+Model~3 shares the round-trip cost structure of Model~1 (base$\to$site$\to$base), but the auction ensures $R$ distinct sites per round, so the coordinated $\mathbb{E}[K]$ from Lemma~\ref{lem:rounds} replaces the geometric $\mathbb{E}[K_1]$.
+\end{proof}
+
+\begin{theorem}[Model~4 Bound]\label{thm:m4}
+Define the expected sites per sortie as
+\[
+S = \max\!\big(1,\; 1 + \lfloor (E - 2\,d_{\mathrm{avg}})/d_{\mathrm{hop}} \rfloor\big),
+\]
+reflecting that a sortie visits one anchor site (at expected cost $2\,d_{\mathrm{avg}}$ for the base-to-anchor round trip) plus as many hop-extensions as the remaining budget allows. Then
+\begin{equation}
+  \mathbb{E}[\mathrm{FCR}_4] \leq \frac{E \cdot \mathbb{E}[K_4]}{d_{\mathrm{opt}}}, \;\;
+  \mathbb{E}[K_4] \leq \frac{1}{n}\sum_{i=1}^{n}\left\lceil \frac{i}{R S} \right\rceil.
+\end{equation}
+\end{theorem}
+\begin{proof}
+A sortie anchored at site $s_1$ spends $d(x_0^r, x_{s_1}) + d(x_{s_k}, x_0^r)$ on the first and last legs, whose expected sum is $\approx 2\,d_{\mathrm{avg}}$. The remaining energy $E - 2\,d_{\mathrm{avg}}$ supports $\lfloor (E - 2\,d_{\mathrm{avg}})/d_{\mathrm{hop}} \rfloor$ additional hops of cost $d_{\mathrm{hop}}$, giving $S$ total sites. With $R$ robots each visiting $S$ sites, $RS$ sites are eliminated per round, so by the argument of Lemma~\ref{lem:rounds} applied with block-size $RS$ the expected number of rounds is at most $\frac{1}{n}\sum_{i=1}^{n}\lceil i/(RS) \rceil$. Each sortie costs at most $E$, so $\mathbb{E}[D_f] \leq E \cdot \mathbb{E}[K_4]$.
+\end{proof}
+
+\begin{corollary}[Improvement Factor]\label{cor:improvement}
+Model~4 reduces the expected number of rounds by a factor of~$S$ relative to Model~3 as long as $S$ sites remain reachable per sortie. As $E \to \infty$, $S \to \infty$ and Model~4's per-round site throughput matches the unconstrained node-to-node regime.
+\end{corollary}
+
+\section{Experimental Evaluation}\label{sec:experiments}
+
+\subsection{Setup}
+Sites are placed uniformly in $[0,L]^2$ with $L=10$. Priors are drawn from $\mathrm{Uniform}(0.1, 1.0)$ and normalized. Bases are placed uniformly at random. The target is drawn from the prior distribution, subject to $d_{\mathrm{opt}} \geq 1.0$ (to avoid degenerate FCR values) and $2\,d_{\mathrm{opt}} \leq E$ (to ensure reachability). Default parameters: $n = 30$ sites, $R = 3$ robots, $E = 14$, 500 trials on identical instances across all models.
+
+\subsection{Main Results}
+
+\begin{table}[ht]
+\centering
+\caption{FCR over 500 trials ($n{=}30$, $R{=}3$, $E{=}14$, $L{=}10$).}\label{tab:main}
+\vspace{2pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{FCR} & \textbf{Med.} & \textbf{Std} & \textbf{Iters} \\
+\midrule
+M1 Random ($\infty$E)          & 18.55 & 14.59 & 17.12 & 5.25 \\
+M2 Auction ($\infty$E, N2N)    &  2.83 &  1.98 &  2.53 & 4.82 \\
+H$_d$ Hungarian ($E$, dist.)   &  6.80 &  6.60 &  3.60 & 5.71 \\
+H$_{p/d}$ Hungarian ($E$, $p/d$) &  6.31 &  5.19 &  4.69 & --- \\
+M3 Auction Single ($E$, $p/d$) &  6.41 &  5.13 &  4.83 & 4.81 \\
+M4 Auction Multi ($E$, $p/d$)  &  3.11 &  2.21 &  2.22 & 1.38 \\
+M4* Auction Multi ($E$, $p/d^2$) &  2.98 &  2.19 &  1.97 & 1.38 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:main} presents the main results.
+
+\textbf{Finding~1: Communication is paramount.} M1 (FCR$=$18.55) vs.\ M2 (FCR$=$2.83) reveals a \textbf{6.6$\times$} improvement from coordination alone. This confirms the theoretical prediction of Chrobak et al.~\cite{Chrobak2015}: how robots communicate matters far more than how many are deployed.
+
+\textbf{Finding~2: Probability-aware bids beat distance-only centralized assignment.} M3 (FCR$=$6.41) outperforms H$_d$ (FCR$=$6.80) by \textbf{5.7\%}, despite H$_d$ computing the globally distance-optimal assignment every round. The intuition is that search is not a shortest-path problem: checking a high-probability site slightly farther away beats checking the nearest but unlikely site. To separate the effect of the bid function ($p/d$ vs.\ $1/d$) from the allocation mechanism (distributed SSI vs.\ centralized Hungarian), we ran the probability-weighted Hungarian ablation H$_{p/d}$ with edge cost $-p_i/d$. The ablation gives a mean FCR of $6.3128$ (median $5.1854$), statistically indistinguishable from M3's $6.4054$ (median $5.1283$): H$_{p/d}$ is marginally better than M3 on the mean ($1.4\%$) and marginally worse on the median ($0.1\%$), both within trial-to-trial noise. Centralizing the allocation therefore contributes essentially nothing once the bid function is probability-aware; the $5.7\%$ gap between H$_d$ and M3 is almost entirely attributable to the bid function.
+
+\textbf{Finding~3: Multi-node sorties close the gap.} M4 (FCR$=$3.11) recovers \textbf{92\%} of the gap between M3 and M2. The number of iterations drops from 4.81 to 1.38 because each sortie now visits $\sim\!5.3$ sites instead of one.
+
+\textbf{Finding~4: $\boldsymbol{p/d^2}$ is optimal under energy constraints.} M4* (FCR$=$2.98) improves upon M4 by \textbf{4.2\%}. Fig.~\ref{fig:bids} confirms the ranking $p/d^2 > p/d > 1/d > p \cdot e^{-d/E} > p$. Notably, the distance-only bid $1/d$ produces FCR$\approx$6.79, closely matching H$_d$ (6.80)---a consistency check between the auction implementation and the Hungarian implementation.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{fig_bid_variants.png}
+  \caption{Bid function comparison within Model~3 (500 trials). The $p/d^2$ bid achieves the lowest FCR.}\label{fig:bids}
+\end{figure}
+
+\subsection{Bounds Verification}
+
+\begin{table}[ht]
+\centering
+\caption{Theoretical bounds verification. Tightness $=$ empirical/bound.}\label{tab:bounds}
+\vspace{2pt}
+\begin{tabular}{@{}lrrcc@{}}
+\toprule
+\textbf{Model} & \textbf{Emp.} & \textbf{Bound} & \textbf{Holds?} & \textbf{Tight.} \\
+\midrule
+M1 Random & 18.55 & 34.09 & $\checkmark$ & 0.54 \\
+M2 Auction &  2.83 &  3.34 & $\checkmark$ & 0.85 \\
+M3 Single  &  6.41 & 17.32 & $\checkmark$ & 0.37 \\
+M4 Multi   &  3.11 & 13.87 & $\checkmark$ & 0.22 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All four bounds hold across 500 trials (Table~\ref{tab:bounds}). The M2 bound is tightest at 0.85, reflecting its simple cost structure (one hop per round). The M4 bound is loosest because our worst-case $S$ underestimates the empirical average (${\sim}5.3$ sites per sortie with $E{=}14$, $n{=}30$, $L{=}10$) that arises when the greedy extension chooses hops much shorter than $d_{\mathrm{hop}}$. Tightening this bound via expected-greedy-chain-length analysis is an important direction for future work.
+
+\subsection{Parameter Sweeps}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{fig_energy_sweep.png}
+  \caption{FCR vs.\ energy budget $E$ ($R{=}3$). M4* converges toward and eventually overtakes M2; M3 and H$_d$ plateau because single-node sorties cannot exploit additional energy.}\label{fig:energy}
+\end{figure}
+
+\textbf{Energy sweep} (Fig.~\ref{fig:energy}): As $E$ increases from 8 to 30, M4* FCR decreases from 3.18 to 2.67, eventually surpassing M2 (2.83). This crossover is not a contradiction---M2 is a strong baseline rather than an algorithmic lower bound: M2's greedy node-to-node auction can lock in sub-optimal chains, whereas M4* re-plans anchor sites at base each iteration using the quadratic-penalty bid. With enough energy, the periodic re-planning outweighs the overhead of base returns. M3 and H$_d$ plateau near 6.5--7.0 regardless of energy because a single-node sortie cannot exploit surplus budget.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{fig_robot_sweep.png}
+  \caption{FCR vs.\ fleet size $R$ ($E{=}14$). Diminishing returns beyond $R{=}4$.}\label{fig:robots}
+\end{figure}
+
+\textbf{Robot sweep} (Fig.~\ref{fig:robots}): At $R{=}1$, the M3--M4* gap is largest (12.97 vs.\ 5.44). By $R{=}6$, M4* (2.04) approaches M2 (2.14). The FCR for all coordinated models appears to stabilize as $R$ grows, consistent with the hypothesis that coordination quality, rather than fleet size, is the primary determinant of search efficiency.
+
+\subsection{Discussion}\label{sec:discussion}
+
+\textbf{On the $d_{\mathrm{opt}}$ filters and selection bias.} Two filters are applied during instance generation: $d_{\mathrm{opt}} \geq 1.0$ removes cases in which the target sits almost on top of a base (FCR explodes regardless of algorithm), and $2\,d_{\mathrm{opt}} \leq E$ removes cases that are physically unreachable by any single-sortie algorithm. The first filter is a selection choice that deserves explicit justification. The filter removes roughly $7\%$ of generated instances. We report the median FCR alongside the mean in Table~\ref{tab:main} to mitigate the sensitivity of means to the remaining right tail; medians and means tell the same story. A full sensitivity sweep at $d_{\mathrm{opt}} \in \{0.0, 0.5, 1.0, 2.0\}$ (500 trials each) gives the mean FCRs below:
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}crrrrrr@{}}
+\toprule
+$d_{\min}$ & M1 & M2 & M3 & M4 & M4* & H$_d$ \\
+\midrule
+0.0 & 24.29 & 2.89 & 6.19 & 3.11 & 2.92 & 6.47 \\
+0.5 & 20.52 & 2.93 & 6.28 & 3.15 & 2.94 & 6.55 \\
+1.0 & 18.55 & 2.83 & 6.41 & 3.11 & 2.98 & 6.80 \\
+2.0 & 14.94 & 2.72 & 6.90 & 3.22 & 3.16 & 7.92 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The relative ranking M2 $<$ M4* $<$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at every threshold, indicating that the filter does not drive any conclusion. Absolute FCRs shift as expected: M1 shrinks with larger thresholds (target trivially-close cases are removed), while the ratio-based models (M3, H$_d$) rise because $d_{\mathrm{opt}}$ grows in both numerator-free and denominator-driven ways. In a real deployment, a target trivially close to a base is an easy case that no algorithm needs to optimize for; excluding it concentrates the evaluation on the instances where algorithmic choices actually matter.
+
+\textbf{On the greedy chain.} We chose greedy over combinatorial tour optimization (2-opt, Christofides) for two reasons: the $O(n)$ greedy step suits real-time planning where each robot must decide its route before departing, and the greedy chain---equivalent to Smith's WSPT rule~\cite{Smith2012}---comes within 7.7\% of brute-force optimal ordering across 500 trials. \textbf{NOTE:} An empirical 2-opt post-processing pass on M4* (500 trials, default config) actually \emph{worsens} mean FCR from $2.98$ to $3.18$ ($-6.58\%$), because minimizing total tour length reorders sites so the target is typically visited later in the tour, inflating the finder's distance. This does not refute the 7.7\% total-tour-length claim---it shows that for the finder-centric metric, a greedy chain anchored at probability-weighted bids is already the right objective.
+
+\textbf{On when $\boldsymbol{p/d^2}$ is less suitable.} The quadratic distance penalty assumes energy is scarce relative to inter-site distances. At low energy ($E{=}8$), the M4--M4* gap narrows to 3\% because all tours are short regardless of bid function. With abundant energy or very dense site placement, the standard $p/d$ bid may perform comparably since the chain-foreclosure effect that motivates $p/d^2$ diminishes.
+
+\textbf{On the perfect-sensor assumption.} Each visit confirms or rules out a site with certainty in our model. This is an idealization: in a real collapsed-structure deployment, dust, occlusion, and rubble produce \emph{false negatives}, and a robot can leave a site where the target is present and report ``not here.'' A false negative corrupts the Bayesian renormalization of Section~\ref{sec:formulation} because the update sets $p_i \leftarrow 0$ for a visited site that should still carry residual mass, so the posterior over-concentrates on the unvisited sites and the true target may be permanently excluded. Two straightforward generalizations would address this. First, for a known per-site detection probability $p_{\mathrm{det}} < 1$, the update should set $p_i \leftarrow (1 - p_{\mathrm{det}}) \, p_i$ rather than zero, leaving residual mass proportional to the miss rate; expected rounds would scale by roughly $1/p_{\mathrm{det}}$, and our bounds generalize by replacing $R$ with $R \cdot p_{\mathrm{det}}$ in Lemma~\ref{lem:rounds}. Second, allowing a revisit policy when the posterior concentrates back toward a previously visited site would recover any target missed on an earlier pass. For non-Euclidean environments, distances would be replaced by shortest-path costs through an obstacle graph---the auction mechanism is agnostic to how distances are computed. Uniform energy budgets could be relaxed to per-robot budgets without changing the algorithm; only the feasibility filter in the auction changes.
+
+\section{Conclusion}\label{sec:conclusion}
+
+We presented a unified framework for analyzing multi-robot search across four models that vary energy and communication assumptions. The headline contribution is a novel bid function $p/d^2$ with a \emph{cost-foreclosure} justification: under a fixed energy budget, a distant anchor site not only costs proportionally more energy but also shrinks the chain-extension budget by the same amount, making the effective marginal cost of distance superlinear. Empirically, $p/d^2$ improves FCR by 4.2\% over the standard $p/d$ under energy constraints. Alongside this: coordination alone yields a $6.6\times$ improvement over random search; probability-aware bids beat distance-optimal centralized assignment by 5.7\%; and multi-node sorties recover 92\% of the energy penalty. All theoretical bounds held across 500 trials. For practitioners, the takeaway is that when battery is the operational bottleneck, replacing the conventional $p/d$ bid with $p/d^2$ is a one-line change with a measurable effect.
+
+Future work includes alternative objectives (minimax workload balancing or total-fleet distance), decaying energy models with path-dependent drain, heterogeneous fleets, imperfect sensors with revisit strategies, tightening the Model~4 bound via expected chain-length analysis, and proving the conjecture that FCR is $O(1)$ with respect to fleet size for coordinated models. Deploying these algorithms on physical drone hardware remains a key validation step.
+
+\bibliographystyle{IEEEtran}
+\bibliography{ref}
+
+\end{document}
