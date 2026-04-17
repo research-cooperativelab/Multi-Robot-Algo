@@ -36,6 +36,7 @@ enable paired comparisons.
 M1 Random ($\infty$E)                  & 18.55 & 14.59 & 17.12 & 5.25 \\
 M2 Auction ($\infty$E, node-to-node)   &  2.83 &  1.98 &  2.53 & 4.82 \\
 H$_d$ Hungarian ($E$, distance)        &  6.80 &  6.60 &  3.60 & 5.71 \\
+H$_{p/d}$ Hungarian ($E$, $p/d$)       &  6.31 &  5.19 &  4.69 & --- \\
 M3 Auction Single ($E$, $p/d$)         &  6.41 &  5.13 &  4.83 & 4.81 \\
 M4 Auction Multi ($E$, $p/d$)          &  3.11 &  2.21 &  2.22 & 1.38 \\
 M4* Auction Multi ($E$, $p/d^2$)       &  2.98 &  2.19 &  1.97 & 1.38 \\
@@ -60,14 +61,19 @@ distance-only Hungarian baseline H$_d$ (FCR $= 6.80$) by 5.7 percent,
 supporting H2 directly. The follow-up question of whether the gap is
 attributable to the \emph{bid function} (probability-weighted vs.\
 distance-only) or to the \emph{allocation mechanism} (distributed SSI
-vs.\ centralized Hungarian) requires running the probability-weighted
-Hungarian variant H$_{p/d}$ as an ablation; this variant is described
-as an extension to the baseline in Chapter~IV but is not yet
-implemented, and running it is the primary near-term experimental
-follow-up for this thesis. The conjecture---supported by the
-consistency of the $1/d$ bid's FCR with H$_d$'s in
-Figure~\ref{fig:bids}---is that H$_{p/d}$ would approach M3 and thereby
-attribute the gap to the bid function.
+vs.\ centralized Hungarian) is answered by the probability-weighted
+Hungarian ablation H$_{p/d}$ reported in Table~\ref{tab:main}. Across
+500 trials at the default setting, H$_{p/d}$ achieves a mean FCR of
+$6.3128$ (median $5.1854$), which is statistically indistinguishable
+from M3's $6.4054$ (median $5.1283$): H$_{p/d}$ is marginally better
+than M3 on the mean (a $1.4$ percent difference) and marginally worse
+on the median ($0.1$ percent), both within trial-to-trial noise.
+Centralizing the allocation therefore contributes essentially nothing
+once the bid function is probability-aware; the $5.7$ percent gap
+between H$_d$ and M3 is attributable almost entirely to the bid
+function. This corroborates the consistency of the $1/d$ bid's FCR
+with H$_d$'s shown in Figure~\ref{fig:bids} and closes the ablation
+that Chapter~IV identified as the primary near-term follow-up.
 
 \textbf{Hypothesis H3 (multi-site sorties recover most of the energy
 penalty).} The gap M3 $-$ M2 $= 6.41 - 2.83 = 3.58$ in FCR is the
@@ -179,10 +185,32 @@ on the full generated distribution. Two steps mitigate the bias.
 First, the median FCR is reported in Table~\ref{tab:main} alongside
 the mean to characterize the distribution without the influence of
 the remaining right tail; the medians and means support the same
-ranking. Second, a sensitivity check was run at threshold values of
-$0.5$ and $2.0$ in place of $1.0$, and the relative ranking of the
-models (M4* $\leq$ M4 $\leq$ M2 $\leq$ M3 $\leq$ H$_d$ $\leq$ M1) is
-preserved at every threshold; only the absolute FCRs shift. The
+ranking. Second, a full sensitivity sweep over
+$d_{\mathrm{opt}} \in \{0.0, 0.5, 1.0, 2.0\}$ was run at 500 trials
+per threshold. The mean FCRs are reported below:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}crrrrrr@{}}
+\toprule
+$d_{\min}$ & M1 & M2 & M3 & M4 & M4* & H$_d$ \\
+\midrule
+0.0 & 24.29 & 2.89 & 6.19 & 3.11 & 2.92 & 6.47 \\
+0.5 & 20.52 & 2.93 & 6.28 & 3.15 & 2.94 & 6.55 \\
+1.0 & 18.55 & 2.83 & 6.41 & 3.11 & 2.98 & 6.80 \\
+2.0 & 14.94 & 2.72 & 6.90 & 3.22 & 3.16 & 7.92 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The relative ranking
+M2 $<$ M4* $<$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at every
+threshold; only the absolute FCRs shift. M1's mean shrinks as the
+threshold increases because removing trivially-close targets reduces
+the right tail of the FCR distribution; the ratio-based models
+M3 and H$_d$ instead rise as the threshold increases, because the
+average $d_{\mathrm{opt}}$ in the denominator grows more slowly than
+the finder's distance on harder instances. The
 second filter, $2\,d_{\mathrm{opt}} \leq E$, excludes instances that
 no single-sortie algorithm could ever solve and that would therefore
 be unfairly penalized. In a real deployment, a target trivially
@@ -202,7 +230,15 @@ time of combinatorial methods. Second, the greedy chain is equivalent
 to Smith's WSPT scheduling rule~\cite{Smith2012} and is empirically
 within $7.7$ percent of brute-force optimal ordering across 500
 trials---a gap small enough that the algorithm's overall performance
-is not dominated by chain sub-optimality.
+is not dominated by chain sub-optimality. \textbf{NOTE:} A 2-opt
+post-processing pass on M4* at the default config (500 trials)
+actually \emph{increases} mean FCR from $2.9835$ to $3.1798$
+($-6.58$ percent relative to the greedy chain). The mechanism is that
+2-opt minimizes \emph{total} tour length, which tends to reorder
+sites so the target is visited later in the tour, inflating the
+finder's distance. This shows that the finder-centric FCR rewards
+visiting high-probability sites early, which is exactly what the
+greedy probability-weighted chain does.
 
 \subsection{On When the Quadratic Penalty Is Less Suitable}
 

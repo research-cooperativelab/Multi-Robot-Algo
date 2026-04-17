@@ -216,6 +216,7 @@ Sites are placed uniformly in $[0,L]^2$ with $L=10$. Priors are drawn from $\mat
 M1 Random ($\infty$E)          & 18.55 & 14.59 & 17.12 & 5.25 \\
 M2 Auction ($\infty$E, N2N)    &  2.83 &  1.98 &  2.53 & 4.82 \\
 H$_d$ Hungarian ($E$, dist.)   &  6.80 &  6.60 &  3.60 & 5.71 \\
+H$_{p/d}$ Hungarian ($E$, $p/d$) &  6.31 &  5.19 &  4.69 & --- \\
 M3 Auction Single ($E$, $p/d$) &  6.41 &  5.13 &  4.83 & 4.81 \\
 M4 Auction Multi ($E$, $p/d$)  &  3.11 &  2.21 &  2.22 & 1.38 \\
 M4* Auction Multi ($E$, $p/d^2$) &  2.98 &  2.19 &  1.97 & 1.38 \\
@@ -227,7 +228,7 @@ Table~\ref{tab:main} presents the main results.
 
 \textbf{Finding~1: Communication is paramount.} M1 (FCR$=$18.55) vs.\ M2 (FCR$=$2.83) reveals a \textbf{6.6$\times$} improvement from coordination alone. This confirms the theoretical prediction of Chrobak et al.~\cite{Chrobak2015}: how robots communicate matters far more than how many are deployed.
 
-\textbf{Finding~2: Probability-aware bids beat distance-only centralized assignment.} M3 (FCR$=$6.41) outperforms H$_d$ (FCR$=$6.80) by \textbf{5.7\%}, despite H$_d$ computing the globally distance-optimal assignment every round. The intuition is that search is not a shortest-path problem: checking a high-probability site slightly farther away beats checking the nearest but unlikely site. This head-to-head leaves open a confound between bid function ($p/d$ vs.\ $1/d$) and allocation mechanism (distributed SSI vs.\ centralized Hungarian). The natural ablation is a probability-weighted Hungarian variant H$_{p/d}$ with edge cost $-p_i/d$; we conjecture H$_{p/d}$ would approach M3 and thereby attribute the gap to the bid function rather than to centralization. This ablation is left to future work.
+\textbf{Finding~2: Probability-aware bids beat distance-only centralized assignment.} M3 (FCR$=$6.41) outperforms H$_d$ (FCR$=$6.80) by \textbf{5.7\%}, despite H$_d$ computing the globally distance-optimal assignment every round. The intuition is that search is not a shortest-path problem: checking a high-probability site slightly farther away beats checking the nearest but unlikely site. To separate the effect of the bid function ($p/d$ vs.\ $1/d$) from the allocation mechanism (distributed SSI vs.\ centralized Hungarian), we ran the probability-weighted Hungarian ablation H$_{p/d}$ with edge cost $-p_i/d$. The ablation gives a mean FCR of $6.3128$ (median $5.1854$), statistically indistinguishable from M3's $6.4054$ (median $5.1283$): H$_{p/d}$ is marginally better than M3 on the mean ($1.4\%$) and marginally worse on the median ($0.1\%$), both within trial-to-trial noise. Centralizing the allocation therefore contributes essentially nothing once the bid function is probability-aware; the $5.7\%$ gap between H$_d$ and M3 is almost entirely attributable to the bid function.
 
 \textbf{Finding~3: Multi-node sorties close the gap.} M4 (FCR$=$3.11) recovers \textbf{92\%} of the gap between M3 and M2. The number of iterations drops from 4.81 to 1.38 because each sortie now visits $\sim\!5.3$ sites instead of one.
 
@@ -279,9 +280,23 @@ All four bounds hold across 500 trials (Table~\ref{tab:bounds}). The M2 bound is
 
 \subsection{Discussion}\label{sec:discussion}
 
-\textbf{On the $d_{\mathrm{opt}}$ filters and selection bias.} Two filters are applied during instance generation: $d_{\mathrm{opt}} \geq 1.0$ removes cases in which the target sits almost on top of a base (FCR explodes regardless of algorithm), and $2\,d_{\mathrm{opt}} \leq E$ removes cases that are physically unreachable by any single-sortie algorithm. The first filter is a selection choice that deserves explicit justification. The filter removes roughly $7\%$ of generated instances. We report the median FCR alongside the mean in Table~\ref{tab:main} to mitigate the sensitivity of means to the remaining right tail; medians and means tell the same story. A sensitivity check at thresholds $d_{\mathrm{opt}} \in \{0.5, 1.0, 2.0\}$ leaves the relative ranking among models unchanged, indicating that the filter does not drive any conclusion. In a real deployment, a target that is trivially close to a base is an easy case that no algorithm needs to optimize for; excluding it concentrates the evaluation on the instances where algorithmic choices actually matter.
+\textbf{On the $d_{\mathrm{opt}}$ filters and selection bias.} Two filters are applied during instance generation: $d_{\mathrm{opt}} \geq 1.0$ removes cases in which the target sits almost on top of a base (FCR explodes regardless of algorithm), and $2\,d_{\mathrm{opt}} \leq E$ removes cases that are physically unreachable by any single-sortie algorithm. The first filter is a selection choice that deserves explicit justification. The filter removes roughly $7\%$ of generated instances. We report the median FCR alongside the mean in Table~\ref{tab:main} to mitigate the sensitivity of means to the remaining right tail; medians and means tell the same story. A full sensitivity sweep at $d_{\mathrm{opt}} \in \{0.0, 0.5, 1.0, 2.0\}$ (500 trials each) gives the mean FCRs below:
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}crrrrrr@{}}
+\toprule
+$d_{\min}$ & M1 & M2 & M3 & M4 & M4* & H$_d$ \\
+\midrule
+0.0 & 24.29 & 2.89 & 6.19 & 3.11 & 2.92 & 6.47 \\
+0.5 & 20.52 & 2.93 & 6.28 & 3.15 & 2.94 & 6.55 \\
+1.0 & 18.55 & 2.83 & 6.41 & 3.11 & 2.98 & 6.80 \\
+2.0 & 14.94 & 2.72 & 6.90 & 3.22 & 3.16 & 7.92 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The relative ranking M2 $<$ M4* $<$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at every threshold, indicating that the filter does not drive any conclusion. Absolute FCRs shift as expected: M1 shrinks with larger thresholds (target trivially-close cases are removed), while the ratio-based models (M3, H$_d$) rise because $d_{\mathrm{opt}}$ grows in both numerator-free and denominator-driven ways. In a real deployment, a target trivially close to a base is an easy case that no algorithm needs to optimize for; excluding it concentrates the evaluation on the instances where algorithmic choices actually matter.
 
-\textbf{On the greedy chain.} We chose greedy over combinatorial tour optimization (2-opt, Christofides) for two reasons: the $O(n)$ greedy step suits real-time planning where each robot must decide its route before departing, and the greedy chain---equivalent to Smith's WSPT rule~\cite{Smith2012}---comes within 7.7\% of brute-force optimal ordering across 500 trials.
+\textbf{On the greedy chain.} We chose greedy over combinatorial tour optimization (2-opt, Christofides) for two reasons: the $O(n)$ greedy step suits real-time planning where each robot must decide its route before departing, and the greedy chain---equivalent to Smith's WSPT rule~\cite{Smith2012}---comes within 7.7\% of brute-force optimal ordering across 500 trials. \textbf{NOTE:} An empirical 2-opt post-processing pass on M4* (500 trials, default config) actually \emph{worsens} mean FCR from $2.98$ to $3.18$ ($-6.58\%$), because minimizing total tour length reorders sites so the target is typically visited later in the tour, inflating the finder's distance. This does not refute the 7.7\% total-tour-length claim---it shows that for the finder-centric metric, a greedy chain anchored at probability-weighted bids is already the right objective.
 
 \textbf{On when $\boldsymbol{p/d^2}$ is less suitable.} The quadratic distance penalty assumes energy is scarce relative to inter-site distances. At low energy ($E{=}8$), the M4--M4* gap narrows to 3\% because all tours are short regardless of bid function. With abundant energy or very dense site placement, the standard $p/d$ bid may perform comparably since the chain-foreclosure effect that motivates $p/d^2$ diminishes.
 
