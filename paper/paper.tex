@@ -39,7 +39,28 @@ oscar.moralesponce@csulb.edu}
 \maketitle
 
 \begin{abstract}
-We study the multi-robot search and rescue problem in which $R$ robots must locate a target hidden among $n$ candidate sites, where each site $i$ has a prior probability $p_i$ of holding the target, each robot has a finite energy budget $E$, and $d$ denotes Euclidean distance. Four models---Random (M1), Unconstrained-Energy Auction (M2), Single-Sortie Auction (M3), and Multi-Sortie Auction (M4/M4*)---are evaluated by the Finder Competitive Ratio (FCR), the ratio of the finding robot's travel to the omniscient optimum. Upper bounds are derived and validated over 500 Monte Carlo trials. Auction-based coordination yields a 6.6$\times$ improvement over random search; a novel bid function $p_i/d^2$ with a cost-foreclosure justification outperforms the standard $p_i/d$ by 4.2\% under energy constraints; and multi-node sorties recover 92\% of the energy-penalty gap. A Hungarian distance-optimal baseline is also reported; a probability-weighted Hungarian variant is discussed as an ablation to disentangle bid function from allocation mechanism.
+Autonomous robot teams deployed after a disaster must search candidate
+sites for trapped survivors under battery constraints and limited
+inter-robot communication. We study the multi-robot search and rescue
+problem in which $R$ robots must locate a target hidden among $n$
+candidate sites, each with prior probability $p_i$, under a finite
+per-robot energy budget $E$. Four models spanning the
+energy--communication design space are proposed: an uncoordinated
+random baseline (M1), an unconstrained-energy auction in which robots
+bid on sites and move freely between them (M2), an energy-constrained
+single-sortie auction in which each robot makes one round trip per
+iteration (M3), and a multi-sortie planner in which each robot chains
+several sites into a single energy-feasible excursion before returning
+to base (M4/M4*). Performance is measured by the Finder Competitive
+Ratio (FCR), the ratio of the finding robot's travel distance to the
+omniscient optimum. Closed-form upper bounds are derived for each model
+and validated over 500 Monte Carlo trials with $n{=}30$ sites,
+$R{=}3$ robots, and energy budget $E{=}14$ in a $10{\times}10$ arena.
+Auction-based coordination yields a $6.6{\times}$ improvement in FCR
+over random search; a novel bid function $p_i/d^2$ outperforms the
+standard $p_i/d$ by 4.2\% under energy constraints, justified by a
+cost-foreclosure argument; and multi-node sorties recover 92\% of the
+energy-penalty gap.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -118,17 +139,18 @@ M4 & $E$ & At base & Base$\to$tour$\to$base & Auction \\
 \end{tabular}
 \end{table}
 
-\textbf{Model~1} (random baseline): each robot independently samples an unvisited site weighted by~$\mathbf{p}$ and makes a round trip costing $2\,d(x_0^r,x_i)$. Without communication, robots may visit the same site.
+\textbf{Model~1} (random baseline): \emph{The idea---}a deliberate floor that quantifies zero coordination. Each robot independently samples an unvisited site weighted by~$\mathbf{p}$ and makes a round trip costing $2\,d(x_0^r,x_i)$. Because robots do not communicate, two robots may visit the same site in the same iteration.
 
-\textbf{Model~2} (unconstrained-energy auction): robots compute bids $b_{r,i} = p_i / d(\mathrm{pos}_r, x_i)$ from their \emph{current position} $\mathrm{pos}_r$ (initially $x_0^r$) and run an SSI auction~\cite{Koenig2006}. In each auction round, the robot--site pair with the globally highest bid is assigned; that robot and site are then removed, and the process repeats until all robots have assignments. Winners travel one-way to the assigned site and update their position. There is no return-trip overhead and no energy limit.
+\textbf{Model~2} (unconstrained-energy auction): \emph{The idea---}the opposite extreme: full coordination with no battery constraint. Robots compute bids $b_{r,i} = p_i / d(\mathrm{pos}_r, x_i)$ from their \emph{current position} $\mathrm{pos}_r$ (initially $x_0^r$) and run an SSI auction~\cite{Koenig2006}. In each auction round, the robot--site pair with the globally highest bid is assigned; both are removed and the process repeats until all robots have assignments. Winners travel one-way to the assigned site; there is no return-trip overhead and no energy limit. The gap between M1 and M2 measures the value of coordination alone.
 
-\textbf{Model~3} (energy-constrained, single sorties): the SSI auction runs at base over energy-feasible candidates satisfying $2\,d(x_0^r,x_i) \leq E$. Each robot executes a single-node round-trip sortie per iteration. In the sortie model, a robot with $E{=}14$ visiting a site at distance~5 spends 10~units on travel and wastes the remaining~4---motivating the multi-node extension.
+\textbf{Model~3} (energy-constrained, single sorties): \emph{The idea---}battery turns on. Each robot has a fixed energy budget~$E$ and must return to base after each visit. The SSI auction runs at base over energy-feasible candidates satisfying $2\,d(x_0^r,x_i) \leq E$. Each robot executes one round-trip sortie per iteration. This exposes the \emph{energy penalty}: a robot with $E{=}14$ visiting a site at distance~5 spends 10~units on travel and wastes the remaining~4, motivating the next model.
 
-\textbf{Model~4 / 4*} (multi-node sorties): after the auction assigns a first site, a \emph{greedy chain extension} appends additional sites within the remaining energy budget. Let $\mathrm{pos}_r$ denote the current position of robot~$r$ (updated after each hop) and $\mathcal{C}$ the set of sites already claimed by any robot's chain. The next extension site is:
+\textbf{Model~4 / 4*} (multi-node sorties): \emph{The idea---}reclaim wasted battery by chaining several sites into one flight before returning to base. The auction assigns each robot an initial \emph{anchor} site; the robot then greedily appends additional sites while energy permits. Let $\mathrm{pos}_r$ denote the current position of robot~$r$ (updated after each hop) and $\mathcal{C}$ the set of sites already claimed. The next extension site is:
 \begin{equation}\label{eq:chain}
   j^* = \arg\max_{j \notin \mathcal{C}} \frac{p_j}{d(\mathrm{pos}_r, x_j)}, \;\; d(\mathrm{pos}_r, x_j) {+} d(x_j, x_0^r) \leq E_{\mathrm{rem}}^r
 \end{equation}
-Extensions proceed in round-robin order across robots. Model~4* replaces $p/d$ with $p/d^2$ bids in \emph{both} the initial auction and the chain extension. The intuition behind this quadratic penalty is a cost-foreclosure argument: under a fixed energy budget, traveling to a site at distance~$d$ not only consumes energy proportional to~$d$ but also forecloses future chain extensions whose reachable-set shrinks roughly as the remaining budget. The effective marginal cost of distance is therefore superlinear, and the $p/d^2$ bid approximates this by penalizing far sites more aggressively, steering robots toward nearby clusters where they can visit more sites per sortie.
+Extensions proceed in round-robin order across robots until no more sites can be appended; then each robot returns to base.
+Model~4* makes one change to Model~4: it replaces the $p/d$ bid with $p/d^2$ in \emph{both} the initial auction and the chain extension. The quadratic penalty is motivated by a cost-foreclosure argument: anchoring at a site of distance~$d$ spends $2d$ of the budget on base legs, leaving $E - 2d$ for chain hops---a quantity that shrinks linearly with~$d$. Because the value of the full sortie depends on both the anchor probability and the number of follow-up hops, the effective marginal cost of distance is superlinear; the $p/d^2$ bid approximates this and steers robots toward nearby clusters where they can visit more sites per sortie.
 
 \textbf{Hungarian baselines.} The Hungarian algorithm~\cite{Kuhn1955} computes the globally distance-optimal assignment each round. We evaluate two variants: (H$_d$) uses cost $c_{r,i} = d(x_0^r, x_i)$, purely distance-minimizing; and (H$_{p/d}$) uses cost $c_{r,i} = -p_i/d(x_0^r, x_i)$, giving the centralized optimizer access to the same probability information used by our distributed auction. Comparing M3 against H$_d$ isolates the value of probability-awareness; comparing M3 against H$_{p/d}$ isolates the value of distributed SSI sequencing versus one-shot centralized assignment.
 

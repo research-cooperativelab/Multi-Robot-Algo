@@ -58,6 +58,19 @@ the improvement over random search. The competitive-ratio literature
 has, however, focused on one-dimensional geometries and has not
 integrated energy constraints.
 
+A rigorous theoretical foundation for search in more general settings
+is provided by \citet{AlpernGal2003}, whose book \emph{The Theory of
+Search Games and Rendezvous} unifies the competitive-ratio and
+game-theoretic approaches for search on graphs, lines, and compact
+spaces. \citeauthor{AlpernGal2003} formalize the minimax and expected-cost
+objectives for search problems and establish that competitive ratio
+is the natural criterion when the adversary may place the target
+adversarially. The present thesis adopts this perspective but extends
+it to the probabilistic setting (where the target is drawn from a known
+prior rather than placed adversarially) and to the two-dimensional,
+energy-constrained, multi-robot regime that
+\citeauthor{AlpernGal2003} did not consider.
+
 \section{Market-Based Multi-Robot Coordination}
 
 \paragraph{Primer.} How should several robots divide a pile of
@@ -96,10 +109,35 @@ item---and proved constant-factor approximation guarantees against
 centralized optima for several objective functions. SSI auctions are
 attractive because they are simple, communication-efficient, and
 produce provably near-optimal assignments. This thesis adopts SSI as
-the basic coordination primitive. The market-based literature has,
-however, historically studied mobility as unconstrained: a robot is
-expected to be able to reach any assigned task, which does not match
-the energy-constrained sortie regime that this thesis studies.
+the basic coordination primitive.
+
+A comprehensive systematic review by \citet{ACMSurveyMRTA2025}
+examined 78 MRTA papers published between 2013 and 2024 and confirmed
+that market-based methods remain the dominant paradigm in multi-robot
+coordination, outperforming both centralized optimization and
+learning-based approaches on dynamic, time-extended tasks. The review
+identifies energy-aware task allocation as one of the principal open
+problems: the overwhelming majority of surveyed papers assume unlimited
+robot mobility, and none incorporate per-sortie energy budgets coupled
+with probabilistic site priors. This gap directly motivates the present
+work.
+
+A critical practical dimension is what happens when the communication
+channel degrades. \citet{OtteKuhlman2020} compared six auction variants
+experimentally as communication quality ranges from perfect to
+nonexistent, finding that different auction protocols degrade at very
+different rates and that the choice of auction matters far more than the
+bid function in degraded-radio settings. Their work provides the
+theoretical footing for an important limitation of the present thesis:
+Models M2, M3, and M4 all assume reliable at-base communication,
+and their performance guarantees do not extend to dropped-radio
+scenarios. The sensitivity of M4*'s FCR advantage to communication
+degradation is a direct open problem identified in Chapter~VI.
+
+The market-based literature has, however, historically studied mobility
+as unconstrained: a robot is expected to be able to reach any assigned
+task, which does not match the energy-constrained sortie regime that
+this thesis studies.
 
 \section{Energy-Constrained and Probabilistic Search}
 
@@ -145,6 +183,28 @@ search and demonstrated experimentally that information-greedy
 policies outperform distance-greedy policies. The observation
 generalizes to the present work.
 
+An important contemporary alternative to analytical bid functions is
+deep reinforcement learning (DRL). \citet{KimKim2025} used a
+market-based strategy combined with Fisher information maximization and
+weighted Voronoi partitioning to coordinate multi-robot search in open
+fields, achieving competitive performance on continuous probability
+maps. The Fisher-information criterion is richer than the $p/d$ or
+$p/d^2$ heuristic in that it accounts for full posterior covariance,
+but it comes at substantially higher computational cost and does not
+admit closed-form competitive-ratio bounds. The present thesis occupies
+a complementary point in the design space: closed-form bid functions
+and analytical bounds are traded for the richer posterior updates of
+information-theoretic methods, but what is gained is exact formal
+guarantees and a one-line deployment prescription.
+
+A structural robustness result directly relevant to this thesis is
+provided by \citet{AutomaticaAuctions2023}, who derived intervals on
+each cost parameter within which perturbations leave the SSI auction's
+output allocation unchanged. This sensitivity analysis provides the
+theoretical machinery to formally quantify how stable the M4* bid
+function is to perturbations in site probabilities---a natural
+extension identified in Chapter~VI as future work.
+
 \section{Gap and Positioning}
 
 Taken together, the three literatures leave a gap. Competitive-ratio
@@ -157,14 +217,46 @@ three into a single framework that asks: what is the expected
 competitive ratio of an auction-coordinated multi-robot search team
 under a finite energy budget?
 
-The present thesis fills that gap. It formulates four algorithmic
-models that systematically vary the energy and communication
-assumptions, derives expected-FCR upper bounds for each model under
-realistic two-dimensional instance distributions, and validates the
-bounds by Monte Carlo simulation. In addition, it studies the choice
-of bid function---a design decision that the existing auction
-literature has largely left to practical convention---and identifies
-a bid function that is provably motivated by and empirically optimal
-under energy constraints.
+The present thesis fills that gap. Four novel contributions emerge
+from it that do not appear in the surveyed literature.
+
+First, the \emph{Finder Competitive Ratio} (FCR) metric is
+introduced as a formal performance measure for the target-finding
+problem. Existing competitive-ratio analyses measure the worst-case
+team cost; FCR instead measures the travel of the specific robot that
+discovers the target, normalized by the omniscient-optimum distance.
+This finder-centric perspective captures operationally relevant
+performance---the time from deployment to discovery---and is not
+equivalent to minimizing total-team distance, as the Target-Delay
+Anomaly of Chapter~V demonstrates.
+
+Second, a sortie model is formalized in which each energy budget $E$
+constrains a single round trip, not a whole mission. This contrasts
+with prior energy models that either restrict total lifetime
+travel~\citep{Betke1995} or graph traversal under a global
+budget~\citep{Das2015}. The sortie model matches the battery-swap
+reality of UAV deployments and enables the multi-site chaining
+strategy of Model~4.
+
+Third, the thesis derives a \emph{cost-foreclosure argument} that
+justifies a superlinear distance penalty in the bid function. No prior
+work in auction-based coordination has analyzed how the choice of bid
+exponent interacts with a per-sortie energy cap.
+
+Fourth, a $p_i / d^2$ bid function is identified empirically as
+optimal under the sortie model, beating the Stone-rule-derived $p_i/d$
+bid. The advantage persists under prior misspecification noise and
+across three non-Euclidean cost variants, demonstrating robustness
+that the analytical argument predicts but does not prove.
+
+In addition, the thesis conducts an ablation that disentangles two
+effects previously conflated in the MRTA literature: the value of
+probability-aware bids versus the value of centralized allocation.
+The ablation shows that the bid function is the dominant factor,
+centralization contributing essentially nothing once the bid is
+probability-aware. This result concretely answers the question
+implicitly raised by \citet{OtteKuhlman2020} of whether coordination
+structure or bid design is the more impactful design decision under
+reliable communication.
 
 \end{doublespacing}

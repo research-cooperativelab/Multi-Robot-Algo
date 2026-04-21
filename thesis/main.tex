@@ -2,6 +2,7 @@
 
 \usepackage{todonotes}
 \usepackage{dirtytalk}
+\usepackage[normalem]{ulem}   % underline for section headings per CSULB format
 
 % CSULB thesis margins: 1.5" left, 1" right/top/bottom.
 % First page of each chapter gets an extra 1" of vertical space before the
@@ -11,7 +12,7 @@
 \usepackage{mathptmx}
 \usepackage{setspace}
 \usepackage{indentfirst}
-\setlength{\parindent}{0.25in}
+\setlength{\parindent}{0.5in}
 \usepackage[document]{ragged2e}
 \setlength{\RaggedRightParindent}{\parindent}
 \usepackage{comment}
@@ -83,6 +84,22 @@
 \setkomafont{subsection}{\normalsize}
 \RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{subsection}
 
+% CSULB format: first/second-level subheads centered/left + underlined.
+\makeatletter
+\renewcommand\sectionlinesformat[4]{%
+  \@hangfrom{\hskip #2#3}{\uline{#4}}%
+}
+\makeatother
+
+% CSULB format: third-level run-in subheads are underlined, NOT bold.
+% All \paragraph{} uses in this thesis have no optional argument,
+% so a simple two-argument patch is safe.
+\setkomafont{paragraph}{\normalsize\mdseries}
+\makeatletter
+\let\csulb@oldparagraph\paragraph
+\renewcommand\paragraph[1]{\csulb@oldparagraph{\uline{#1}}}
+\makeatother
+
 \usepackage{etoolbox}
 \AtBeginEnvironment{figure}{\setlength{\RaggedRightParindent}{0em}}
 \AtBeginEnvironment{table}{\setlength{\RaggedRightParindent}{0em}}
@@ -92,7 +109,7 @@
 \setlength{\cftbeforetoctitleskip}{0pt}
 \setlength{\cftaftertoctitleskip}{0pt}
 \renewcommand*\contentsname{TABLE OF CONTENTS}
-\renewcommand{\cfttoctitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cfttoctitlefont}{\hspace*{\fill}\normalsize}
 \renewcommand{\cftaftertoctitle}{\hspace*{\fill}}
 \KOMAoptions{toc=chapterentrydotfill}
 \setkomafont{chapterentry}{}
@@ -102,14 +119,14 @@
 \setlength{\cftbeforelottitleskip}{0pt}
 \setlength{\cftafterlottitleskip}{0pt}
 \renewcommand*\listtablename{LIST OF TABLES}
-\renewcommand{\cftlottitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftlottitlefont}{\hspace*{\fill}\normalsize}
 \renewcommand{\cftafterlottitle}{\hspace*{\fill}}
 \setlength{\cfttabindent}{0.25in}
 
 \setlength{\cftbeforeloftitleskip}{0pt}
 \setlength{\cftafterloftitleskip}{0pt}
 \renewcommand*\listfigurename{LIST OF FIGURES}
-\renewcommand{\cftloftitlefont}{\hspace*{\fill}\normalsize\bfseries}
+\renewcommand{\cftloftitlefont}{\hspace*{\fill}\normalsize}
 \renewcommand{\cftafterloftitle}{\hspace*{\fill}}
 \setlength{\cftfigindent}{0.25in}
 \newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
@@ -171,6 +188,7 @@
 \input{Chapters/methodology}
 \input{Chapters/results}
 \input{Chapters/conclusion}
+\input{Chapters/appendix}
 
 % References section — CSULB spec:
 % 1. Half-title page: just "REFERENCES" centered vertically.
@@ -187,6 +205,8 @@
 % apalike = LaTeX's built-in APA-style bibliography (author, year) with
 % hanging indent and alphabetical ordering. Close match to APA 7th edition
 % for CSULB honors thesis purposes.
+% Add bold to chapter font so REFERENCES heading is bold (CSULB spec).
+\addtokomafont{chapter}{\bfseries}
 \bibliographystyle{apalike}
 \bibliography{ref}
 
