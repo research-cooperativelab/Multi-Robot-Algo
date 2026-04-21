@@ -84,35 +84,76 @@ robots' energy expenditure. Minimax workload balancing, total-fleet
 distance, or time-to-last-cleared-site are alternative objectives that
 would favor different bid functions. A systematic study of the
 trade-off among these objectives on a common benchmark is an open
-problem.
+problem. The sensitivity analysis framework of \citet{AutomaticaAuctions2023}
+provides formal machinery to characterize how the optimal bid exponent
+shifts as the objective changes.
 
-\textbf{Tighter Model 4 bound.} The looseness of the Model 4 bound
+\textbf{Tighter Model~4 bound.} The looseness of the Model~4 bound
 comes from the pessimistic estimate $S = 1 + \lfloor (E -
 2\,d_{\mathrm{avg}}) / d_{\mathrm{hop}} \rfloor$. A more refined
 analysis would compute the expected length of a greedy chain under the
 prior distribution, not the worst-case length under a uniform
-distribution, and could plausibly produce a bound within a factor of
-two of the empirical mean.
+distribution. Because the greedy chain preferentially selects sites
+closer than $d_{\mathrm{hop}}$, the expected $S$ is better described
+by the expected minimum of a random sample from the inter-site
+distance distribution---a quantity that can be computed in closed form
+for uniform site placements. This tighter bound would bring the
+analytical estimate from the current factor-of-$4.5$ gap down to
+within a factor of two of the empirical mean.
 
-\textbf{Fleet-size scaling conjecture.} The robot sweep suggests that
-coordinated models achieve FCR $= O(1)$ as $R \to \infty$ while
-uncoordinated models achieve only FCR $= \Omega(R^{-1})$. A formal
-proof of this conjecture would strengthen the case for coordination
-as the primary design lever.
+\textbf{Fleet-size scaling conjecture.} The robot sweep
+(Chapter~V, Figure~5) suggests that coordinated models achieve
+FCR $= O(1)$ as $R \to \infty$ while uncoordinated models achieve
+only FCR $= \Omega(R^{-1})$. More precisely, the conjecture is that
+there exists a constant $c > 0$ such that for any $\epsilon > 0$,
+$\mathrm{FCR}_{M2} \leq c + \epsilon$ for all $R$ large enough, while
+$\mathrm{FCR}_{M1} \geq c' / \sqrt{R}$ for some constant $c' > 0$.
+A formal proof would require bounding the expected maximum of $R$
+exponential random variables---the round count in M1---and the
+expected minimum of $R$ base-to-target distances---the $d_{\mathrm{opt}}$
+denominator. This conjecture is accessible to formal verification and
+would significantly strengthen the case that communication is the
+primary design lever in multi-robot search.
+
+\textbf{Comparison with learning-based approaches.} Recent DRL
+methods for multi-robot search~\citep{KimKim2025} optimize richer
+posterior objectives (Fisher information, mutual information) and
+can exploit complex spatial patterns that closed-form bid functions
+cannot represent. A head-to-head evaluation of M4* against a trained
+DRL policy on the same instance distribution would quantify precisely
+how much is lost by restricting to analytical bids---and, conversely,
+how much is gained by having provable bounds. The Target-Delay
+Anomaly (Chapter~V) already suggests one dimension on which DRL
+policies trained on average-case path length would lose to M4*: they
+would likely learn to minimize tour length rather than
+probability-weighted prefix, and so suffer from the same reordering
+effect that made 2-opt harmful.
 
 \textbf{Relaxing assumptions.} Perfect sensors, flat terrain, and
 uniform energy budgets are idealizations. Detection probability less
 than one, shortest-path distance over an obstacle graph, and per-robot
 energy heterogeneity are realistic generalizations. The auction
-mechanism adapts to each of these without modification; what changes
-is the structure of the bounds.
+mechanism adapts to each without modification; what changes is the
+structure of the bounds. For imperfect sensors with detection
+probability $p_{\mathrm{det}} < 1$, Lemma~1 generalizes by replacing
+$R$ with $R \cdot p_{\mathrm{det}}$, and the bid update rule becomes
+$p_i \leftarrow (1 - p_{\mathrm{det}}) p_i$ rather than zero.
 
-\textbf{Physical deployment.} The simulation validates the algorithms
-under the stated assumptions, but physical deployment introduces
-additional concerns: sensor noise, communication loss, obstacle
-avoidance, and motor control variability. Porting the algorithms to a
-small team of UAVs or ground robots and measuring FCR on physical
-instances would provide the strongest test of the framework and is
-the logical next step.
+\textbf{Communication degradation.} \citet{OtteKuhlman2020} showed
+that different auction protocols degrade at very different rates under
+unreliable communication. The performance of M4* under dropped or
+delayed radio links---a condition that is common in real rubble-pile
+deployments---is unknown. A natural extension is to evaluate M4* under
+the communication models of \citeauthor{OtteKuhlman2020} and derive
+degraded-communication FCR bounds.
+
+\textbf{Physical deployment.} \citet{Coad2024SPROUT} demonstrated
+that vine-robot deployment in USAR scenarios currently operates in
+single-robot mode; multi-robot coordination remains an open
+deployment challenge. Porting M4* to a small team of UAVs or ground
+robots and measuring FCR on physical instances---including sensor
+noise, communication loss, obstacle avoidance, and motor control
+variability---would provide the strongest validation of the framework
+and is the most operationally impactful next step.
 
 \end{doublespacing}

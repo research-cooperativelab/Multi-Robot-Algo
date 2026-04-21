@@ -160,7 +160,7 @@ three different angles, each in isolation, and no prior work puts all
 three together. Chapter~II explains the three strands in detail; in
 brief:
 
-\begin{itemize}
+\begin{enumerate}
 \item \textbf{Competitive search theory}, starting with the cow-path
 problem~\citep{BaezaYates1993}, produces elegant worst-case
 guarantees, but the geometries it studies are one-dimensional
@@ -172,7 +172,7 @@ treatment assumes robots can fly as far as they want.
 \item \textbf{Energy-constrained exploration} studies fuel-limited
 robots, but typically without formal competitive-ratio guarantees
 and without auction-based coordination.
-\end{itemize}
+\end{enumerate}
 
 Putting all three together---finite battery, auction coordination,
 and a competitive-ratio performance guarantee, in a two-dimensional
@@ -211,6 +211,26 @@ less, which inverts the naive intuition that a ``self-sufficient''
 robot with enough battery can simply brute-force the problem. Giving
 each robot a bigger battery does not remove the need for good
 coordination; it just shifts the failure mode.
+
+Recent disaster events confirm that multi-robot coordination under
+energy and communication constraints remains an open operational
+problem. The February 2023 earthquake in Turkey and Syria---the
+deadliest in the region in nearly a century, causing more than
+50,000 fatalities and rendering over 160,000 structures
+uninhabitable---saw large-scale deployment of thermal-imaging drones
+and ground robots for survivor localization. Post-incident analysis
+reported that the sheer scale of the disaster overwhelmed available
+robotic assets: robots duplicated coverage, radio links were
+unreliable in the rubble, and battery life was the primary
+operational constraint~\citep{ACMSurveyMRTA2025}. These are
+precisely the three problems---coordination, communication
+reliability, and energy---that this thesis addresses algorithmically.
+On the technology side, \citet{Coad2024SPROUT} recently field-tested
+a vine-like soft robot at a Massachusetts USAR training facility with
+professional first-responders and found that the single-robot
+deployment paradigm still dominates in practice---multi-robot
+coordination for USAR remains a gap between research and operation.
+The algorithms in this thesis are designed to close that gap.
 
 \section{Scope and Contributions}
 

@@ -2,12 +2,12 @@
 \phantomsection
 \addcontentsline{toc}{chapter}{ABSTRACT}
 \begin{center}
-\textbf{ABSTRACT}
+ABSTRACT
 
 \vspace{0.25in}
-\textbf{ON THE NUMERICAL ANALYSIS OF MULTI-ROBOT SEARCH\\
+ON THE NUMERICAL ANALYSIS OF MULTI-ROBOT SEARCH\\
 AND RESCUE ALGORITHMS IN UNKNOWN\\
-ENVIRONMENTS}
+ENVIRONMENTS
 
 \vspace{0.25in}
 By
@@ -21,19 +21,35 @@ Spring 2026
 
 \begin{doublespacing}
 \noindent
+Every minute after a structural collapse, the probability of finding
+survivors alive decreases. When autonomous robot teams are deployed to
+search the rubble, they face two simultaneous constraints: a finite
+battery budget that forces frequent returns to a charging base, and
+limited inter-robot communication that makes coordination difficult.
 This thesis studies the multi-robot search and rescue problem in which
 $R$ robots must locate a target hidden among $n$ candidate sites, each
 carrying a prior probability $p_i$ of containing the target, under a
-finite per-robot energy budget $E$. Four algorithmic models that
-systematically vary coordination and energy assumptions are formulated
-and evaluated by the Finder Competitive Ratio (FCR), the ratio of the
-finding robot's travel distance to the omniscient optimum. Theoretical
-upper bounds are derived for each model and validated over 500 Monte
-Carlo trials with parameter sweeps. Auction-based coordination yields
-a 6.6-fold improvement over random search; a bid function $p_i/d^2$
-that penalizes distance quadratically outperforms the standard $p_i/d$
-by 4.2 percent under energy constraints, motivated by a
-cost-foreclosure argument; and multi-node sorties close 92 percent of
-the gap between energy-constrained and unconstrained performance.
+finite per-robot energy budget $E$. Four algorithmic models spanning
+the energy--communication design space are introduced and compared:
+an uncoordinated random baseline (M1), an unconstrained-energy auction
+in which robots bid on sites and move freely between them (M2), an
+energy-constrained single-sortie auction in which each robot makes one
+round trip per iteration (M3), and a multi-sortie planner in which
+each robot chains several sites into a single energy-feasible excursion
+before returning to base (M4/M4*). Performance is measured by the
+Finder Competitive Ratio (FCR), the ratio of the finding robot's travel
+distance to the omniscient optimum, for which closed-form upper bounds
+are derived for each model. All bounds are validated through 500 Monte
+Carlo trials in a $10 \times 10$ square arena with $n = 30$ candidate
+sites and $R = 3$ robots, with parameter sweeps over the energy budget
+$E \in [8, 30]$ and fleet size $R \in [1, 6]$. Auction-based
+coordination yields a 6.6-fold improvement in FCR over uncoordinated
+random search; a novel bid function $p_i/d^2$ that penalizes distance
+quadratically outperforms the standard $p_i/d$ by 4.2 percent under
+energy constraints, justified by a cost-foreclosure argument showing
+that a distant anchor site not only costs more energy to reach but also
+shrinks the budget available for subsequent chain extensions; and
+multi-node sorties close 92 percent of the performance gap between
+energy-constrained and unconstrained operation.
 \end{doublespacing}
 \clearpage
