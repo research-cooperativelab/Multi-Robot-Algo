@@ -1,0 +1,6 @@
+variant,baseline,mean_variant,mean_baseline,delta_pct,W_stat,p_value,tag,direction
+alpha_1.0,alpha_2.0,3.1165,3.0926,0.77,119002,2.3314e-01,p=0.2331,higher
+alpha_1.5,alpha_2.0,3.1067,3.0926,0.46,49289,8.3953e-01,p=0.8395,higher
+alpha_2.5,alpha_2.0,3.0611,3.0926,-1.02,27745,5.5349e-01,p=0.5535,lower
+alpha_3.0,alpha_2.0,3.0550,3.0926,-1.21,54119,7.9674e-01,p=0.7967,lower
+adaptive,alpha_2.0,3.0990,3.0926,0.21,99898,4.5865e-02,p<0.05,higher
