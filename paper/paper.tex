@@ -144,23 +144,25 @@ FCR is a strict and honest metric: it compares our algorithms directly
 to the omniscient optimum and normalizes for how hard each individual
 instance is, making comparisons across environments meaningful.
 
-Across 500 Monte Carlo trials at the default configuration
+Across 5,000 Monte Carlo trials at the default configuration
 ($n{=}30$, $R{=}3$, $E{=}14$), four principal findings emerge:
 \begin{enumerate}
   \item Auction coordination alone reduces FCR by $6.6\times$ over
     uncoordinated random search (M2 vs.\ M1), confirming that
     \emph{communication mechanism} is the dominant design lever.
-  \item Probability-aware bids outperform the centralized
-    distance-optimal Hungarian assignment by $5.7\%$ (M3
-    vs.\ $\mathrm{H}_d$), showing that \emph{optimizing for probability
-    beats optimizing for geometry} in target search.
-  \item Multi-node sorties (M4) recover $92\%$ of the FCR gap between
+  \item Probability-aware SSI auctions outperform the centralized
+    distance-optimal Hungarian assignment by $8.1\%$ (M3
+    vs.\ $\mathrm{H}_d$); a key ablation reveals that adding
+    probability-weighted bids to Hungarian assignment \emph{worsens}
+    performance---the SSI mechanism's iterative reassignment, not the
+    bid function alone, is what enables effective target-directed search.
+  \item Multi-node sorties (M4) recover $90\%$ of the FCR gap between
     the battery-constrained (M3) and battery-free (M2) settings,
     nearly eliminating the battery penalty with smarter scheduling.
   \item Our novel $p/d^2$ bid function achieves the \emph{best FCR}
-    of all models with energy constraints, improving upon $p/d$ by
-    $4.2\%$ at the default configuration and by a growing margin
-    across the energy and fleet-size sweeps.
+    of all models with energy constraints; the advantage is $1.5\%$ at
+    the default configuration and grows to ${\sim}12\%$ as $E$ decreases,
+    where cost-foreclosure is most active.
 \end{enumerate}
 All theoretical upper bounds are verified to hold empirically across
 every configuration tested.
@@ -1018,7 +1020,7 @@ Section~\ref{sec:future}.
   \includegraphics[width=0.9\columnwidth]{fig_energy_sweep.png}
   \caption{Mean FCR vs.\ energy budget $E$ at $R{=}3$.
   M4* FCR decreases monotonically and crosses below M2 at $E{\approx}22$;
-  M3 and $\mathrm{H}_d$ plateau independent of $E$.}\label{fig:energy}
+  M3 and $\mathrm{H}_d$ plateau independent of $E$ (500 trials per configuration point).}\label{fig:energy}
 \end{figure}
 
 \textbf{Energy sweep} (Fig.~\ref{fig:energy}).
@@ -1041,7 +1043,7 @@ budget.
   \caption{Mean FCR vs.\ fleet size $R$ at $E{=}14$.
   All coordinated models exhibit diminishing returns beyond $R{=}4$,
   consistent with the conjecture that coordinated FCR is $O(1)$ in
-  $R$.}\label{fig:robots}
+  $R$ (500 trials per configuration point).}\label{fig:robots}
 \end{figure}
 
 \textbf{Fleet-size sweep} (Fig.~\ref{fig:robots}).
@@ -1085,6 +1087,9 @@ $d_{\min}$ & M1 & M2 & M3 & M4 & M4* & $\mathrm{H}_d$ \\
 \end{center}
 
 No conclusion in Section~\ref{sec:results} depends on the choice of threshold.
+
+\smallskip
+{\footnotesize \textit{Note:} These sensitivity runs use 500 independent trials per threshold, run separately from the 5{,}000-trial main comparison. The M4* value of $2.98$ at $d_{\min}{=}1.0$ reflects a different random seed; the authoritative single-point mean is $3.11 \pm 0.058$ from Table~\ref{tab:main}.}
 
 \textbf{Greedy chain vs.\ 2-opt tour optimization.}
 Algorithm~\ref{alg:chain} selects extensions in $O(|\mathcal{U}|)$ per step,
@@ -1227,6 +1232,7 @@ For $R = \Theta(n)$, $D_{\mathrm{opt}} \to 0$ and FCR saturates to $\Theta(1)$
 for all coordinated models---the true \emph{over-deployment threshold}.
 These results formally confirm that \emph{coordination mechanism, not fleet
 size}, is the primary design lever in multi-robot SAR.
+A complete formal proof with explicit constants and Jensen-safe conditioning is provided in the supplementary file \texttt{paper/\_theory\_scaling.tex} in the repository.
 
 \textbf{Alternative objectives and multi-objective analysis.}
 FCR measures only the finding robot's distance.
