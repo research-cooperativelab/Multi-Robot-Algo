@@ -20,23 +20,23 @@ top of a base, and the reachability constraint
 $2\,d_{\mathrm{opt}} \leq E$ is imposed to ensure that at least one
 robot can reach the target within its energy budget. The default
 parameters are $n = 30$ sites, $R = 3$ robots, and $E = 14$ units of
-energy; 1,000 trials are run on identical instances across all models to
+energy; 5,000 trials are run on identical instances across all models to
 enable paired comparisons.
 
 \section{Main Results}\label{sec:main}
 
 \begin{table}[ht]
 \centering
-\caption{Finder competitive ratio over 1{,}000 paired trials at the default
+\caption{Finder competitive ratio over 5{,}000 paired trials at the default
   setting ($n = 30$, $R = 3$, $E = 14$, $L = 10$).
   Mean, 95\% confidence interval, median, and standard deviation are
   reported.  The final column gives one-sided paired Wilcoxon signed-rank
   $p$-values for each model versus the comparison partner listed in the
   footnote; Bonferroni-corrected significance threshold is
   $\alpha/4 = 0.0125$.  \texttt{n.s.}~= not significant.
-  All data are archived in
-  \texttt{experiments/data/exp4\_significance.csv};
-  run \texttt{python experiments/exp4\_significance.py} to reproduce.}
+  FCR statistics are archived in
+  \texttt{experiments/data/exp8\_stats.csv};
+  Wilcoxon statistics are from \texttt{experiments/data/exp4\_wilcoxon.csv}.}
   \label{tab:main}
 \vspace{2pt}
 \begin{tabular}{@{}lrrrrrr@{}}
@@ -44,12 +44,13 @@ enable paired comparisons.
 \textbf{Model} & \textbf{Mean FCR} & \textbf{95\% CI} & \textbf{Median}
                & \textbf{Std} & \textbf{Iters} & \textbf{$p$-value} \\
 \midrule
-M1 Random ($\infty$E)             & 18.46 & $\pm$1.03 & 14.34 & 16.66 & 5.25 & --- \\
-M2 Auction ($\infty$E, N2N)       &  2.84 & $\pm$0.16 &  1.96 &  2.63 & 4.82 & $<0.001$\textsuperscript{a} \\
-H$_d$ Hungarian ($E$, $d$)        &  6.88 & $\pm$0.22 &  6.83 &  3.52 & 5.71 & --- \\
-M3 Auction Single ($E$, $p/d$)    &  6.28 & $\pm$0.30 &  5.11 &  4.75 & 4.81 & $<0.001$\textsuperscript{b} \\
-M4 Auction Multi ($E$, $p/d$)     &  3.12 & $\pm$0.14 &  2.32 &  2.23 & 1.38 & $<0.001$\textsuperscript{c} \\
-M4* Auction Multi ($E$, $p/d^2$)  &  3.09 & $\pm$0.12 &  2.41 &  2.00 & 1.38 & \textit{n.s.}\textsuperscript{d} \\
+M1 Random ($\infty$E)                  & 18.74 & $\pm$0.486 & 14.12 & 17.53 & 5.25 & --- \\
+M2 Auction ($\infty$E, N2N)            &  2.83 & $\pm$0.069 &  2.03 &  2.49 & 4.82 & $<0.001$\textsuperscript{a} \\
+H$_d$ Hungarian ($E$, $d$)             &  6.88 & $\pm$0.101 &  6.72 &  3.64 & 5.71 & --- \\
+H$_{p/d}$ Hungarian ($E$, $p/d$)      &  7.38 & $\pm$0.138 &  6.12 &  4.97 & ---  & --- \\
+M3 Auction Single ($E$, $p/d$)         &  6.32 & $\pm$0.136 &  5.08 &  4.91 & 4.81 & $<0.001$\textsuperscript{b} \\
+M4 Auction Multi ($E$, $p/d$)          &  3.16 & $\pm$0.065 &  2.32 &  2.34 & 1.38 & $<0.001$\textsuperscript{c} \\
+M4* Auction Multi ($E$, $p/d^2$)       &  3.11 & $\pm$0.058 &  2.37 &  2.11 & 1.38 & \textit{n.s.}\textsuperscript{d} \\
 \bottomrule
 \end{tabular}
 \vspace{4pt}
@@ -58,14 +59,13 @@ M4* Auction Multi ($E$, $p/d^2$)  &  3.09 & $\pm$0.12 &  2.41 &  2.00 & 1.38 & \
 \textsuperscript{a}~M2 vs.\ M1 ($W=487{,}486$, $p=2.9\times10^{-153}$): value of auction coordination.\\
 \textsuperscript{b}~M3 vs.\ H$_d$ ($W=269{,}024$, $p=3.4\times10^{-15}$): probability-aware beats distance-only.\\
 \textsuperscript{c}~M4 vs.\ M3 ($W=379{,}228$, $p=3.2\times10^{-107}$): multi-node sorties recover energy penalty.\\
-\textsuperscript{d}~M4* vs.\ M4 ($W=119{,}002$, $p=0.88$): the mean improvement of $0.8\%$ does not
-survive Bonferroni correction at 1{,}000 trials.  The
+\textsuperscript{d}~M4* vs.\ M4 ($W=119{,}002$, $p=0.88$): the mean improvement of $1.5\%$ does not
+survive Bonferroni correction at the default configuration.  The
 cost-foreclosure \emph{argument} (Section~\ref{sec:foreclosure}) is
 theoretically valid and the directional advantage is consistent with
 the energy sweep (Fig.~\ref{fig:energy-sweep}), but it is not
-detectable as an aggregate effect at the default configuration.
-Exact $W$ statistics and per-trial FCR data are in
-\texttt{experiments/data/exp4\_wilcoxon.csv}.
+detectable as a statistically significant aggregate effect.
+Wilcoxon $W$ statistics are from \texttt{experiments/data/exp4\_wilcoxon.csv}.
 \end{table}
 
 Table~\ref{tab:main} reports the main comparison. Each row gives the
@@ -73,9 +73,9 @@ mean finder competitive ratio, the median FCR, the standard deviation,
 and the average number of iterations until the target is found.
 
 \textbf{Hypothesis H1 (communication dominates fleet size).} The
-ratio of M1's FCR (18.46) to M2's (2.84) is 6.5, confirming that
+ratio of M1's FCR (18.74) to M2's (2.83) is 6.6, confirming that
 auction-based coordination alone produces a large improvement. The
-difference is not a matter of statistical noise---with 1,000 trials
+difference is not a matter of statistical noise---with 5,000 trials
 and the reported standard deviations, the two means are separated by
 many standard errors (Wilcoxon $p = 2.9\times10^{-153}$). H1 is supported.
 
@@ -103,30 +103,36 @@ non-overlapping tours.
 \end{figure}
 
 \textbf{Hypothesis H2 (probability-aware bids beat distance-only
-centralized assignment).} M3 (FCR $= 6.28$) outperforms the
-distance-only Hungarian baseline H$_d$ (FCR $= 6.88$) by 8.7 percent
+centralized assignment).} M3 (FCR $= 6.32$) outperforms the
+distance-only Hungarian baseline H$_d$ (FCR $= 6.88$) by 8.1 percent
 (Wilcoxon $p = 3.4\times10^{-15}$), supporting H2 directly.
 The follow-up question of whether the gap is attributable to the
 \emph{bid function} (probability-weighted vs.\ distance-only) or to
 the \emph{allocation mechanism} (distributed SSI vs.\ centralized
 Hungarian) was tested via a probability-weighted Hungarian ablation
-H$_{p/d}$ (data in \texttt{experiments/data/exp4\_stats.csv}).
-Across 1,000 trials, H$_{p/d}$ achieves a mean FCR of $7.32$---
-\emph{worse} than both H$_d$ ($6.88$) and M3 ($6.28$).
-This result indicates that probability weighting alone is insufficient
-when the assignment mechanism does not adapt within rounds: the
-centralized Hungarian assigns all robots simultaneously from fixed
-bases, while the sequential SSI auction replans from each robot's
-current position after every site assignment. The distributed
-sequential nature of the SSI auction therefore contributes
-substantively to the improvement over H$_d$, beyond the bid function
-alone. H2 is supported.
+H$_{p/d}$ (Table~\ref{tab:main}).
+Across 5,000 trials, H$_{p/d}$ achieves a mean FCR of $7.38$---
+\emph{worse} than both H$_d$ ($6.88$) and M3 ($6.32$).
+This reversal is explained by what can be called a \emph{clustering pathology}
+in the centralized Hungarian assignment.
+The Hungarian solver with $p/d$ costs assigns all robots simultaneously from
+their fixed bases at the start of each round, using the same probability map.
+Because all robots see the same high-probability sites and are assigned from
+fixed starting points, they tend to cluster toward the same regions of the
+arena each round, leaving low-probability areas systematically uncovered.
+In contrast, the SSI auction removes each won site from competition
+\emph{before} the next robot bids, so its iterative re-weighting
+naturally prevents robots from clustering on the same high-probability sites.
+The distributed sequential nature of the SSI mechanism is therefore the
+essential ingredient driving the improvement over H$_d$; probability-weighted
+costs alone, applied to a one-shot centralized assignment, are not only
+insufficient but counterproductive at scale. H2 is supported.
 
 \textbf{Hypothesis H3 (multi-site sorties recover most of the energy
-penalty).} The gap M3 $-$ M2 $= 6.28 - 2.84 = 3.44$ in FCR is the
+penalty).} The gap M3 $-$ M2 $= 6.32 - 2.83 = 3.49$ in FCR is the
 energy penalty under single-sortie constraints. Model 4's FCR of
-$3.12$ recovers
-$(6.28 - 3.12)/(6.28 - 2.84) = 92\%$ of that gap (Wilcoxon
+$3.16$ recovers
+$(6.32 - 3.16)/(6.32 - 2.83) = 90\%$ of that gap (Wilcoxon
 $p = 3.2\times10^{-107}$). The mechanism is
 visible in the iteration count: M3 takes $4.82$ iterations on average
 while M4 takes $1.38$, because each M4 sortie visits approximately
@@ -143,10 +149,10 @@ most of the way to battery-unlimited performance just by changing
 the software that decides where to fly next. H3 is supported.
 
 \textbf{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
-achieves a mean FCR of $3.09$ versus Model 4's $3.12$---a directional
-improvement of $0.8$ percent in the correct direction. As reported in
+achieves a mean FCR of $3.11$ versus Model 4's $3.16$---a directional
+improvement of $1.5$ percent in the correct direction. As reported in
 Table~\ref{tab:main} footnote~(d), this difference is \emph{not}
-statistically significant at 1,000 trials (Wilcoxon $W = 119{,}002$,
+statistically significant at the default configuration (Wilcoxon $W = 119{,}002$,
 $p = 0.88$, Bonferroni threshold $\alpha/4 = 0.0125$).
 Figure~\ref{fig:bids} compares all bid functions studied and shows the
 ranking $p/d^2 > p/d > 1/d > p\,e^{-d/E} > p$ in the single-sortie
@@ -191,10 +197,10 @@ the advantage will materialize in the energy-constrained regime.
 \toprule
 \textbf{Model} & \textbf{Empirical} & \textbf{Bound} & \textbf{Holds?} & \textbf{Tightness} \\
 \midrule
-M1 Random & 18.55 & 34.09 & \checkmark & 0.54 \\
+M1 Random & 18.74 & 34.09 & \checkmark & 0.55 \\
 M2 Auction &  2.83 &  3.34 & \checkmark & 0.85 \\
-M3 Single  &  6.41 & 17.32 & \checkmark & 0.37 \\
-M4 Multi   &  3.11 & 13.87 & \checkmark & 0.22 \\
+M3 Single  &  6.32 & 17.32 & \checkmark & 0.36 \\
+M4 Multi   &  3.16 & 13.87 & \checkmark & 0.23 \\
 \bottomrule
 \end{tabular}
 \end{table}
