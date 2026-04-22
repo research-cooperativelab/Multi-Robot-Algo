@@ -205,50 +205,41 @@ of all results presented in this thesis.
 The following terms are used throughout the thesis.
 Formal definitions appear in Chapter~\ref{ch:problem}.
 
-\begin{description}[leftmargin=2em, style=nextline]
-\item[Robot.]
-  An autonomous mobile agent capable of traveling to a site,
-  performing an instantaneous inspection, and returning to a base
-  station.
-  The results generalize beyond aerial vehicles to any mobile agent
-  class.
+A \emph{robot} is an autonomous mobile agent capable of traveling to a
+site, performing an instantaneous inspection, and returning to a base
+station; the results generalize beyond aerial vehicles to any mobile
+agent class.
 
-\item[Site.]
-  A candidate location $i \in \{1,\ldots,n\}$ with known spatial
-  position and prior probability $p_i$ of containing the target.
-  Sites are fixed throughout each instance.
+A \emph{site} is a candidate location $i \in \{1,\ldots,n\}$ with known
+spatial position and prior probability $p_i$ of containing the target;
+sites are fixed throughout each instance.
 
-\item[Prior probability.]
-  The probability $p_i$ that site $i$ contains the target, derived
-  from domain knowledge before search begins.
-  Priors sum to one: $\sum_i p_i = 1$.
-  After a negative inspection of site $i$, the prior is Bayesian-updated
-  to zero and the remaining probabilities are renormalized.
+The \emph{prior probability} $p_i$ is the probability that site $i$
+contains the target, derived from domain knowledge before search begins.
+Priors sum to one ($\sum_i p_i = 1$), and after a negative inspection of
+site $i$, the prior is Bayesian-updated to zero and the remaining
+probabilities are renormalized.
 
-\item[Sortie.]
-  A single round trip by one robot:
-  base $\rightarrow$ one or more sites $\rightarrow$ base.
-  Energy-constrained sorties must satisfy a budget $E$.
+A \emph{sortie} is a single round trip by one robot: base $\rightarrow$
+one or more sites $\rightarrow$ base; energy-constrained sorties must
+satisfy a budget $E$.
 
-\item[Auction / SSI auction.]
-  The coordination protocol used by Models~2--4.
-  In a \emph{sequential single-item} (SSI) auction, one site is
-  auctioned per round: every robot submits a bid for every available
-  site, the globally highest bid wins, and the process repeats until
-  all robots hold an assignment.
+The coordination protocol used by Models~2--4 is a
+\emph{Sequential Single-Item (SSI) auction}: one site is auctioned per
+round, every robot submits a bid for every available site, the globally
+highest bid wins and that (robot, site) pair is removed, and the process
+repeats until all robots hold an assignment.
 
-\item[Bid function.]
-  The formula mapping a (robot, site) pair to a scalar bid.
-  Five functions are studied: $p_i$ (probability only), $1/d$
-  (distance only), $p_i/d$ (Stone's rule), $p_i/d^2$ (this thesis),
-  and $p_i e^{-d/E}$ (exponential budget decay).
+A \emph{bid function} maps a (robot, site) pair to a scalar bid.
+Five functions are studied: $p_i$ (probability only), $1/d$
+(distance only), $p_i/d$ (Stone's rule), $p_i/d^2$ (this thesis),
+and $p_i e^{-d/E}$ (exponential budget decay).
 
-\item[Finder Competitive Ratio (FCR).]
-  The ratio of the finding robot's total travel distance $D_f$ to the
-  omniscient optimum $D_{\mathrm{opt}} = \min_r d(x_0^r, x_\tau)$.
-  $\mathrm{FCR} = 1$ is optimal; $\mathrm{FCR} = k$ means the
-  finding robot traveled $k$ times the minimum possible distance.
-\end{description}
+The \emph{Finder Competitive Ratio (FCR)} is the ratio of the finding
+robot's total travel distance $D_f$ to the omniscient optimum
+$D_{\mathrm{opt}} = \min_r d(x_0^r, x_\tau)$.
+$\mathrm{FCR} = 1$ is optimal; $\mathrm{FCR} = k$ means the finding
+robot traveled $k$ times the minimum possible distance.
 
 \section{Thesis Organization}
 
