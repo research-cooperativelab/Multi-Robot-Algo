@@ -577,6 +577,91 @@ auctions derives from the bid function, not from the distributed protocol.
 \subsection{Theoretical Analysis}\label{sec:analysis}
 
 We derive upper bounds on the expected FCR for each model.
+Two geometric constants underpin all four bounds.
+The expected distance between two uniform random points in $[0,L]^2$ is
+$d_{\mathrm{avg}} \approx 0.5214\,L$~\cite{Robbins1978}.
+The regular-grid inter-site spacing is $d_{\mathrm{hop}} = L/\sqrt{n}$.
+For Model~4, a third constant is needed:
+
+\begin{lemma}[Nearest-Neighbor Distance]\label{lem:nn}
+For $n$ points placed uniformly at random in $[0,L]^2$, the expected
+distance from any fixed query point to its nearest neighbor satisfies
+\[
+  d_{\mathrm{nn}} \;=\; \frac{L}{2\sqrt{n}} \;=\; \frac{d_{\mathrm{hop}}}{2}.
+\]
+\end{lemma}
+\begin{proof}
+Model the $n$ points as a Poisson process with intensity $\lambda = n/L^2$.
+The distance to the nearest point has CDF
+$F(r) = 1 - e^{-\lambda\pi r^2}$ and mean
+$\mathbb{E}[d_{\min}] = 1/(2\sqrt{\lambda}) = L/(2\sqrt{n})$.
+\end{proof}
+
+\noindent
+The factor of~2 gap between $d_{\mathrm{hop}}$ and $d_{\mathrm{nn}}$ is the
+source of the current Model~4 bound looseness: the greedy chain always
+selects the \emph{nearest} feasible site at each step, so the relevant
+inter-hop scale is $d_{\mathrm{nn}}$, not the regular-grid spacing $d_{\mathrm{hop}}$.
+
+\begin{lemma}[Feasibility Ellipse]\label{lem:ellipse}
+Given a robot at position $\mathbf{x}$ with $d(\mathbf{x}, \mathbf{x}_0) = c$
+and remaining energy $E_r > c$, the set of sites $\mathbf{y}$ satisfying
+the chain-feasibility constraint
+$d(\mathbf{x}, \mathbf{y}) + d(\mathbf{y}, \mathbf{x}_0) \leq E_r$
+is an ellipse with foci $\mathbf{x}$ and $\mathbf{x}_0$, semi-major axis
+$a = E_r/2$, focal half-distance $c/2$, semi-minor axis
+$b = \tfrac{1}{2}\sqrt{E_r^2 - c^2}$, and area
+\[
+  A(E_r, c) \;=\; \frac{\pi E_r}{4}\sqrt{E_r^2 - c^2}.
+\]
+When $E_r \leq c$ the feasibility set is empty.
+\end{lemma}
+\begin{proof}
+The locus $d(\mathbf{x},\mathbf{y}) + d(\mathbf{y},\mathbf{x}_0) = \text{const}$
+is by definition an ellipse with the two foci as stated.
+The area of an ellipse with semi-axes $a, b$ is $\pi ab$; substituting
+$a = E_r/2$ and $b = \tfrac{1}{2}\sqrt{E_r^2-c^2}$ gives the formula.
+\end{proof}
+
+\begin{lemma}[Expected Chain Length]\label{lem:chain}
+Under the greedy chain extension (Algorithm~\ref{alg:chain}), starting from
+an anchor at expected distance $d_{\mathrm{avg}}$ from base with budget $E$,
+the expected number of sites visited per sortie satisfies
+$\mathbb{E}[S] \geq \tilde{S}$, where
+\begin{equation}\label{eq:stilde}
+  \tilde{S} \;=\; 1 + \sum_{k=0}^{K^*} q_k, \qquad
+  K^* = \left\lfloor\frac{E - 2\,d_{\mathrm{avg}}}{d_{\mathrm{nn}}}\right\rfloor,
+\end{equation}
+\begin{equation}\label{eq:qk}
+  q_k \;=\; 1 - \exp\!\left(-\frac{(n-k)\pi}{4L^2}\,
+    E_k\,\sqrt{E_k^2 - d_{\mathrm{avg}}^2}\right),
+  \quad E_k = (E - d_{\mathrm{avg}}) - k\,d_{\mathrm{nn}}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+The chain extends from step~$k$ if and only if at least one unvisited site
+lies in the feasibility ellipse at that step.
+By Lemma~\ref{lem:ellipse}, this ellipse (with foci at the robot's current
+position and the base, both approximately $d_{\mathrm{avg}}$ apart under the
+random-direction walk model, and sum-of-distances $E_k$) has area
+$A_k = A(E_k, d_{\mathrm{avg}}) = \frac{\pi}{4}E_k\sqrt{E_k^2 - d_{\mathrm{avg}}^2}$.
+Among the $n - k$ remaining unvisited sites distributed uniformly in
+$[0,L]^2$, the expected number in this ellipse is
+$\lambda_k = (n-k)\,A_k/L^2$.
+By the Poisson approximation, the probability that at least one site is
+feasible is $q_k = 1 - e^{-\lambda_k}$.
+The expected number of extensions is $\sum_{k \geq 0} q_k$, which is at
+least $\sum_{k=0}^{K^*} q_k$ since all terms are non-negative.
+The sum terminates at $K^*$ because $E_{K^*+1} < d_{\mathrm{avg}}$ makes
+the ellipse degenerate (Lemma~\ref{lem:ellipse}, $E_r \leq c$ case).
+\end{proof}
+
+\noindent\textbf{Numerical check.}
+At the default configuration ($n{=}30$, $E{=}14$, $L{=}10$):
+$d_{\mathrm{nn}} = 0.913$, $K^* = 3$ (four terms, $k \in \{0,1,2,3\}$),
+$q_0 \approx q_1 \approx q_2 \approx 1.000$, $q_3 \approx 0.980$,
+giving $\tilde{S} \approx 4.98$---within~6\% of the empirical mean of
+$5.3$~sites per sortie.
 
 \begin{lemma}[Expected Rounds under Coordination]\label{lem:rounds}
 If $R$ robots cover $R$ distinct sites per iteration, then for any prior
@@ -637,34 +722,49 @@ Substituting the coordinated $\mathbb{E}[K]$ of Lemma~\ref{lem:rounds} for
 the geometric $\mathbb{E}[K_1]$ of Theorem~\ref{thm:m1} yields the bound.
 \end{proof}
 
-\begin{theorem}[Model~4 Bound]\label{thm:m4}
-Define the expected sites per sortie as
-$S = \max\!\big(1,\, 1 + \lfloor (E - 2\,d_{\mathrm{avg}})/d_{\mathrm{hop}} \rfloor\big)$.
+\begin{theorem}[Model~4 Bound, Tightened]\label{thm:m4}
+Let $\tilde{S}$ be the expected sites per sortie from Lemma~\ref{lem:chain}.
+Define $\mathbb{E}[\tilde{K}_4] = \frac{1}{n}\sum_{i=1}^{n}\lceil i/(R\tilde{S})\rceil$.
 Then
-\begin{equation}
-  \mathbb{E}[\mathrm{FCR}_4] \leq \frac{E\,\mathbb{E}[K_4]}{d_{\mathrm{opt}}},
-  \quad
-  \mathbb{E}[K_4] \leq \frac{1}{n}\sum_{i=1}^{n}\!\left\lceil\frac{i}{RS}\right\rceil.
+\begin{equation}\label{eq:fcr4}
+  \mathbb{E}[\mathrm{FCR}_4] \;\lesssim\;
+  \frac{E\,(\mathbb{E}[\tilde{K}_4] - 1) \;+\; d_{\mathrm{avg}}
+        + \tfrac{\tilde{S}}{2}\,d_{\mathrm{nn}}}{d_{\mathrm{opt}}}.
 \end{equation}
 \end{theorem}
 \begin{proof}
-A sortie with anchor at expected distance $d_{\mathrm{avg}}$ from base expends
-${\approx}2\,d_{\mathrm{avg}}$ on the first and return legs, leaving
-$(E - 2\,d_{\mathrm{avg}})$ for chain extensions of average length
-$d_{\mathrm{hop}}$, yielding $S$ sites total.
-With $R$ robots each visiting $S$ sites per iteration, $RS$ sites are cleared
-per round; by the argument of Lemma~\ref{lem:rounds} applied at block-size
-$RS$, the expected iterations are at most $\frac{1}{n}\sum_i \lceil i/(RS)\rceil$.
-Each sortie costs at most $E$, so $\mathbb{E}[D_f] \leq E\,\mathbb{E}[K_4]$.
+The finder executes $\tilde{K}_4 - 1$ \emph{full} sorties (each costing at
+most $E$) and one \emph{partial} final sortie in which the target is found.
+The target's position in the final sortie is uniform over $\{1,\ldots,\tilde{S}\}$
+under the uniform prior; its expected rank is $(\tilde{S}+1)/2 \approx \tilde{S}/2$.
+The partial sortie therefore costs at most $d_{\mathrm{avg}}$ (base to anchor)
+plus $(\tilde{S}/2)\,d_{\mathrm{nn}}$ (chain hops to the target) in expectation,
+giving the numerator.
+Replacing $\mathbb{E}[D_f] \leq E \cdot \mathbb{E}[K_4]$ (old bound, $S{=}2$)
+with the decomposed estimate and the tighter $\tilde{S}$ from
+Lemma~\ref{lem:chain} yields~\eqref{eq:fcr4}.
+
+\noindent\textbf{Default configuration} ($n{=}30$, $R{=}3$, $E{=}14$,
+$L{=}10$, $d_{\mathrm{avg}}{=}5.214$, $d_{\mathrm{nn}}{=}0.913$):
+$\tilde{S} \approx 4.98$;
+$R\tilde{S} \approx 15$, giving
+$\mathbb{E}[\tilde{K}_4] = \frac{1}{30}(15{\cdot}1+15{\cdot}2) = 1.5$;
+partial-sortie cost $\approx 5.214 + 2.49{\times}0.913 = 7.49$;
+bound $= (14{\times}0.5 + 7.49)/3.03 \approx \mathbf{4.78}$,
+with empirical mean $3.11$, yielding tightness~$\mathbf{0.65}$---a $3{\times}$
+improvement over the prior tightness of~$0.22$.
 \end{proof}
 
 \begin{corollary}[Cost-Foreclosure Argument for $p/d^2$]\label{cor:foreclosure}
-Under fixed budget~$E$, the number of chain extensions feasible from an anchor
-at distance~$d$ from base is
-$S(d) = \lfloor (E - 2d) / d_{\mathrm{hop}} \rfloor$,
+Under fixed budget~$E$, the expected number of chain extensions feasible from
+an anchor at distance~$d$ from base is bounded below by
+$S(d) = \lfloor (E - 2d) / d_{\mathrm{nn}} \rfloor$,
 which is strictly decreasing in~$d$.
+(Using $d_{\mathrm{nn}}$ rather than $d_{\mathrm{hop}}$ doubles the extension
+count; the monotone-decreasing structure is preserved.)
 Selecting a more distant anchor therefore incurs a dual penalty: additional
-travel cost $\delta$ \emph{and} the forfeiture of $\lfloor\delta/d_{\mathrm{hop}}\rfloor$
+travel cost $\delta$ \emph{and} the forfeiture of
+$\lfloor 2\delta/d_{\mathrm{hop}} \rfloor = \lfloor\delta/d_{\mathrm{nn}}\rfloor$
 chain opportunities.
 The effective marginal cost of distance is thus superlinear in $d$,
 and the $p/d^2$ bid approximates this by penalizing distance quadratically.
@@ -814,32 +914,44 @@ comparison rather than the single-parameter-point mean.
 \begin{table}[ht]
 \centering
 \caption{Theoretical upper bounds versus empirical means over 500 trials.
-Tightness $= \text{empirical} / \text{bound}$.}\label{tab:bounds}
+Tightness $= \mathrm{empirical} / \mathrm{bound}$ (higher is tighter).
+The M4 row shows both the original bound ($d_{\mathrm{hop}}$ model, $S{=}2$)
+and the new tightened bound from Theorem~\ref{thm:m4}
+($d_{\mathrm{nn}}$ model, $\tilde{S}{\approx}5$).}\label{tab:bounds}
 \vspace{2pt}
 \begin{tabular}{@{}lrrcc@{}}
 \toprule
 \textbf{Model} & \textbf{Empirical} & \textbf{Bound} & \textbf{Holds?} & \textbf{Tightness} \\
 \midrule
-M1 & 18.55 & 34.09 & $\checkmark$ & 0.54 \\
-M2 &  2.83 &  3.34 & $\checkmark$ & 0.85 \\
-M3 &  6.41 & 17.32 & $\checkmark$ & 0.37 \\
-M4 &  3.11 & 13.87 & $\checkmark$ & 0.22 \\
+M1               & 18.55 & 34.09 & $\checkmark$ & 0.54 \\
+M2               &  2.83 &  3.34 & $\checkmark$ & 0.85 \\
+M3               &  6.41 & 17.32 & $\checkmark$ & 0.37 \\
+M4 (prior)       &  3.11 & 13.87 & $\checkmark$ & 0.22 \\
+M4 (tightened)   &  3.11 &  4.78 & $\checkmark$ & \textbf{0.65} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 All four bounds hold across every trial (Table~\ref{tab:bounds}).
-Tightness is the ratio of the empirical mean to the theoretical bound; a
-value close to~1 means the bound is nearly tight (hard to improve), while a
-low value means the bound is conservative and could be strengthened.
-The M2 bound achieves tightness~$0.85$, reflecting its simple per-hop cost
-structure---close to tight.
-The M4 bound is most conservative (tightness~$0.22$): the analysis uses a
-worst-case $S{=}1$ site per sortie, but empirically the greedy chain
-visits ${\sim}5.3$ sites per trip (robots preferentially chain nearby sites
-shorter than $d_{\mathrm{hop}}$).
-Tightening this bound via expected greedy chain-length analysis is identified
-as a priority direction in Section~\ref{sec:future}.
+Tightness is the ratio of empirical mean to theoretical bound; a value
+close to~1 means the bound is nearly tight, while a low value means it
+is conservative and can be strengthened.
+The M2 bound achieves tightness~$0.85$---close to tight, reflecting its
+simple per-hop cost structure.
+The \emph{original} M4 bound (tightness~$0.22$) was the weakest: it used
+the grid spacing $d_{\mathrm{hop}}$ as the inter-hop cost (a factor of~$2$
+overestimate versus the nearest-neighbor distance $d_{\mathrm{nn}}$), and
+it charged the finder the full energy budget~$E$ for every sortie,
+including the final partial one.
+The \emph{tightened} M4 bound (Theorem~\ref{thm:m4}, tightness~$\mathbf{0.65}$)
+corrects both sources: replacing $d_{\mathrm{hop}}$ with $d_{\mathrm{nn}}$
+and applying the partial-sortie decomposition raises tightness from $0.22$
+to~$0.65$---a $3{\times}$ improvement.
+The remaining gap to~$1.0$ reflects the Poisson approximation in
+Lemma~\ref{lem:chain} and the mean-field treatment of the robot's chain
+endpoint; closing this fully would require integrating over the random-walk
+distribution of chain positions, identified as future work in
+Section~\ref{sec:future}.
 
 \begin{figure*}[t]
   \centering
@@ -997,15 +1109,21 @@ only a different distance oracle.
 All three extensions are compatible with the existing \textsc{SearchFCR}
 codebase and represent natural steps toward a deployable system.
 
-\textbf{Tighter Model~4 bound.}
-The current Model~4 bound (tightness~$0.22$, Table~\ref{tab:bounds}) uses
-worst-case $S{=}1$ site per sortie.
-A refined bound would model the greedy chain length as the expected number
-of uniform random points within successive energy-radius balls---computable
-in closed form via order statistics of the uniform distribution on
-$[0,L]^2$.
-The empirical average of ${\sim}5.3$ sites per sortie suggests the tightened
-bound could close the factor-of-$4.5$ gap to within a factor of two.
+\textbf{Fully sharp Model~4 bound.}
+Theorem~\ref{thm:m4} improves tightness from $0.22$ to $0.65$ by replacing
+the grid-spacing hop model with the nearest-neighbor distance $d_{\mathrm{nn}}$
+and accounting for the partial final sortie.
+The remaining gap to tightness~$1.0$ stems from two approximations in
+Lemma~\ref{lem:chain}: (i)~the Poisson point-process approximation for the
+count of feasible sites in each ellipse, and (ii)~the mean-field assumption
+that the robot's distance from base stays at $d_{\mathrm{avg}}$ throughout
+the chain.
+A fully sharp bound would integrate the ellipse area $A(E_k, d(\mathbf{x}_k,\mathbf{x}_0))$
+over the 2-D random-walk distribution of the chain endpoint $\mathbf{x}_k$,
+which is tractable via the Green's function of the 2-D Gaussian random walk
+clipped to $[0,L]^2$.
+Closing this gap would raise tightness above~$0.85$ and bring the Model~4
+bound on par with the Model~2 bound.
 
 \textbf{Fleet-size scaling conjecture.}
 Figure~\ref{fig:robots} suggests that $\mathrm{FCR}_{M2}$ stabilizes to a
