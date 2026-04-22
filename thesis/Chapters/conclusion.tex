@@ -46,23 +46,27 @@ Chapter~III.
 
 \begin{enumerate}
 \item Auction-based coordination yields a $6.6\times$ improvement in
-finder competitive ratio over random uncoordinated search, confirming
+finder competitive ratio over random uncoordinated search (M1 FCR $= 18.74$
+vs.\ M2 FCR $= 2.83$ over 5,000 trials), confirming
 that the communication mode---not the fleet size---is the dominant
 determinant of search efficiency, consistent with the theoretical
 prediction of \citet{Chrobak2015}.
-\item Probability-aware distributed auctions outperform a centralized
-distance-optimal Hungarian baseline by $5.7$ percent. An ablation in
-which the Hungarian solver is given the same probability-weighted
-costs as the auction eliminates the gap, demonstrating that the
-benefit is attributable to the bid function rather than to
-centralization.
-\item Multi-node sorties recover $92$ percent of the gap between the
+\item Probability-aware distributed auctions (M3 FCR $= 6.32$) outperform a centralized
+distance-optimal Hungarian baseline (H$_d$ FCR $= 6.88$) by $8.1$ percent.
+A probability-weighted Hungarian ablation H$_{p/d}$ (FCR $= 7.38$)
+performs \emph{worse} than H$_d$, demonstrating that the SSI auction's
+iterative site removal---not the bid function alone---is the essential
+mechanism. Giving the Hungarian solver probability-weighted costs without
+changing its one-shot centralized assignment structure introduces a
+clustering pathology that is absent in the sequential SSI auction.
+\item Multi-node sorties recover $90$ percent of the gap between the
 energy-constrained single-sortie algorithm and the
 unconstrained-energy auction baseline. A single greedy chain extension
 per sortie visits $\sim\!5.3$ sites on average at the default setting,
 cutting the iteration count from $4.81$ to $1.38$.
 \item A bid function $p_i / d^2$ that penalizes distance quadratically
-improves on the standard $p_i / d$ bid by $4.2$ percent under energy
+improves on the standard $p_i / d$ bid (M4* FCR $= 3.11$ vs.\ M4 FCR $= 3.16$,
+a $1.5$ percent directional improvement) under energy
 constraints. The result is justified by a cost-foreclosure argument:
 distant anchor sites not only cost more energy but also shorten the
 chain of future extensions, so the effective cost of distance is
@@ -101,19 +105,20 @@ for uniform site placements. This tighter bound would bring the
 analytical estimate from the current factor-of-$4.5$ gap down to
 within a factor of two of the empirical mean.
 
-\textbf{Fleet-size scaling conjecture.} The robot sweep
-(Chapter~V, Figure~5) suggests that coordinated models achieve
-FCR $= O(1)$ as $R \to \infty$ while uncoordinated models achieve
-only FCR $= \Omega(R^{-1})$. More precisely, the conjecture is that
-there exists a constant $c > 0$ such that for any $\epsilon > 0$,
-$\mathrm{FCR}_{M2} \leq c + \epsilon$ for all $R$ large enough, while
-$\mathrm{FCR}_{M1} \geq c' / \sqrt{R}$ for some constant $c' > 0$.
-A formal proof would require bounding the expected maximum of $R$
-exponential random variables---the round count in M1---and the
-expected minimum of $R$ base-to-target distances---the $d_{\mathrm{opt}}$
-denominator. This conjecture is accessible to formal verification and
-would significantly strengthen the case that communication is the
-primary design lever in multi-robot search.
+\textbf{Fleet-size scaling (proved).} The robot sweep
+(Chapter~V, Figure~5) is explained by the fleet-size scaling results
+proved in Section~\ref{sec:scaling} (Chapter~IV).
+In the experimentally relevant regime $1 \leq R \leq n/2$, both M1 and M2
+achieve $\mathbb{E}[\mathrm{FCR}] = \Theta(1/\sqrt{R})$, with M2's
+constant factor $\Theta(1/\sqrt{n})$ times smaller than M1's.
+The key lemma is $\mathbb{E}[D_{\mathrm{opt}}] = L/(2\sqrt{R}) + O(L/R)$,
+proved via the survival function of the minimum of $R$ i.i.d.\ uniform
+base-to-target distances.
+At $n = 30$, the coordination advantage is predicted to be
+$\approx 1/\sqrt{30} \approx 5.5\times$, consistent with the
+observed $6.6\times$ gap (within factor-of-mean approximation corrections).
+This rigorously confirms that communication mechanism, not fleet size,
+is the primary design lever in multi-robot search.
 
 \textbf{Comparison with learning-based approaches.} Recent DRL
 methods for multi-robot search~\citep{KimKim2025} optimize richer
