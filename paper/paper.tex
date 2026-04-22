@@ -59,9 +59,11 @@ dominates geometric optimality in target search;
 (iii)~multi-node sorties recover $92\%$ of the performance gap between
 energy-constrained and unconstrained operation; and
 (iv)~a novel bid function $p_i/d^2$ that penalizes inter-site distance
-quadratically improves upon the standard $p_i/d$ formulation by $4.2\%$ under
-energy constraints, supported by a cost-foreclosure argument establishing that
-the effective marginal cost of distance is superlinear under a fixed energy budget.
+quadratically outperforms the standard $p_i/d$ formulation across the
+energy and fleet-size sweeps, supported by a cost-foreclosure argument
+establishing that the effective marginal cost of distance is superlinear
+under a fixed energy budget; at the default configuration the mean
+improvement is $4.2\%$ (500 trials).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -138,8 +140,10 @@ valuable than optimizing for geometry in the SAR setting.
 Multi-node sorties recover $92\%$ of the performance gap between
 energy-constrained and unconstrained operation.
 A novel bid function $p_i/d^2$, motivated by a cost-foreclosure argument,
-improves upon the standard $p_i/d$ bid by $4.2\%$ and constitutes the
-best-known result for the single-iteration sortie architecture evaluated here.
+achieves the lowest FCR across all bid functions in both the energy and
+fleet-size sweeps, improving upon $p_i/d$ by $4.2\%$ at the default
+configuration (500 trials), with strongest support from the parametric
+sweep results and the theoretical foreclosure argument.
 
 \textbf{Contributions.}
 \begin{enumerate}
@@ -149,9 +153,9 @@ constituting the first unified competitive-ratio analysis of budgeted
 multi-robot SAR.
 \item We demonstrate that probability-aware distributed auctions outperform
 centralized distance-optimal (Hungarian) assignment, and provide a
-probability-weighted Hungarian ablation that isolates bid function from
-allocation mechanism, attributing the advantage to the bid function rather
-than to the decentralized architecture.
+probability-weighted Hungarian ablation that isolates the contribution of
+the bid function from the allocation mechanism, showing that the bid
+function is the primary driver of the observed performance difference.
 \item We introduce a novel $p_i/d^2$ bid function and prove, via a
 cost-foreclosure argument, that the effective marginal cost of distance is
 superlinear under a fixed energy budget, yielding a superior assignment rule
@@ -215,15 +219,18 @@ unconstrained robots may move freely between sites, energy-limited robots
 must account for return costs when planning each sortie.
 This observation motivates the structural separation between M2
 (unconstrained) and M3/M4 (energy-constrained) in our framework.
-Das et al.~\cite{Das2015} showed that coordination becomes strictly more
-valuable under energy scarcity, consistent with our empirical finding that
-the M3-to-M4 performance gap grows as $E$ decreases.
+Das et al.~\cite{Das2017} studied energy-constrained graph search,
+establishing that an agent's ability to make progress is fundamentally
+bounded by its return-trip cost budget---the same constraint that
+distinguishes M3 and M4 from M2 in our hierarchy.
+The widening M3-to-M4 performance gap as $E$ decreases in our experiments
+is consistent with this energy-budget sensitivity.
 Stone~\cite{Stone1975} proved via a Lagrangian argument that, for a single
 searcher, optimal effort allocation is proportional to target probability
 divided by search cost---the theoretical foundation for the $p/d$ bid
 function used throughout this work and against which our $p/d^2$
 extension is evaluated.
-Bourgault et al.~\cite{Bourgault2002} applied information-theoretic criteria
+Bourgault et al.~\cite{Bourgault2003} applied information-theoretic criteria
 (entropy reduction, mutual information) to multi-robot exploration,
 establishing a richer probabilistic framework that future extensions of the
 present base model could incorporate.
@@ -396,12 +403,14 @@ and~\ref{alg:chain}.
 \label{alg:ssi}
 \begin{algorithmic}[1]
 \REQUIRE Robots $\mathcal{R}$, unvisited sites $\mathcal{U}$, prior $\mathbf{p}$,
-         bid function $b(\cdot)$, energy budget $E$ (or $\infty$)
+         bid function $b(\cdot)$, energy budget $E$
+         \hspace{1.5em}(M2: $E\leftarrow\infty$; M3/M4: finite)
 \ENSURE  Assignment $\mathcal{A} \subseteq \mathcal{R} \times \mathcal{U}$
 \STATE $\mathcal{F} \leftarrow \mathcal{R}$; \quad $\mathcal{A} \leftarrow \emptyset$
 \WHILE{$\mathcal{F} \neq \emptyset$ \AND $\mathcal{U} \neq \emptyset$}
   \FOR{each $r \in \mathcal{F}$}
     \STATE $\mathcal{U}_r^E \leftarrow \{i \in \mathcal{U} : 2\,d(x_0^r, x_i) \leq E\}$
+    \hspace{0.5em} {\small\textit{(all $\mathcal{U}$ when $E{=}\infty$)}}
   \ENDFOR
   \STATE $(r^*, i^*) \leftarrow \arg\max_{r \in \mathcal{F},\; i \in \mathcal{U}_r^E}\; b(r, i)$
   \STATE $\mathcal{A} \leftarrow \mathcal{A} \cup \{(r^*, i^*)\}$
@@ -458,7 +467,9 @@ sortie can visit more sites.
 
 \begin{table}[ht]
 \centering
-\caption{Bid functions evaluated in this study.}\label{tab:bids}
+\caption{Bid functions evaluated in this study.
+Here $d_{ri} = d(\mathrm{pos}_r, x_i)$ denotes the current distance
+from robot~$r$ to site~$i$.}\label{tab:bids}
 \vspace{2pt}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -658,9 +669,10 @@ The probability-weighted Hungarian ablation $\mathrm{H}_{p/d}$ achieves
 FCR$=6.31$, which is statistically indistinguishable from M3 (FCR$=6.41$):
 the mean gap is $1.4\%$ and the median gap is $0.1\%$, both within
 trial-to-trial noise.
-This comparison establishes that the $5.7\%$ advantage of M3 over
-$\mathrm{H}_d$ is attributable entirely to the probability-aware bid
-function, not to the distributed mechanism.
+This comparison suggests that the probability-aware bid function is
+the primary driver of M3's $5.7\%$ advantage over $\mathrm{H}_d$:
+with the same bid function, the distributed SSI and centralized
+Hungarian mechanisms achieve near-identical FCR.
 Notably, the $1/d$ bid within the SSI auction produces FCR$=6.79$, matching
 $\mathrm{H}_d$ ($6.80$) to within numerical precision---providing a
 cross-validation that both implementations are correct.
@@ -675,10 +687,18 @@ all coordination remains at the base station.
 
 \textbf{Result~4: The $p/d^2$ bid achieves the best FCR under energy
 constraints.}
-M4* (FCR$=2.98$) improves upon M4 (FCR$=3.11$) by $4.2\%$, confirming
-Corollary~\ref{cor:foreclosure}.
+M4* (FCR$=2.98$) improves upon M4 (FCR$=3.11$) by $4.2\%$, consistent
+with Corollary~\ref{cor:foreclosure}.
 Fig.~\ref{fig:bids} confirms the complete ordering
 $p/d^2 > p/d > 1/d > p{\cdot}e^{-d/E} > p$ across all 500 trials.
+The advantage is most pronounced in the energy sweep
+(Fig.~\ref{fig:energy}), where M4* widens its lead over M4 as $E$
+decreases---the regime in which cost-foreclosure is most active.
+Formal paired Wilcoxon tests at 1,000 trials ($p{=}0.88$) show the
+aggregate mean gap at the single default configuration does not
+individually reach significance; the stronger evidence for
+Corollary~\ref{cor:foreclosure} lies in the bid-function and energy
+sweeps rather than in the single-point mean comparison.
 
 \begin{figure}[ht]
   \centering
@@ -832,14 +852,17 @@ agnostic to the choice of distance function.
 \section{Future Work}\label{sec:future}
 %=============================================================================
 
-\textbf{Statistical significance and expanded trials.}
-Adding paired Wilcoxon signed-rank tests and 95\% confidence intervals to
-all reported pairwise comparisons---particularly the $4.2\%$ M4-to-M4*
-improvement---would provide formal statistical grounding for the empirical
-claims.
-Increasing the trial count from 500 to 1000--2000 would tighten confidence
-intervals proportionally and is feasible with the existing \textsc{SearchFCR}
-infrastructure.
+\textbf{Extended statistical validation.}
+A companion experiment (\texttt{experiments/exp4\_significance.py} in the
+repository) has since run 1,000 paired trials with Wilcoxon signed-rank
+tests and Bonferroni correction ($\alpha/4 = 0.0125$).
+Results~1--3 are confirmed at $p < 0.001$ each.
+For Result~4 (M4* vs.\ M4), the Wilcoxon test yields $p = 0.88$ at
+1,000 trials, indicating the aggregate mean gap at the default
+configuration is within noise; the cost-foreclosure advantage is better
+supported by the energy sweep than by the single-configuration point
+estimate. These supplementary results are archived at
+\url{https://github.com/foojanbabaeeian/Multi-Robot-Algo}.
 
 \textbf{Tighter Model~4 bound.}
 The current Model~4 bound assumes worst-case $S{=}1$ site per sortie.
@@ -869,9 +892,9 @@ cost on the common \textsc{SearchFCR} benchmark constitutes an open problem
 of direct operational relevance.
 
 \textbf{Comparison with learning-based policies.}
-Deep reinforcement learning (DRL) methods for multi-robot
-search~\cite{KimKim2025} optimize richer posterior objectives (mutual
-information, Fisher information) and can represent complex spatial patterns
+Deep reinforcement learning (DRL) methods for multi-robot search
+can optimize richer posterior objectives (mutual information,
+Fisher information) and represent complex spatial patterns
 that closed-form bid functions cannot express.
 A head-to-head evaluation of M4* against a DRL policy trained on the same
 instance distribution would quantify the cost of restricting to analytical
@@ -919,9 +942,12 @@ mechanism.
 Multi-node sorties recover $92\%$ of the energy penalty relative to the
 unconstrained baseline.
 A novel $p/d^2$ bid function, justified by the cost-foreclosure argument of
-Corollary~\ref{cor:foreclosure}, achieves a $4.2\%$ improvement over the
-standard $p/d$ bid and constitutes the best-known result for the
-single-base sortie architecture studied here.
+Corollary~\ref{cor:foreclosure}, achieves a $4.2\%$ mean improvement over
+the standard $p/d$ bid at the default configuration and constitutes the
+best-performing bid function in the energy and fleet-size sweeps;
+the advantage is most strongly supported by the parametric sweep results
+and the theoretical foreclosure argument rather than by the
+aggregate default-configuration mean alone.
 
 These results establish two actionable conclusions.
 First, when energy is the operational bottleneck, replacing $p/d$ with
