@@ -39,32 +39,30 @@ oscar.moralesponce@csulb.edu}
 \maketitle
 
 \begin{abstract}
-We present a unified computational framework for multi-robot search and rescue (SAR)
-in unknown environments, wherein $R$ robots must locate a target concealed among
-$n$ candidate sites under a finite per-robot energy budget~$E$.
-Each site~$i$ carries a prior probability $p_i$ of containing the target; performance
-is measured by the \emph{finder competitive ratio} (FCR), defined as the ratio of
-the discovering robot's traveled distance to the omniscient optimum.
-We formalize four algorithmic models spanning the energy--communication design
-space---from uncoordinated random search to multi-sortie probability-aware auctions
----derive closed-form upper bounds on the expected FCR for each model, and validate
-all bounds through 5,000 Monte Carlo trials with parameter sweeps over energy budget
-$E \in [8,30]$ and fleet size $R \in [1,6]$.
-Four principal results emerge:
-(i)~auction-based coordination achieves a $6.6\times$ reduction in FCR over
-uncoordinated random search;
-(ii)~probability-aware SSI auctions outperform centralized distance-optimal
-(Hungarian) assignment by $8.1\%$; paradoxically, adding probability-weighted bids
-to Hungarian assignment \emph{worsens} performance, revealing that iterative
-bid updates---not prior weighting alone---are essential for effective target search;
-(iii)~multi-node sorties recover $90\%$ of the performance gap between
-energy-constrained and unconstrained operation; and
-(iv)~a novel $p_i/d^2$ bid function that penalizes distance quadratically
-outperforms the standard $p_i/d$ formulation across all energy and fleet-size
-configurations tested, supported by a cost-foreclosure proof showing that
-the effective marginal cost of distance is superlinear under a fixed energy
-budget (mean improvement $1.5\%$ at the default configuration, with the
-advantage growing monotonically as $E$ decreases).
+Coordinating autonomous drones in disaster scenarios---collapsed buildings,
+earthquake rubble, flood sites---requires assigning a resource-constrained fleet
+to search an uncertain environment as efficiently as possible.
+We present a unified competitive-ratio framework for this problem, wherein $R$
+robots must locate a target hidden among $n$ candidate sites under a finite
+per-robot energy budget~$E$ and prior probability vector~$\mathbf{p}$.
+We formalize four base models: M1, in which each robot independently selects a
+random unvisited site with \emph{no inter-robot communication whatsoever} (the
+total uncoordinated baseline); M2, which introduces Sequential Single-Item (SSI)
+auctions with unconstrained energy; M3, which adds the energy constraint with a
+$p_i/d$ bid function; and M4/M4*, which extends each sortie via a greedy chain
+using either $p_i/d$ or the novel $p_i/d^2$ bid, motivated by a cost-foreclosure
+argument, alongside a Hungarian assignment baseline.
+All bounds are validated through 5,000 Monte Carlo trials.
+Four results emerge: auction coordination achieves a $6.6\times$ FCR reduction
+over the uncoordinated baseline; SSI auctions with probability bids outperform
+Hungarian assignment by $8.1\%$, while adding probability weighting to Hungarian
+alone \emph{worsens} performance, showing that iterative bid updates are essential;
+multi-node greedy chains recover $90\%$ of the energy penalty; and the $p_i/d^2$
+bid achieves the best FCR across all energy-constrained configurations, with its
+advantage growing to ${\sim}12\%$ at tight budgets.
+Therefore, this work provides a reproducible foundational benchmark, applicable to
+any scenario in which a team of resource-constrained agents must locate a target
+under uncertainty, from urban search-and-rescue to planetary exploration.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -144,26 +142,26 @@ FCR is a strict and honest metric: it compares our algorithms directly
 to the omniscient optimum and normalizes for how hard each individual
 instance is, making comparisons across environments meaningful.
 
-Across 5,000 Monte Carlo trials at the default configuration
-($n{=}30$, $R{=}3$, $E{=}14$), four principal findings emerge:
-\begin{enumerate}
-  \item Auction coordination alone reduces FCR by $6.6\times$ over
-    uncoordinated random search (M2 vs.\ M1), confirming that
-    \emph{communication mechanism} is the dominant design lever.
-  \item Probability-aware SSI auctions outperform the centralized
-    distance-optimal Hungarian assignment by $8.1\%$ (M3
-    vs.\ $\mathrm{H}_d$); a key ablation reveals that adding
-    probability-weighted bids to Hungarian assignment \emph{worsens}
-    performance---the SSI mechanism's iterative reassignment, not the
-    bid function alone, is what enables effective target-directed search.
-  \item Multi-node sorties (M4) recover $90\%$ of the FCR gap between
-    the battery-constrained (M3) and battery-free (M2) settings,
-    nearly eliminating the battery penalty with smarter scheduling.
-  \item Our novel $p/d^2$ bid function achieves the \emph{best FCR}
-    of all models with energy constraints; the advantage is $1.5\%$ at
-    the default configuration and grows to ${\sim}12\%$ as $E$ decreases,
-    where cost-foreclosure is most active.
-\end{enumerate}
+Five thousand Monte Carlo trials at the default configuration ($n{=}30$,
+$R{=}3$, $E{=}14$) yield four principal findings.
+\textbf{Coordination gain.}
+Auction coordination alone reduces FCR by $6.6\times$ over uncoordinated random
+search (M2 vs.\ M1), confirming that \emph{communication mechanism} is the
+dominant design lever.
+\textbf{Mechanism matters.}
+Probability-aware SSI auctions outperform the centralized distance-optimal
+Hungarian assignment by $8.1\%$ (M3 vs.\ $\mathrm{H}_d$); a key ablation reveals
+that adding probability-weighted bids to Hungarian assignment \emph{worsens}
+performance---the SSI mechanism's iterative reassignment, not the bid function
+alone, is what enables effective target-directed search.
+\textbf{Energy recovery.}
+Multi-node sorties (M4) recover $90\%$ of the FCR gap between the
+battery-constrained (M3) and battery-free (M2) settings, nearly eliminating the
+battery penalty with smarter scheduling.
+\textbf{Bid function.}
+Our novel $p/d^2$ bid function achieves the \emph{best FCR} of all models with
+energy constraints; the advantage is $1.5\%$ at the default configuration and
+grows to ${\sim}12\%$ as $E$ decreases, where cost-foreclosure is most active.
 All theoretical upper bounds are verified to hold empirically across
 every configuration tested.
 
@@ -172,25 +170,27 @@ analysis that simultaneously addresses both the \emph{energy} and
 \emph{communication} dimensions of multi-robot SAR---prior work addresses
 each in isolation.
 Concretely, we contribute:
-\begin{enumerate}
-\item \textbf{Four formally defined base models} (M1--M4*) spanning the
+
+\textbf{Four formally defined base models} (M1--M4*) spanning the
 energy--communication design space, along with closed-form upper bounds on
 the expected FCR for each---constituting the first such unified analysis
 for budgeted multi-robot SAR.
-\item \textbf{Empirical demonstration} that probability-aware distributed
+
+\textbf{Empirical demonstration} that probability-aware distributed
 SSI auctions outperform centralized distance-optimal (Hungarian) assignment,
 with an ablation study isolating the bid function as the primary performance
 driver.
-\item \textbf{A novel $p_i/d^2$ bid function} with a formal cost-foreclosure
+
+\textbf{A novel $p_i/d^2$ bid function} with a formal cost-foreclosure
 proof (Corollary~\ref{cor:foreclosure}) establishing that the effective
 marginal cost of distance is superlinear under a fixed energy budget,
 yielding the best-performing assignment rule for all energy-constrained
 configurations tested.
-\item \textbf{A fully open-source, reproducible benchmark}---the
+
+\textbf{A fully open-source, reproducible benchmark}---the
 \textsc{SearchFCR} Python library, command-line interface, and interactive
 web-based simulator---enabling researchers to replicate, extend, and
 build upon every result in this paper with a single command.
-\end{enumerate}
 
 The remainder of this paper is organized as follows.
 Section~\ref{sec:related} surveys related work.
@@ -382,6 +382,11 @@ compared.
 Think of it as the ``MNIST of multi-robot SAR'': a controlled,
 well-understood baseline that new methods must beat before claiming
 practical improvement.
+These are intentional base models: they establish provable performance
+guarantees and a reproducible benchmark on which future, more realistic
+algorithms can be built.
+They do not require full knowledge of the target's location---only the
+prior distribution~$\mathbf{p}$.
 
 %=============================================================================
 \section{Problem Formulation}\label{sec:problem}
@@ -398,6 +403,10 @@ The finder competitive ratio is:
   \mathrm{FCR} = D_f \,/\, D_{\mathrm{opt}}.
   \label{eq:fcr}
 \end{equation}
+Notice that when $\mathrm{FCR} = 1$, the discovering robot traveled the shortest
+possible path from its base --- the algorithm is optimal for that instance.
+Values greater than~$1$ quantify the efficiency loss due to uncertainty and
+coordination overhead.
 \end{definition}
 
 When $\mathrm{FCR} = 1$, the discovering robot reaches the target on its
