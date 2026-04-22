@@ -7,16 +7,16 @@ are locally good at each step but globally sub-optimal as traveling
 salesman tours; 2-opt will, on average, shorten them. Doing so
 \emph{hurts} the finder competitive ratio.
 
-At the default configuration ($n=30$, $R=3$, $E=14$, $L=10$; 500
+At the default configuration ($n=30$, $R=3$, $E=14$, $L=10$; 1,000
 paired trials; seed~42), 2-opt post-processing reduces mean finder
-tour length from 12.601 to 12.025 units --- a mean reduction of
-0.576 units per tour, exactly as expected from a tour-length
-optimizer. Over the same 500 trials, mean finder competitive ratio
-\emph{rises} from 2.983 under the greedy chain to 3.180 under the
-2-opt chain, a 6.58 percent degradation. The effect is distributional
-rather than universal: 121 of the 500 trials (24.2\%) are strictly
-worse under 2-opt, 240 (48.0\%) are strictly better, and the
-remaining 139 (27.8\%) are unchanged. More trials are helped than
+tour length from 12.567 to 12.024 units --- a mean reduction of
+0.543 units per tour, exactly as expected from a tour-length
+optimizer. Over the same 1,000 trials, mean finder competitive ratio
+\emph{rises} from 3.093 under the greedy chain to 3.257 under the
+2-opt chain, a 5.3 percent degradation. The effect is distributional
+rather than universal: 225 of the 1,000 trials (22.5\%) are strictly
+worse under 2-opt, 491 (49.1\%) are strictly better, and the
+remaining 284 (28.4\%) are unchanged. More trials are helped than
 hurt, but the trials that are hurt are hurt by enough to drag the
 mean upward.
 
@@ -34,7 +34,7 @@ length, but it does so without reference to the prior: sites are
 swapped into earlier or later positions according to their geometry
 alone. Two consequences follow. First, the rank at which the target
 appears in the tour is reshuffled (the mean rank shifts only slightly,
-from 3.270 to 3.244, but the distribution spreads: 2-opt has fewer
+from 3.220 to 3.203, but the distribution spreads: 2-opt has fewer
 trials with the target at rank~3 and more at rank~5 and 7 ---
 Figure~\ref{fig:target-delay}, left panel). Second, and more
 importantly, even when the target occupies the same rank under both
@@ -45,7 +45,7 @@ Figure~\ref{fig:target-delay} (right panel) makes the anomaly visible:
 121 trials lie in the upper-right quadrant, where 2-opt shortened the
 overall tour yet increased finder distance. The overall correlation
 between tour-length reduction and FCR increase is weakly positive
-(Pearson $r = 0.09$), consistent with the interpretation that 2-opt
+(Pearson $r = 0.054$), consistent with the interpretation that 2-opt
 and probability-weighted ordering are approximately orthogonal:
 shortening the tour neither systematically helps nor systematically
 hurts a finder-centric objective.
@@ -53,16 +53,16 @@ hurts a finder-centric objective.
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.95\textwidth]{fig_target_delay.png}
-  \caption{The Target-Delay Anomaly on 500 paired trials at the
+  \caption{The Target-Delay Anomaly on 1,000 paired trials at the
     default configuration. \textbf{Left:} histogram of the target's
     rank within the finder's tour for Model~4* under greedy chain
     extension (green) and the same tours post-processed with 2-opt
-    (red). Mean ranks are nearly identical (3.270 vs.\ 3.244); 2-opt
+    (red). Mean ranks are nearly identical (3.220 vs.\ 3.203); 2-opt
     redistributes mass rather than shifting it wholesale. \textbf{Right:}
     per-trial scatter of tour-length reduction against FCR increase.
     Points in the upper-right quadrant are the anomaly: 2-opt made the
-    tour shorter but the finder slower (121 trials; lower-right: 157
-    trials where 2-opt helped both).}\label{fig:target-delay}
+    tour shorter but the finder slower (225 of 1,000 trials; 491 trials
+    where 2-opt helped the FCR).}\label{fig:target-delay}
 \end{figure}
 
 The experiment supports a named conclusion we call the

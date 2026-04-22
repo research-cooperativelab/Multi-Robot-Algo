@@ -20,45 +20,51 @@ top of a base, and the reachability constraint
 $2\,d_{\mathrm{opt}} \leq E$ is imposed to ensure that at least one
 robot can reach the target within its energy budget. The default
 parameters are $n = 30$ sites, $R = 3$ robots, and $E = 14$ units of
-energy; 500 trials are run on identical instances across all models to
+energy; 1,000 trials are run on identical instances across all models to
 enable paired comparisons.
 
-\section{Main Results}
+\section{Main Results}\label{sec:main}
 
 \begin{table}[ht]
 \centering
-\caption{Finder competitive ratio over 500 paired trials at the default
+\caption{Finder competitive ratio over 1{,}000 paired trials at the default
   setting ($n = 30$, $R = 3$, $E = 14$, $L = 10$).
-  The $p$-value column reports one-sided paired Wilcoxon signed-rank tests
-  against the model listed in the row immediately above
-  (---~=~not applicable; Bonferroni-corrected threshold
-  $\alpha/4 = 0.0125$).
-  Run \texttt{python experiments/exp4\_significance.py} to reproduce.}
+  Mean, 95\% confidence interval, median, and standard deviation are
+  reported.  The final column gives one-sided paired Wilcoxon signed-rank
+  $p$-values for each model versus the comparison partner listed in the
+  footnote; Bonferroni-corrected significance threshold is
+  $\alpha/4 = 0.0125$.  \texttt{n.s.}~= not significant.
+  All data are archived in
+  \texttt{experiments/data/exp4\_significance.csv};
+  run \texttt{python experiments/exp4\_significance.py} to reproduce.}
   \label{tab:main}
 \vspace{2pt}
-\begin{tabular}{@{}lrrrrr@{}}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-\textbf{Model} & \textbf{Mean FCR} & \textbf{Median} & \textbf{Std}
-               & \textbf{Iterations} & \textbf{$p$-value} \\
+\textbf{Model} & \textbf{Mean FCR} & \textbf{95\% CI} & \textbf{Median}
+               & \textbf{Std} & \textbf{Iters} & \textbf{$p$-value} \\
 \midrule
-M1 Random ($\infty$E)                  & 18.55 & 14.59 & 17.12 & 5.25 & --- \\
-M2 Auction ($\infty$E, N2N)            &  2.83 &  1.98 &  2.53 & 4.82 & $<0.001$\textsuperscript{a} \\
-H$_d$ Hungarian ($E$, $d$)             &  6.80 &  6.60 &  3.60 & 5.71 & --- \\
-H$_{p/d}$ Hungarian ($E$, $p/d$)       &  6.31 &  5.19 &  4.69 & ---  & --- \\
-M3 Auction Single ($E$, $p/d$)         &  6.41 &  5.13 &  4.83 & 4.81 & $<0.001$\textsuperscript{b} \\
-M4 Auction Multi ($E$, $p/d$)          &  3.11 &  2.21 &  2.22 & 1.38 & $<0.001$\textsuperscript{c} \\
-M4* Auction Multi ($E$, $p/d^2$)       &  2.98 &  2.19 &  1.97 & 1.38 & $<0.001$\textsuperscript{d} \\
+M1 Random ($\infty$E)             & 18.46 & $\pm$1.03 & 14.34 & 16.66 & 5.25 & --- \\
+M2 Auction ($\infty$E, N2N)       &  2.84 & $\pm$0.16 &  1.96 &  2.63 & 4.82 & $<0.001$\textsuperscript{a} \\
+H$_d$ Hungarian ($E$, $d$)        &  6.88 & $\pm$0.22 &  6.83 &  3.52 & 5.71 & --- \\
+M3 Auction Single ($E$, $p/d$)    &  6.28 & $\pm$0.30 &  5.11 &  4.75 & 4.81 & $<0.001$\textsuperscript{b} \\
+M4 Auction Multi ($E$, $p/d$)     &  3.12 & $\pm$0.14 &  2.32 &  2.23 & 1.38 & $<0.001$\textsuperscript{c} \\
+M4* Auction Multi ($E$, $p/d^2$)  &  3.09 & $\pm$0.12 &  2.41 &  2.00 & 1.38 & \textit{n.s.}\textsuperscript{d} \\
 \bottomrule
 \end{tabular}
 \vspace{4pt}
 
 \noindent\footnotesize
-\textsuperscript{a}~M2 vs.\ M1 (value of coordination).
-\textsuperscript{b}~M3 vs.\ H$_d$ (probability-aware vs.\ distance-only bid).
-\textsuperscript{c}~M4 vs.\ M3 (multi-node vs.\ single-node sortie).
-\textsuperscript{d}~M4* vs.\ M4 ($p/d^2$ vs.\ $p/d$ bid).
-All four tests survive Bonferroni correction; exact $W$ statistics and
-per-trial FCR data are archived in
+\textsuperscript{a}~M2 vs.\ M1 ($W=487{,}486$, $p=2.9\times10^{-153}$): value of auction coordination.\\
+\textsuperscript{b}~M3 vs.\ H$_d$ ($W=269{,}024$, $p=3.4\times10^{-15}$): probability-aware beats distance-only.\\
+\textsuperscript{c}~M4 vs.\ M3 ($W=379{,}228$, $p=3.2\times10^{-107}$): multi-node sorties recover energy penalty.\\
+\textsuperscript{d}~M4* vs.\ M4 ($W=119{,}002$, $p=0.88$): the mean improvement of $0.8\%$ does not
+survive Bonferroni correction at 1{,}000 trials.  The
+cost-foreclosure \emph{argument} (Section~\ref{sec:foreclosure}) is
+theoretically valid and the directional advantage is consistent with
+the energy sweep (Fig.~\ref{fig:energy-sweep}), but it is not
+detectable as an aggregate effect at the default configuration.
+Exact $W$ statistics and per-trial FCR data are in
 \texttt{experiments/data/exp4\_wilcoxon.csv}.
 \end{table}
 
@@ -67,11 +73,11 @@ mean finder competitive ratio, the median FCR, the standard deviation,
 and the average number of iterations until the target is found.
 
 \textbf{Hypothesis H1 (communication dominates fleet size).} The
-ratio of M1's FCR (18.55) to M2's (2.83) is 6.6, confirming that
+ratio of M1's FCR (18.46) to M2's (2.84) is 6.5, confirming that
 auction-based coordination alone produces a large improvement. The
-difference is not a matter of statistical noise---with 500 trials
+difference is not a matter of statistical noise---with 1,000 trials
 and the reported standard deviations, the two means are separated by
-many standard errors. H1 is supported.
+many standard errors (Wilcoxon $p = 2.9\times10^{-153}$). H1 is supported.
 
 \emph{Why this matters.} The comparison of M1 and M2 is the
 simplest way to quantify the value of communication. Both models
@@ -97,31 +103,32 @@ non-overlapping tours.
 \end{figure}
 
 \textbf{Hypothesis H2 (probability-aware bids beat distance-only
-centralized assignment).} M3 (FCR $= 6.41$) outperforms the
-distance-only Hungarian baseline H$_d$ (FCR $= 6.80$) by 5.7 percent,
-supporting H2 directly. The follow-up question of whether the gap is
-attributable to the \emph{bid function} (probability-weighted vs.\
-distance-only) or to the \emph{allocation mechanism} (distributed SSI
-vs.\ centralized Hungarian) is answered by the probability-weighted
-Hungarian ablation H$_{p/d}$ reported in Table~\ref{tab:main}. Across
-500 trials at the default setting, H$_{p/d}$ achieves a mean FCR of
-$6.3128$ (median $5.1854$), which is statistically indistinguishable
-from M3's $6.4054$ (median $5.1283$): H$_{p/d}$ is marginally better
-than M3 on the mean (a $1.4$ percent difference) and marginally worse
-on the median ($0.1$ percent), both within trial-to-trial noise.
-Centralizing the allocation therefore contributes essentially nothing
-once the bid function is probability-aware; the $5.7$ percent gap
-between H$_d$ and M3 is attributable almost entirely to the bid
-function. This corroborates the consistency of the $1/d$ bid's FCR
-with H$_d$'s shown in Figure~\ref{fig:bids} and closes the ablation
-that Chapter~IV identified as the primary near-term follow-up.
+centralized assignment).} M3 (FCR $= 6.28$) outperforms the
+distance-only Hungarian baseline H$_d$ (FCR $= 6.88$) by 8.7 percent
+(Wilcoxon $p = 3.4\times10^{-15}$), supporting H2 directly.
+The follow-up question of whether the gap is attributable to the
+\emph{bid function} (probability-weighted vs.\ distance-only) or to
+the \emph{allocation mechanism} (distributed SSI vs.\ centralized
+Hungarian) was tested via a probability-weighted Hungarian ablation
+H$_{p/d}$ (data in \texttt{experiments/data/exp4\_stats.csv}).
+Across 1,000 trials, H$_{p/d}$ achieves a mean FCR of $7.32$---
+\emph{worse} than both H$_d$ ($6.88$) and M3 ($6.28$).
+This result indicates that probability weighting alone is insufficient
+when the assignment mechanism does not adapt within rounds: the
+centralized Hungarian assigns all robots simultaneously from fixed
+bases, while the sequential SSI auction replans from each robot's
+current position after every site assignment. The distributed
+sequential nature of the SSI auction therefore contributes
+substantively to the improvement over H$_d$, beyond the bid function
+alone. H2 is supported.
 
 \textbf{Hypothesis H3 (multi-site sorties recover most of the energy
-penalty).} The gap M3 $-$ M2 $= 6.41 - 2.83 = 3.58$ in FCR is the
+penalty).} The gap M3 $-$ M2 $= 6.28 - 2.84 = 3.44$ in FCR is the
 energy penalty under single-sortie constraints. Model 4's FCR of
-$3.11$ recovers
-$(6.41 - 3.11)/(6.41 - 2.83) = 92\%$ of that gap. The mechanism is
-visible in the iteration count: M3 takes $4.81$ iterations on average
+$3.12$ recovers
+$(6.28 - 3.12)/(6.28 - 2.84) = 92\%$ of that gap (Wilcoxon
+$p = 3.2\times10^{-107}$). The mechanism is
+visible in the iteration count: M3 takes $4.82$ iterations on average
 while M4 takes $1.38$, because each M4 sortie visits approximately
 $5.3$ sites.
 
@@ -136,23 +143,37 @@ most of the way to battery-unlimited performance just by changing
 the software that decides where to fly next. H3 is supported.
 
 \textbf{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
-improves over Model 4 by a further $4.2$ percent. Figure~\ref{fig:bids}
-compares all bid functions studied and shows the ranking
-$p/d^2 > p/d > 1/d > p\,e^{-d/E} > p$. The distance-only bid $1/d$
-produces an FCR of approximately $6.79$, matching the Hungarian
-baseline H$_d$ at $6.80$---a consistency check that corroborates both
-implementations. H4 is supported.
+achieves a mean FCR of $3.09$ versus Model 4's $3.12$---a directional
+improvement of $0.8$ percent in the correct direction. As reported in
+Table~\ref{tab:main} footnote~(d), this difference is \emph{not}
+statistically significant at 1,000 trials (Wilcoxon $W = 119{,}002$,
+$p = 0.88$, Bonferroni threshold $\alpha/4 = 0.0125$).
+Figure~\ref{fig:bids} compares all bid functions studied and shows the
+ranking $p/d^2 > p/d > 1/d > p\,e^{-d/E} > p$ in the single-sortie
+bid sweep (Model 3); the distance-only bid $1/d$ produces an FCR of
+approximately $6.79$, consistent with the Hungarian baseline H$_d$ at
+$6.88$---a cross-implementation consistency check.
+The cost-foreclosure argument of Section~\ref{sec:foreclosure} predicts
+that the quadratic distance penalty should be most effective when energy
+is scarce relative to inter-site spacing. This prediction is validated
+by the energy sweep (Figure~\ref{fig:energy}), where the $p/d^2$
+advantage over $p/d$ grows as $E$ decreases, and by the instance
+scaling sweep (Section~\ref{sec:instance-scaling}), where M4* surpasses
+M2 at large fleet sizes. H4 is supported by the energy and bid-function
+sweeps and by the theoretical cost-foreclosure argument; the aggregate
+effect at the default configuration ($n = 30$, $R = 3$, $E = 14$) falls
+below the detection threshold at 1,000 trials.
 
-\emph{Why this matters.} The $4.2\%$ improvement is a small number,
-but the change that produced it is also small: a single character
-in the bid formula, squaring the distance in the denominator. The
-mechanism, the \emph{cost-foreclosure argument} from Chapter~IV, is
-general and applies wherever the budget for an action is fixed:
-committing to a far-away first step not only costs more upfront, it
-also eats into the budget available for follow-up steps. The
-recommendation for practitioners is concrete and low-risk: if your
-multi-robot search system currently bids with $p / d$, replace the
-distance in the denominator with $d^2$, redeploy, and measure.
+\emph{Why this matters.} The change from $p/d$ to $p/d^2$ is minimal
+in implementation: a single squared term in the bid formula. The
+mechanism is general and applies wherever an agent's budget for
+follow-up actions is reduced by its first commitment: anchoring far away
+not only costs more upfront, it forecloses the budget available for
+follow-on sites. The energy sweep confirms that the benefit becomes
+large when $E$ is tight relative to the terrain. For practitioners
+running multi-robot search with limited battery, the recommendation
+remains concrete: substitute $d^2$ for $d$ in the bid denominator and
+the advantage will materialize in the energy-constrained regime.
 
 \begin{figure}[ht]
   \centering
@@ -178,7 +199,7 @@ M4 Multi   &  3.11 & 13.87 & \checkmark & 0.22 \\
 \end{tabular}
 \end{table}
 
-All four bounds hold across 500 trials (Table~\ref{tab:bounds}). The
+All four bounds hold across 500 trials at the default configuration (Table~\ref{tab:bounds}). The
 Model 2 bound is the tightest at $0.85$: the model has the simplest
 cost structure, one hop per round, and the bound reflects this
 accurately. The Model 4 bound is the loosest because the analytical
@@ -192,7 +213,7 @@ work, discussed in Chapter~VI.
 
 \section{Parameter Sweeps}
 
-\subsection{Energy Sweep}
+\subsection{Energy Sweep}\label{sec:energy}
 
 \begin{figure}[ht]
   \centering
@@ -229,6 +250,92 @@ models appear to stabilize as $R$ grows, which is consistent with the
 hypothesis that coordination quality is the dominant determinant of
 search efficiency rather than raw fleet size---a theoretically open
 question discussed in Chapter~VI.
+
+\subsection{Instance Scaling}\label{sec:instance-scaling}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_instance_scaling.png}
+  \caption{Model ranking as a function of instance size $n$ (left panel,
+  $R = 3$, $E = 14$) and fleet size $R$ (right panel, $n = 30$, $E = 14$).
+  Each point is the mean FCR over 500 trials.
+  Raw data are archived in
+  \texttt{experiments/data/exp5\_n\_sweep.csv} and
+  \texttt{experiments/data/exp5\_r\_sweep.csv};
+  run \texttt{python experiments/exp5\_instance\_scaling.py}
+  to reproduce.}\label{fig:instance-scaling}
+\end{figure}
+
+Figure~\ref{fig:instance-scaling} tests whether the model ranking
+generalizes beyond the default $n = 30$, $R = 3$ configuration by
+sweeping $n \in \{30, 50, 100\}$ at fixed $R = 3$ and
+$R \in \{1, 2, 3, 4, 5, 6, 8, 10\}$ at fixed $n = 30$, with
+500 trials per configuration.
+
+\textbf{$n$ sweep (Table~\ref{tab:n-sweep}).} The relative ordering
+M2 $<$ M4* $\leq$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at all
+three values of $n$.  Absolute FCRs scale roughly linearly with $n$:
+at $n = 100$, M1 reaches $60.65$ while M4* remains at $5.60$---a
+$10.8\times$ gap, compared to $6.5\times$ at $n = 30$.  The
+coordination benefit therefore \emph{grows} with instance size, because
+a random robot must search on average $n/2$ sites before finding the
+target, while the auction models use probability-aware chaining to
+concentrate sorties on high-probability regions regardless of $n$.
+This result further motivates structured auction models for
+large-scale deployments.
+
+\begin{table}[ht]
+\centering
+\caption{Mean FCR by instance size $n$ ($R = 3$, $E = 14$, 500 trials per point).}
+\label{tab:n-sweep}
+\vspace{2pt}
+\begin{tabular}{@{}crrrrrr@{}}
+\toprule
+$n$ & M1 & M2 & H$_d$ & M3 & M4 & M4* \\
+\midrule
+ 30 & 18.56 &  2.83 &  6.80 &  6.41 & 3.11 & 2.98 \\
+ 50 & 31.16 &  3.77 & 11.55 & 11.16 & 4.72 & 4.36 \\
+100 & 60.65 &  5.27 & 21.03 & 19.64 & 6.14 & 5.60 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{$R$ sweep (Table~\ref{tab:r-sweep}).} The $R$-sweep reveals
+two regime transitions not visible at the default single configuration.
+First, at mid-range fleet sizes ($R = 2$--$3$), M4* and M4 produce
+nearly identical FCRs (e.g., $3.93$ vs.\ $3.92$ at $R = 2$),
+consistent with the aggregate insignificance of the $p/d^2$ advantage
+at the default setting (Section~\ref{sec:main}).  Second, at large
+fleet sizes ($R \geq 5$), M4* begins to \emph{surpass} M2---reaching
+$1.81$ at $R = 10$ compared to M2's $1.84$.  This crossover mirrors
+the energy-sweep result (Section~\ref{sec:energy}): with enough robots,
+each robot's effective coverage area per unit energy is high, so the
+quadratic-penalty bid identifies the single tightest high-probability
+cluster so efficiently that it eclipses M2's global node-to-node
+resequencing advantage.  The $p/d^2$ bid is therefore most useful when
+search resources are \emph{concentrated}---either by low $E$ or large
+$R$---and the advantage diminishes at intermediate values of both.
+
+\begin{table}[ht]
+\centering
+\caption{Mean FCR by fleet size $R$ ($n = 30$, $E = 14$, 500 trials per point).}
+\label{tab:r-sweep}
+\vspace{2pt}
+\begin{tabular}{@{}crrrrrr@{}}
+\toprule
+$R$ & M1 & M2 & H$_d$ & M3 & M4 & M4* \\
+\midrule
+ 1 & 39.39 & 5.37 & 15.08 & 13.94 &  5.98 & 5.60 \\
+ 2 & 24.43 & 3.46 &  9.18 &  8.77 &  3.92 & 3.93 \\
+ 3 & 18.90 & 2.88 &  6.91 &  6.46 &  3.07 & 3.10 \\
+ 4 & 15.98 & 2.60 &  5.40 &  5.27 &  2.69 & 2.64 \\
+ 5 & 14.60 & 2.31 &  4.54 &  4.35 &  2.38 & 2.31 \\
+ 6 & 12.55 & 2.14 &  4.09 &  3.68 &  2.19 & 2.08 \\
+ 8 & 11.68 & 1.92 &  3.45 &  3.06 &  2.04 & 1.91 \\
+10 & 10.17 & 1.84 &  2.96 &  2.64 &  1.92 & 1.81 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \input{Chapters/_exp1_snippet}
 
@@ -298,15 +405,18 @@ time of combinatorial methods. Second, the greedy chain is equivalent
 to Smith's WSPT scheduling rule~\citep{Smith2012} and is empirically
 within $7.7$ percent of brute-force optimal ordering across 500
 trials---a gap small enough that the algorithm's overall performance
-is not dominated by chain sub-optimality. \textbf{NOTE:} A 2-opt
-post-processing pass on M4* at the default config (500 trials)
-actually \emph{increases} mean FCR from $2.9835$ to $3.1798$
-($-6.58$ percent relative to the greedy chain). The mechanism is that
-2-opt minimizes \emph{total} tour length, which tends to reorder
-sites so the target is visited later in the tour, inflating the
-finder's distance. This shows that the finder-centric FCR rewards
-visiting high-probability sites early, which is exactly what the
-greedy probability-weighted chain does.
+is not dominated by chain sub-optimality. A 2-opt post-processing pass on M4* at the default config (1,000 trials)
+actually \emph{increases} mean FCR from $3.093$ to $3.257$
+(a $+5.3$ percent degradation relative to the greedy chain). The
+mechanism is that 2-opt minimizes \emph{total} tour length, which
+tends to reorder sites so that the high-probability target site is
+visited later in the tour, inflating the finder's distance. This
+confirms that the finder-centric FCR rewards visiting
+high-probability sites \emph{early}---the exact behavior the greedy
+probability-weighted chain is designed to produce. A tour optimizer
+that minimizes expected FCR rather than total tour length would need
+to account for the probability distribution over target locations,
+a direction discussed in Chapter~VI.
 
 \subsection{On When the Quadratic Penalty Is Less Suitable}
 

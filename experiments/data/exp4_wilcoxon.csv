@@ -1,0 +1,5 @@
+model_lower,model_higher,mean_lower,mean_higher,pct_improvement,W_stat,p_value,tag,bonf_sig
+M2,M1,2.8361,18.4611,84.64,487486,2.9393e-153,p<0.001,YES
+M3,HungarianD,6.2820,6.8831,8.73,269024,3.3863e-15,p<0.001,YES
+M4,M3,3.1165,6.2820,50.39,379228,3.1624e-107,p<0.001,YES
+M4*,M4,3.0926,3.1165,0.77,119002,8.8343e-01,p=0.8834,NO
