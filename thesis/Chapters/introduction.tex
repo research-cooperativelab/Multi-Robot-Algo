@@ -14,7 +14,7 @@ In a typical urban search-and-rescue (USAR) deployment, a fleet of
 aerial or ground robots is dispatched to survey $n$ candidate sites
 derived from prior knowledge of the environment---structural surveys,
 thermal imaging, acoustic sensors, or trained search-dog
-indications---each assigned a prior probability $p_i$ that the target
+indications---each assigned a \emph{prior probability} $p_i$ that the target
 (a survivor, a critical sensor, a chemical source) is present there.
 
 The operational challenge is not perception or locomotion; it is
@@ -27,20 +27,18 @@ and in what order, such that the first robot to locate the target has
 traveled as short a distance as possible.
 Two practical constraints make this non-trivial:
 
-\begin{enumerate}
-\item \textbf{Finite energy.}
-  A robot that visits one site and returns to base for recharging wastes
-  most of its battery on travel overhead.
-  If it can chain several sites into one excursion, the same battery
-  covers far more of the search space---but chaining too aggressively
-  risks running out of charge mid-flight.
-\item \textbf{Communication at base only.}
-  In rubble-pile environments, radio links are unreliable during flight.
-  Coordination must be achieved at the base station between sorties,
-  using a protocol that is fast enough not to delay deployments.
-\end{enumerate}
+\emph{Finite energy:}  A robot that visits one site and returns to base
+for recharging wastes most of its battery on travel overhead.
+If it can chain several sites into one excursion, the same battery
+covers far more of the search space---but chaining too aggressively
+risks running out of charge mid-flight.
 
-These two constraints interact: under tight energy budgets, every
+\emph{Communication at base only:}  In rubble-pile environments, radio
+links are unreliable during flight.
+Coordination must be achieved at the base station between sorties,
+using a protocol that is fast enough not to delay deployments.
+
+These two constraints interact: under tight \emph{energy budgets}, every
 wasted sortie---one that revisits a cleared site or visits a
 low-probability one---is a larger fraction of the total searchable
 volume, so coordination quality matters \emph{more} as energy grows
@@ -102,8 +100,8 @@ bound on performance against which everything else is measured.
 the energy constraint, establishing an upper bound on what
 communication alone can achieve.
 In M2, robots share current position information, bid for sites using a
-probability-weighted score, and are assigned sites via a sequential
-single-item (SSI) auction~\citep{Koenig2006}.
+probability-weighted score, and are assigned sites via a \emph{sequential
+single-item} (SSI) auction~\citep{Koenig2006}.
 The gap between M1 and M2 measures the value of coordination.
 
 \textbf{Model~3 (M3)} reintroduces the energy constraint while retaining
@@ -114,7 +112,7 @@ The gap between M2 and M3 measures the cost of the finite battery.
 
 \textbf{Model~4 and M4*} extend M3 by allowing each robot to chain
 multiple sites into a single sortie before returning to base.
-After the auction assigns an anchor site, a greedy chain extension
+After the auction assigns an anchor site, a \emph{greedy chain extension}
 appends additional sites while budget remains.
 M4 uses the classical $p/d$ bid function; M4* uses a novel
 $p/d^2$ bid function introduced and justified in this thesis.
@@ -134,37 +132,34 @@ evaluated.
 The four models yield four principal findings, each corresponding to
 one of the research hypotheses stated in Chapter~\ref{ch:method}:
 
-\begin{enumerate}
-\item \textbf{Coordination dominates fleet size.}
-  M2 (auction-coordinated, $\mathrm{FCR} = 2.83$) outperforms M1
-  (uncoordinated, $\mathrm{FCR} = 18.55$) by a factor of~$6.6$ at
-  identical fleet size.
-  The mode of communication, not the number of robots, is the
-  primary determinant of search efficiency---consistent with the
-  theoretical bound of \citet{Chrobak2015}.
+\emph{Coordination dominates fleet size:}  M2 (auction-coordinated,
+$\mathrm{FCR} = 2.83$) outperforms M1 (uncoordinated,
+$\mathrm{FCR} = 18.55$) by a factor of~$6.6$ at identical fleet size.
+The mode of communication, not the number of robots, is the primary
+determinant of search efficiency---consistent with the theoretical
+bound of \citet{Chrobak2015}.
 
-\item \textbf{Probability-aware bids outperform distance-optimal
-  centralized assignment.}
-  M3 ($\mathrm{FCR} = 6.41$) outperforms the Hungarian distance-optimal
-  baseline ($\mathrm{FCR} = 6.80$) by $5.7\%$, despite the Hungarian
-  algorithm computing the globally optimal assignment each iteration.
-  A probability-weighted Hungarian ablation narrows this gap to
-  $1.4\%$, establishing that the advantage is attributable to the bid
-  function, not to the distributed mechanism.
+\emph{Probability-aware bids outperform distance-optimal centralized
+assignment:}  M3 ($\mathrm{FCR} = 6.41$) outperforms the Hungarian
+distance-optimal baseline ($\mathrm{FCR} = 6.80$) by $5.7\%$, despite
+the Hungarian algorithm computing the globally optimal assignment each
+iteration.
+A probability-weighted Hungarian ablation narrows this gap to $1.4\%$,
+establishing that the advantage is attributable to the bid function,
+not to the distributed mechanism.
 
-\item \textbf{Multi-node sorties recover the energy penalty.}
-  M4 ($\mathrm{FCR} = 3.11$) recovers $92\%$ of the performance gap
-  between M3 and M2 by chaining an average of $5.3$ sites per sortie,
-  reducing average iteration count from $4.81$ to~$1.38$.
+\emph{Multi-node sorties recover the energy penalty:}  M4
+($\mathrm{FCR} = 3.11$) recovers $92\%$ of the performance gap between
+M3 and M2 by chaining an average of $5.3$ sites per sortie, reducing
+average iteration count from $4.81$ to~$1.38$.
 
-\item \textbf{The $p/d^2$ bid is superior under energy constraints.}
-  M4* ($\mathrm{FCR} = 2.98$) improves upon M4 by $4.2\%$.
-  The improvement is justified by a cost-foreclosure argument: a
-  distant anchor site not only costs more energy to reach, but also
-  shortens the remaining budget for chain extensions---making the
-  effective marginal cost of distance superlinear.
-  The $p/d^2$ bid captures this by penalizing distance quadratically.
-\end{enumerate}
+\emph{The $p/d^2$ bid is superior under energy constraints:}  M4*
+($\mathrm{FCR} = 2.98$) improves upon M4 by $4.2\%$.
+The improvement is justified by a cost-foreclosure argument: a distant
+anchor site not only costs more energy to reach, but also shortens the
+remaining budget for chain extensions---making the effective marginal
+cost of distance superlinear.
+The $p/d^2$ bid captures this by penalizing distance quadratically.
 
 All theoretical bounds were validated through 500 Monte Carlo trials
 per configuration, with paired Wilcoxon signed-rank tests confirming
@@ -182,31 +177,28 @@ Physical robot deployment is left as future work
 
 The specific contributions are:
 
-\begin{enumerate}
-\item \textbf{A unified base framework of four models} spanning the
-  energy--communication design space, together with closed-form upper
-  bounds on the expected FCR for each.
-  This constitutes the first competitive-ratio analysis of budgeted
-  multi-robot SAR that integrates energy constraints, auction-based
-  coordination, and a probabilistic target model in a single framework.
+\emph{A unified base framework of four models:}  This framework spans the
+energy--communication design space, together with closed-form upper
+bounds on the expected FCR for each.
+It constitutes the first competitive-ratio analysis of budgeted
+multi-robot SAR that integrates energy constraints, auction-based
+coordination, and a probabilistic target model in a single framework.
 
-\item \textbf{An ablation isolating bid function from allocation
-  mechanism.}
-  A probability-weighted Hungarian baseline is introduced to separate
-  the effect of probability-aware bids from the effect of centralized
-  assignment; the bid function is identified as the dominant factor.
+\emph{An ablation isolating bid function from allocation mechanism:}  A
+probability-weighted Hungarian baseline is introduced to separate the
+effect of probability-aware bids from the effect of centralized
+assignment; the bid function is identified as the dominant factor.
 
-\item \textbf{A novel $p/d^2$ bid function} and its theoretical
-  justification via the cost-foreclosure argument, establishing that
-  the effective marginal cost of distance is superlinear under a fixed
-  per-sortie energy budget.
-  This is the primary algorithmic contribution.
+\emph{A novel $p/d^2$ bid function:}  The theoretical justification
+proceeds via the cost-foreclosure argument, establishing that the
+effective marginal cost of distance is superlinear under a fixed
+per-sortie energy budget.
+This is the primary algorithmic contribution.
 
-\item \textbf{A fully reproducible open-source benchmark.}
-  The \textsc{SearchFCR} Python library, command-line interface, and
-  interactive web-based simulator enable direct replication and
-  extension of all results presented in this thesis.
-\end{enumerate}
+\emph{A fully reproducible open-source benchmark:}  The
+\textsc{SearchFCR} Python library, command-line interface, and
+interactive web-based simulator enable direct replication and extension
+of all results presented in this thesis.
 
 \section{Key Definitions}
 
