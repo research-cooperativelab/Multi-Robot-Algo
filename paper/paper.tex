@@ -104,23 +104,21 @@ distance as possible.
 
 Rather than proposing a single algorithm and claiming it is optimal,
 we introduce four base models that \emph{systematically build} on each
-other---each adding one new capability and isolating its contribution:
-\begin{itemize}
-  \item \textbf{M1 (Random):} Robots have no communication.
-    Each independently picks a random unvisited site and flies there.
-    This is the uncoordinated worst case.
-  \item \textbf{M2 (Coordinated, no battery limit):} Robots communicate
-    at all times and run an auction to decide who goes where, but we
-    ignore the battery constraint.
-    This gives us the theoretical best case for coordination alone.
-  \item \textbf{M3 (Coordinated, battery-limited):} Same auction as M2,
-    but now each robot can only make one short round-trip per turn.
-    This is the realistic baseline with energy constraints.
-  \item \textbf{M4 / M4* (Coordinated, smarter trips):} The auction
-    assigns each robot a starting site, and then each robot chains
-    additional nearby sites into the same trip before returning.
-    M4 uses a standard bid function; M4* uses our improved $p/d^2$ bid.
-\end{itemize}
+other---each adding one new capability and isolating its contribution.
+\textbf{M1 (Random):} Robots have no communication; each independently
+picks a random unvisited site and flies there, forming the uncoordinated
+worst case.
+\textbf{M2 (Coordinated, no battery limit):} Robots communicate at all
+times and run a \emph{Sequential Single-Item (SSI) auction} to decide who
+goes where, but the battery constraint is ignored, giving the theoretical
+best case for coordination alone.
+\textbf{M3 (Coordinated, battery-limited):} Same SSI auction as M2, but
+each robot can only make one short round-trip per turn---the realistic
+baseline with energy constraints.
+\textbf{M4 / M4*:} The auction assigns each robot an anchor site, and
+then each robot chains additional nearby sites into the same trip via a
+\emph{greedy chain extension} before returning to base; M4 uses the
+standard $p/d$ bid, and M4* uses our improved $p/d^2$ bid.
 This design ladder isolates three measurable effects:
 the value of communication (M1$\to$M2),
 the cost of finite battery (M2$\to$M3),
