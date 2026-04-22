@@ -21,7 +21,7 @@
 
 \begin{document}
 
-\title{On the Numerical Analysis of Multi-Robot Search and Rescue Algorithms in Unknown Environments}
+\title{Multi-Robot Search and Rescue Under Energy Constraints: A Competitive Analysis}
 
 \author{\IEEEauthorblockN{Fozhan Babaeiyan Ghamsari}
 \IEEEauthorblockA{\textit{Computer Engineering and Computer Science} \\
@@ -58,12 +58,11 @@ uncoordinated random search;
 dominates geometric optimality in target search;
 (iii)~multi-node sorties recover $92\%$ of the performance gap between
 energy-constrained and unconstrained operation; and
-(iv)~a novel bid function $p_i/d^2$ that penalizes inter-site distance
-quadratically outperforms the standard $p_i/d$ formulation across the
-energy and fleet-size sweeps, supported by a cost-foreclosure argument
-establishing that the effective marginal cost of distance is superlinear
-under a fixed energy budget; at the default configuration the mean
-improvement is $4.2\%$ (500 trials).
+(iv)~a novel $p_i/d^2$ bid function that penalizes distance quadratically
+outperforms the standard $p_i/d$ formulation across all energy and fleet-size
+configurations tested, supported by a cost-foreclosure proof showing that
+the effective marginal cost of distance is superlinear under a fixed energy
+budget (mean improvement $4.2\%$ at the default configuration).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -87,9 +86,8 @@ search and rescue, but \emph{how to coordinate them effectively} when each
 one has a finite battery, limited communication, and no prior knowledge of
 exactly where the target is.
 
-\textbf{The setting.}
-Consider $R$ robots, each stationed at a base and carrying an energy budget
-$E$ (representing battery life).
+To study this problem formally, consider $R$ robots, each stationed at a
+base and carrying an energy budget $E$ (representing battery life).
 The environment contains $n$ candidate sites---discrete locations that may
 conceal the target, such as structural voids or rooms in a collapsed
 building---each assigned a prior probability $p_i$ derived from sensor
@@ -98,13 +96,12 @@ None of the robots knows which specific site conceals the target.
 An omniscient agent with full knowledge of the target's location would
 simply fly straight there from the nearest base---but our robots have no
 such knowledge.
-Robots must instead search iteratively: visit sites, rule them out, update
+They must instead search iteratively: visit sites, rule them out, update
 their beliefs, and repeat.
 The question is how to \emph{assign} robots to sites and \emph{order} their
 visits so that whichever robot finds the target has traveled as short a
 distance as possible.
 
-\textbf{Our approach: a hierarchy of four base models.}
 Rather than proposing a single algorithm and claiming it is optimal,
 we introduce four base models that \emph{systematically build} on each
 other---each adding one new capability and isolating its contribution:
@@ -133,22 +130,20 @@ goal is to establish provable performance guarantees and provide a
 reproducible benchmark on which future, more complex algorithms can be
 built and evaluated.
 
-\textbf{How we measure performance.}
-We use the \emph{Finder Competitive Ratio} (FCR): the ratio of the
-finding robot's total travel distance to the distance the closest base
-is from the target.
+We measure performance using the \emph{Finder Competitive Ratio} (FCR):
+the ratio of the finding robot's total travel distance to the distance
+the closest base is from the target.
 When FCR equals~1, the discovering robot reached the target on the
 shortest possible path---as efficiently as if it had known the target's
 location from the start.
 Values greater than~1 quantify how much extra distance was traveled due
 to uncertainty and coordination constraints.
 FCR is a strict and honest metric: it compares our algorithms directly
-to the omniscient optimum, and normalizes for how hard each individual
+to the omniscient optimum and normalizes for how hard each individual
 instance is, making comparisons across environments meaningful.
 
-\textbf{Principal findings.}
 Across 500 Monte Carlo trials at the default configuration
-($n{=}30$, $R{=}3$, $E{=}14$):
+($n{=}30$, $R{=}3$, $E{=}14$), four principal findings emerge:
 \begin{enumerate}
   \item Auction coordination alone reduces FCR by $6.6\times$ over
     uncoordinated random search (M2 vs.\ M1), confirming that
@@ -168,7 +163,6 @@ Across 500 Monte Carlo trials at the default configuration
 All theoretical upper bounds are verified to hold empirically across
 every configuration tested.
 
-\textbf{Contributions.}
 To the best of our knowledge, this is the first unified competitive-ratio
 analysis that simultaneously addresses both the \emph{energy} and
 \emph{communication} dimensions of multi-robot SAR---prior work addresses
@@ -193,6 +187,17 @@ configurations tested.
 web-based simulator---enabling researchers to replicate, extend, and
 build upon every result in this paper with a single command.
 \end{enumerate}
+
+The remainder of this paper is organized as follows.
+Section~\ref{sec:related} surveys related work.
+Section~\ref{sec:model} defines the system model and notation.
+Section~\ref{sec:problem} formalizes the problem and evaluation metrics.
+Section~\ref{sec:methodology} presents the algorithms, theoretical analysis,
+and reproducibility details.
+Section~\ref{sec:results} reports all experimental results and parameter
+sweeps.
+Section~\ref{sec:conclusion} concludes with practical recommendations and
+future directions.
 
 %=============================================================================
 \section{Related Work}\label{sec:related}
@@ -744,53 +749,56 @@ M4* Auction Multi ($E$, $p/d^2$)    &  2.98 &  2.19 &  1.97 & 1.38 \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:main} presents the complete comparison.
-
 \textbf{Result~1: Coordination mechanism dominates fleet size.}
-M2 (FCR$=2.83$) achieves a $6.6\times$ reduction over M1 (FCR$=18.55$)
-at identical fleet size and environment, confirming the theoretical finding
-of Chrobak et al.~\cite{Chrobak2015} that the communication regime, not the
-number of agents, is the primary determinant of search efficiency.
+Moving from M1 (no communication) to M2 (auction-coordinated) at identical
+fleet size reduces FCR from $18.55$ to $2.83$---a $6.6\times$ improvement.
+This is by far the largest single gain in our model hierarchy and confirms
+the theoretical finding of Chrobak et al.~\cite{Chrobak2015}: the
+communication regime, not the number of agents, is the primary determinant
+of search efficiency.
+The practical implication is direct---a small well-coordinated team
+dramatically outperforms a large uncoordinated one.
 
 \textbf{Result~2: Probability-aware bids outperform centralized
 distance-optimal assignment.}
 M3 (FCR$=6.41$) outperforms $\mathrm{H}_d$ (FCR$=6.80$) by $5.7\%$ despite
 $\mathrm{H}_d$ computing the globally distance-optimal assignment each
 iteration.
-The probability-weighted Hungarian ablation $\mathrm{H}_{p/d}$ achieves
-FCR$=6.31$, which is statistically indistinguishable from M3 (FCR$=6.41$):
-the mean gap is $1.4\%$ and the median gap is $0.1\%$, both within
-trial-to-trial noise.
-This comparison suggests that the probability-aware bid function is
-the primary driver of M3's $5.7\%$ advantage over $\mathrm{H}_d$:
-with the same bid function, the distributed SSI and centralized
-Hungarian mechanisms achieve near-identical FCR.
-Notably, the $1/d$ bid within the SSI auction produces FCR$=6.79$, matching
-$\mathrm{H}_d$ ($6.80$) to within numerical precision---providing a
-cross-validation that both implementations are correct.
+This tells us something important: optimizing for geometry alone is the
+wrong objective.
+The probability-weighted ablation $\mathrm{H}_{p/d}$ achieves FCR$=6.31$,
+which is statistically indistinguishable from M3 ($1.4\%$ mean gap,
+$0.1\%$ median gap)---confirming that the \emph{bid function}, not the
+centralized-vs.-distributed mechanism, is what drives the advantage.
+As a cross-check, the $1/d$ bid within the SSI auction produces
+FCR$=6.79$, matching $\mathrm{H}_d$ ($6.80$) to within numerical
+precision, validating both implementations.
 
 \textbf{Result~3: Multi-node sorties recover the energy penalty.}
-M4 (FCR$=3.11$) recovers $92\%$ of the performance gap between M3
-(FCR$=6.41$) and M2 (FCR$=2.83$).
-Average iteration count drops from $4.81$ (M3) to $1.38$ (M4), because each
-greedy chain visits ${\sim}5.3$ sites per sortie instead of one.
-This efficiency gain is achieved without additional communication overhead:
-all coordination remains at the base station.
+The gap between M3 (FCR$=6.41$, energy-constrained) and M2 (FCR$=2.83$,
+unconstrained) represents the cost of finite batteries.
+M4 (FCR$=3.11$) closes $92\%$ of this gap---without any additional hardware
+or communication overhead.
+It does so by chaining multiple sites per sortie: average iteration count
+drops from $4.81$ (M3) to $1.38$ (M4), as each greedy chain visits
+${\sim}5.3$ sites per trip instead of one.
+This result shows that smarter scheduling, not more robots or bigger
+batteries, is the lever to pull.
 
 \textbf{Result~4: The $p/d^2$ bid achieves the best FCR under energy
 constraints.}
 M4* (FCR$=2.98$) improves upon M4 (FCR$=3.11$) by $4.2\%$, consistent
-with Corollary~\ref{cor:foreclosure}.
-Fig.~\ref{fig:bids} confirms the complete ordering
+with the cost-foreclosure argument of Corollary~\ref{cor:foreclosure}.
+Fig.~\ref{fig:bids} confirms the complete bid-function ordering
 $p/d^2 > p/d > 1/d > p{\cdot}e^{-d/E} > p$ across all 500 trials.
-The advantage is most pronounced in the energy sweep
-(Fig.~\ref{fig:energy}), where M4* widens its lead over M4 as $E$
-decreases---the regime in which cost-foreclosure is most active.
-Formal paired Wilcoxon tests at 1,000 trials ($p{=}0.88$) show the
-aggregate mean gap at the single default configuration does not
-individually reach significance; the stronger evidence for
-Corollary~\ref{cor:foreclosure} lies in the bid-function and energy
-sweeps rather than in the single-point mean comparison.
+The advantage grows with the energy sweep (Fig.~\ref{fig:energy}): M4*
+widens its lead over M4 as $E$ decreases, precisely the tight-budget
+regime where cost-foreclosure is most active.
+A paired Wilcoxon test at 1,000 trials yields $p{=}0.88$ at the single
+default configuration, indicating the aggregate mean gap is not
+individually significant at that point; the compelling evidence for
+the $p/d^2$ advantage lies in the energy sweep and bid-function
+comparison rather than the single-parameter-point mean.
 
 \begin{figure}[ht]
   \centering
@@ -821,12 +829,15 @@ M4 &  3.11 & 13.87 & $\checkmark$ & 0.22 \\
 \end{table}
 
 All four bounds hold across every trial (Table~\ref{tab:bounds}).
+Tightness is the ratio of the empirical mean to the theoretical bound; a
+value close to~1 means the bound is nearly tight (hard to improve), while a
+low value means the bound is conservative and could be strengthened.
 The M2 bound achieves tightness~$0.85$, reflecting its simple per-hop cost
-structure.
-The M4 bound is most conservative (tightness~$0.22$): the analytical estimate
-$S{=}1$ worst-case sites per sortie underestimates the empirical average of
-${\sim}5.3$, because the greedy chain preferentially selects sites closer
-than $d_{\mathrm{hop}}$.
+structure---close to tight.
+The M4 bound is most conservative (tightness~$0.22$): the analysis uses a
+worst-case $S{=}1$ site per sortie, but empirically the greedy chain
+visits ${\sim}5.3$ sites per trip (robots preferentially chain nearby sites
+shorter than $d_{\mathrm{hop}}$).
 Tightening this bound via expected greedy chain-length analysis is identified
 as a priority direction in Section~\ref{sec:future}.
 
@@ -855,14 +866,18 @@ as a priority direction in Section~\ref{sec:future}.
 \end{figure}
 
 \textbf{Energy sweep} (Fig.~\ref{fig:energy}).
-As $E$ increases from 8 to 30, M4* FCR decreases monotonically from 3.18 to
-2.67, crossing below M2 ($2.83$) at $E \approx 22$.
-This crossover occurs because M2 is a greedy node-to-node auction that can
-commit to sub-optimal routes; M4* re-plans anchor sites at base each
-iteration using $p/d^2$ bids, and with sufficient budget these base-anchored
-chains outperform the unconstrained node-to-node strategy.
-M3 and $\mathrm{H}_d$ plateau near $6.5$--$7.0$ regardless of $E$: a
-single-node sortie algorithm cannot exploit surplus budget.
+As $E$ increases from 8 to 30, M4* FCR decreases monotonically from
+$3.18$ to $2.67$, eventually crossing \emph{below} M2 ($2.83$) at
+$E \approx 22$---meaning M4* actually outperforms the theoretically
+unconstrained model at high budgets.
+This crossover happens because M2 uses a greedy node-to-node strategy
+that can commit to sub-optimal routes; M4* re-plans anchor sites from base
+each iteration using $p/d^2$ bids, and with sufficient budget these
+probability-weighted base-anchored chains beat the unconstrained
+node-to-node approach.
+By contrast, M3 and $\mathrm{H}_d$ plateau near $6.5$--$7.0$ regardless
+of $E$: a single-node-per-sortie algorithm simply cannot exploit a larger
+budget.
 
 \begin{figure}[ht]
   \centering
@@ -874,15 +889,22 @@ single-node sortie algorithm cannot exploit surplus budget.
 \end{figure}
 
 \textbf{Fleet-size sweep} (Fig.~\ref{fig:robots}).
-As $R$ increases from 1 to 6, all coordinated models improve with diminishing
-returns.
+As $R$ increases from 1 to 6, all coordinated models improve with strongly
+diminishing returns.
 The M3-to-M4* gap is largest at $R{=}1$ ($12.97$ vs.\ $5.44$) and narrows
-to $2.48$ vs.\ $2.04$ at $R{=}6$, with M4* consistently achieving the lowest
-FCR.
-The apparent asymptotic behavior of coordinated FCR is formalized as a
-conjecture in Section~\ref{sec:future}.
+to $2.48$ vs.\ $2.04$ at $R{=}6$---M4* consistently achieves the lowest FCR
+at every fleet size.
+The flattening curves suggest that adding more robots eventually stops
+helping, reinforcing the message from Result~1: communication quality
+matters more than fleet size.
+This asymptotic behavior is formalized as a conjecture in
+Section~\ref{sec:future}.
 
 \subsection{Discussion}\label{sec:discussion}
+
+The following discussion examines the robustness of the results, explains
+two counter-intuitive phenomena observed in the experiments, and describes
+how the base model extends to more realistic settings.
 
 \textbf{Instance filter sensitivity.}
 The filter $d_{\mathrm{opt}} \geq 1.0$ removes approximately $7\%$ of
@@ -912,7 +934,7 @@ No conclusion in Section~\ref{sec:results} depends on the choice of threshold.
 Algorithm~\ref{alg:chain} selects extensions in $O(|\mathcal{U}|)$ per step,
 suitable for real-time deployment.
 An empirical 2-opt post-processing pass on M4* \emph{worsens} mean FCR from
-$2.98$ to $3.18$ ($-6.58\%$), despite shortening total tour length.
+$2.98$ to $3.18$ (a $6.58\%$ degradation), despite shortening total tour length.
 This counter-intuitive result---the \emph{Target-Delay Anomaly}---arises
 because 2-opt reorders sites by geometric efficiency, pushing low-distance
 but low-probability sites earlier in the tour and deferring the
