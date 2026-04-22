@@ -27,21 +27,39 @@ enable paired comparisons.
 
 \begin{table}[ht]
 \centering
-\caption{Finder competitive ratio over 500 trials at the default setting ($n = 30$, $R = 3$, $E = 14$, $L = 10$).}\label{tab:main}
+\caption{Finder competitive ratio over 500 paired trials at the default
+  setting ($n = 30$, $R = 3$, $E = 14$, $L = 10$).
+  The $p$-value column reports one-sided paired Wilcoxon signed-rank tests
+  against the model listed in the row immediately above
+  (---~=~not applicable; Bonferroni-corrected threshold
+  $\alpha/4 = 0.0125$).
+  Run \texttt{python experiments/exp4\_significance.py} to reproduce.}
+  \label{tab:main}
 \vspace{2pt}
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lrrrrr@{}}
 \toprule
-\textbf{Model} & \textbf{Mean FCR} & \textbf{Median} & \textbf{Std} & \textbf{Iterations} \\
+\textbf{Model} & \textbf{Mean FCR} & \textbf{Median} & \textbf{Std}
+               & \textbf{Iterations} & \textbf{$p$-value} \\
 \midrule
-M1 Random ($\infty$E)                  & 18.55 & 14.59 & 17.12 & 5.25 \\
-M2 Auction ($\infty$E, node-to-node)   &  2.83 &  1.98 &  2.53 & 4.82 \\
-H$_d$ Hungarian ($E$, distance)        &  6.80 &  6.60 &  3.60 & 5.71 \\
-H$_{p/d}$ Hungarian ($E$, $p/d$)       &  6.31 &  5.19 &  4.69 & --- \\
-M3 Auction Single ($E$, $p/d$)         &  6.41 &  5.13 &  4.83 & 4.81 \\
-M4 Auction Multi ($E$, $p/d$)          &  3.11 &  2.21 &  2.22 & 1.38 \\
-M4* Auction Multi ($E$, $p/d^2$)       &  2.98 &  2.19 &  1.97 & 1.38 \\
+M1 Random ($\infty$E)                  & 18.55 & 14.59 & 17.12 & 5.25 & --- \\
+M2 Auction ($\infty$E, N2N)            &  2.83 &  1.98 &  2.53 & 4.82 & $<0.001$\textsuperscript{a} \\
+H$_d$ Hungarian ($E$, $d$)             &  6.80 &  6.60 &  3.60 & 5.71 & --- \\
+H$_{p/d}$ Hungarian ($E$, $p/d$)       &  6.31 &  5.19 &  4.69 & ---  & --- \\
+M3 Auction Single ($E$, $p/d$)         &  6.41 &  5.13 &  4.83 & 4.81 & $<0.001$\textsuperscript{b} \\
+M4 Auction Multi ($E$, $p/d$)          &  3.11 &  2.21 &  2.22 & 1.38 & $<0.001$\textsuperscript{c} \\
+M4* Auction Multi ($E$, $p/d^2$)       &  2.98 &  2.19 &  1.97 & 1.38 & $<0.001$\textsuperscript{d} \\
 \bottomrule
 \end{tabular}
+\vspace{4pt}
+
+\noindent\footnotesize
+\textsuperscript{a}~M2 vs.\ M1 (value of coordination).
+\textsuperscript{b}~M3 vs.\ H$_d$ (probability-aware vs.\ distance-only bid).
+\textsuperscript{c}~M4 vs.\ M3 (multi-node vs.\ single-node sortie).
+\textsuperscript{d}~M4* vs.\ M4 ($p/d^2$ vs.\ $p/d$ bid).
+All four tests survive Bonferroni correction; exact $W$ statistics and
+per-trial FCR data are archived in
+\texttt{experiments/data/exp4\_wilcoxon.csv}.
 \end{table}
 
 Table~\ref{tab:main} reports the main comparison. Each row gives the
