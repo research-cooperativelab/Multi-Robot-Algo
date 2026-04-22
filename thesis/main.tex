@@ -199,15 +199,14 @@
 \clearpage
 \phantomsection
 \thispagestyle{empty}
-\vspace*{\fill}\begin{center}\normalsize\bfseries REFERENCES\end{center}\vspace*{\fill}
+\vspace*{\fill}\begin{center}\normalsize REFERENCES\end{center}\vspace*{\fill}
 \addcontentsline{toc}{chapter}{REFERENCES}
 \clearpage
 
 % apalike = LaTeX's built-in APA-style bibliography (author, year) with
 % hanging indent and alphabetical ordering. Close match to APA 7th edition
 % for CSULB honors thesis purposes.
-% Add bold to chapter font so REFERENCES heading is bold (CSULB spec).
-\addtokomafont{chapter}{\bfseries}
+\addtokomafont{chapter}{\normalfont}
 \bibliographystyle{apalike}
 \bibliography{ref}
 

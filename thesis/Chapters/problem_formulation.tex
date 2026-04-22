@@ -97,17 +97,15 @@ $\min_r 2 \, d(x_0^r, x_\tau) \leq E$.
 The bounds derived in Chapter~IV are expressed in terms of two
 geometric quantities.
 
-\begin{enumerate}
-\item The expected distance between two independent uniform-random
-points in the square $[0,L]^2$ is
-$d_{\mathrm{avg}} \approx 0.5214\,L$~\citep{Robbins1978}. This is used
-to estimate the expected cost of base-to-site legs.
-\item The characteristic inter-site spacing
-$d_{\mathrm{hop}} = L / \sqrt{n}$ arises from the regular-grid
+The first constant is the \emph{expected base-to-site distance}
+$d_{\mathrm{avg}} \approx 0.5214\,L$, which is the expected distance
+between two independent uniform-random points in $[0,L]^2$~\citep{Robbins1978};
+this is used to estimate the expected cost of base-to-site legs.
+The second is the \emph{characteristic inter-site spacing}
+$d_{\mathrm{hop}} = L / \sqrt{n}$, which arises from the regular-grid
 approximation in which $n$ sites are placed in a square of side $L$;
 each site then occupies a cell of area $L^2/n$, whose side length is
 $L/\sqrt{n}$.
-\end{enumerate}
 
 \section{Research Hypotheses}
 
@@ -117,14 +115,13 @@ constraints---decomposes into four testable hypotheses. Each is stated
 below as a falsifiable claim, and each is evaluated in Chapter~V both
 theoretically (bounds) and experimentally (Monte Carlo).
 
-\begin{description}
-\item[H1. Communication dominates fleet size.] An auction-coordinated
+\emph{H1. Communication dominates fleet size.} An auction-coordinated
 team of $R$ robots achieves substantially lower FCR than a team of $R$
 robots that chooses sites independently. The hypothesis is that the
 improvement factor is large (of order $5\times$ or greater) at the
 default parameter setting.
 
-\item[H2. Probability-awareness dominates centralization.] A
+\emph{H2. Probability-awareness dominates centralization.} A
 distributed auction with bids $p_i / d$ achieves lower FCR than a
 centralized Hungarian assignment that minimizes total distance without
 using probability information. Moreover, if the Hungarian is given
@@ -132,18 +129,17 @@ access to $p_i$-weighted costs, its performance matches the distributed
 auction's, so that the gap is attributable to the bid function rather
 than to the allocation mechanism.
 
-\item[H3. Multi-site sorties recover most of the energy penalty.]
+\emph{H3. Multi-site sorties recover most of the energy penalty.}
 A multi-sortie planner that chains several sites per excursion closes
 the majority of the FCR gap between an energy-constrained single-sortie
 algorithm and an unconstrained-energy baseline.
 
-\item[H4. A quadratic distance penalty is empirically optimal under
-energy constraints.] Of the bid functions
+\emph{H4. A quadratic distance penalty is empirically optimal under
+energy constraints.} Of the bid functions
 $\{p, d^{-1}, p\,e^{-d/E}, p/d, p/d^2\}$, the function $p/d^2$ achieves
 the lowest FCR on the default parameter setting. The hypothesized
 mechanism is a cost-foreclosure argument: committing to a distant
 anchor site wastes budget that would otherwise support additional
 chain extensions.
-\end{description}
 
 \end{doublespacing}

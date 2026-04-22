@@ -44,14 +44,16 @@ Four headline findings plus three extensions emerged, each
 corresponding to one of the research hypotheses stated in
 Chapter~III.
 
-\begin{enumerate}
-\item Auction-based coordination yields a $6.6\times$ improvement in
+\emph{Coordination gain (H1).}
+Auction-based coordination yields a $6.6\times$ improvement in
 finder competitive ratio over random uncoordinated search (M1 FCR $= 18.74$
 vs.\ M2 FCR $= 2.83$ over 5,000 trials), confirming
 that the communication mode---not the fleet size---is the dominant
 determinant of search efficiency, consistent with the theoretical
 prediction of \citet{Chrobak2015}.
-\item Probability-aware distributed auctions (M3 FCR $= 6.32$) outperform a centralized
+
+\emph{Mechanism matters (H2).}
+Probability-aware distributed auctions (M3 FCR $= 6.32$) outperform a centralized
 distance-optimal Hungarian baseline (H$_d$ FCR $= 6.88$) by $8.1$ percent.
 A probability-weighted Hungarian ablation H$_{p/d}$ (FCR $= 7.38$)
 performs \emph{worse} than H$_d$, demonstrating that the SSI auction's
@@ -59,19 +61,22 @@ iterative site removal---not the bid function alone---is the essential
 mechanism. Giving the Hungarian solver probability-weighted costs without
 changing its one-shot centralized assignment structure introduces a
 clustering pathology that is absent in the sequential SSI auction.
-\item Multi-node sorties recover $90$ percent of the gap between the
+
+\emph{Energy recovery (H3).}
+Multi-node sorties recover $90$ percent of the gap between the
 energy-constrained single-sortie algorithm and the
 unconstrained-energy auction baseline. A single greedy chain extension
 per sortie visits $\sim\!5.3$ sites on average at the default setting,
 cutting the iteration count from $4.81$ to $1.38$.
-\item A bid function $p_i / d^2$ that penalizes distance quadratically
+
+\emph{Bid function (H4).}
+A bid function $p_i / d^2$ that penalizes distance quadratically
 improves on the standard $p_i / d$ bid (M4* FCR $= 3.11$ vs.\ M4 FCR $= 3.16$,
 a $1.5$ percent directional improvement) under energy
 constraints. The result is justified by a cost-foreclosure argument:
 distant anchor sites not only cost more energy but also shorten the
 chain of future extensions, so the effective cost of distance is
 superlinear.
-\end{enumerate}
 
 All four theoretical bounds held empirically across every trial. The
 bounds on Models~1 and~2 are relatively tight; the Model~4 bound is

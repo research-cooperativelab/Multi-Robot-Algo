@@ -23,33 +23,48 @@ Spring 2026
 \noindent
 Every minute after a structural collapse, the probability of finding
 survivors alive decreases. When autonomous robot teams are deployed to
-search the rubble, they face two simultaneous constraints: a finite
-battery budget that forces frequent returns to a charging base, and
-limited inter-robot communication that makes coordination difficult.
+search collapsed buildings, earthquake rubble, or flood sites, they
+face two simultaneous constraints: a finite battery budget that forces
+frequent returns to a charging base, and limited inter-robot
+communication that makes coordination difficult.
 This thesis studies the multi-robot search and rescue problem in which
 $R$ robots must locate a target hidden among $n$ candidate sites, each
 carrying a prior probability $p_i$ of containing the target, under a
 finite per-robot energy budget $E$. Four algorithmic models spanning
 the energy--communication design space are introduced and compared:
-an uncoordinated random baseline (M1), an unconstrained-energy auction
-in which robots bid on sites and move freely between them (M2), an
-energy-constrained single-sortie auction in which each robot makes one
-round trip per iteration (M3), and a multi-sortie planner in which
-each robot chains several sites into a single energy-feasible excursion
-before returning to base (M4/M4*). Performance is measured by the
-Finder Competitive Ratio (FCR), the ratio of the finding robot's travel
-distance to the omniscient optimum, for which closed-form upper bounds
-are derived for each model. All bounds are validated through 500 Monte
-Carlo trials in a $10 \times 10$ square arena with $n = 30$ candidate
-sites and $R = 3$ robots, with parameter sweeps over the energy budget
-$E \in [8, 30]$ and fleet size $R \in [1, 6]$. Auction-based
-coordination yields a 6.6-fold improvement in FCR over uncoordinated
-random search; a novel bid function $p_i/d^2$ that penalizes distance
-quadratically outperforms the standard $p_i/d$ by 4.2 percent under
-energy constraints, justified by a cost-foreclosure argument showing
-that a distant anchor site not only costs more energy to reach but also
-shrinks the budget available for subsequent chain extensions; and
-multi-node sorties close 92 percent of the performance gap between
+M1, an uncoordinated random baseline with \emph{no inter-robot
+communication whatsoever}; M2, which introduces
+\emph{Sequential Single-Item (SSI) auctions} with unconstrained energy;
+M3, which adds the energy constraint with a standard $p_i/d$ bid
+function; and M4/M4*, which extends each sortie via a \emph{greedy
+chain extension} using the novel $p_i/d^2$ bid, alongside a
+\emph{Hungarian assignment} baseline for comparison.
+Performance is measured by the \emph{Finder Competitive Ratio} (FCR),
+the ratio of the finding robot's travel distance to the omniscient
+optimum, for which closed-form upper bounds are derived for each model.
+All bounds are validated through 5,000 Monte Carlo trials in a
+$10 \times 10$ square arena with $n = 30$ candidate sites and
+$R = 3$ robots, with parameter sweeps over the energy budget
+$E \in [8, 30]$ and fleet size $R \in [1, 6]$.
+Four results emerge from this study.
+Auction-based coordination yields a 6.6-fold improvement in FCR over
+uncoordinated random search.
+SSI auctions with probability-aware bids outperform Hungarian
+assignment by $8.1\%$, and adding probability weighting to Hungarian
+assignment alone \emph{worsens} performance due to a clustering
+pathology, establishing that the SSI iterative bid-update mechanism
+is essential.
+Multi-node greedy chains recover $90\%$ of the performance gap between
 energy-constrained and unconstrained operation.
+The novel $p_i/d^2$ bid function outperforms the standard $p_i/d$ bid
+by $1.5\%$ overall, with the advantage growing to approximately $12\%$
+at tight energy budgets, justified by a cost-foreclosure argument
+showing that a distant anchor site not only costs more energy to reach
+but also shrinks the budget available for subsequent chain extensions.
+Therefore, this thesis provides a reproducible foundational benchmark,
+with closed-form guarantees and simple one-line deployment rules,
+applicable to any scenario in which a team of resource-constrained
+agents must locate a target under uncertainty---from urban
+search-and-rescue to autonomous planetary exploration.
 \end{doublespacing}
 \clearpage
