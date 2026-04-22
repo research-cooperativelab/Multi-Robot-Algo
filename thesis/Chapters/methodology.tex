@@ -36,6 +36,48 @@ is shown graphically in Figure~\ref{fig:model-tree}.
   \caption{The four models ordered by what each adds. M4* (the bid function $p_i/d^2$ variant of M4) is the primary contribution of the thesis.}\label{fig:model-tree}
 \end{figure}
 
+\subsection{Instance Generator}
+
+To reproduce any result in this thesis, a reader needs only the instance
+generator and the model loop described below. The instance generator
+creates a single search scenario: it places $n$ sites and $R$ robot bases
+uniformly at random in the square $[0, L]^2$, draws prior probabilities
+from a uniform distribution and normalizes them to sum to one, then
+selects a target site by sampling from those priors. Two feasibility
+filters are applied: the nearest-base distance must be at least
+$d_{\min} = 1.0$ (to avoid degenerate near-zero FCR denominators), and
+the target must be reachable within the energy budget ($2\,d_{\mathrm{opt}}
+\leq E$). The following Python pseudocode implements this exactly:
+
+\begin{verbatim}
+def generate_instance(n, R, L, E, d_min, seed):
+    rng = np.random.default_rng(seed)       # reproducible random state
+
+    # Place n sites uniformly in [0,L]^2 and draw normalized priors
+    sites = rng.uniform(0, L, size=(n, 2))
+    raw   = rng.uniform(0.1, 1.0, size=n)
+    p     = raw / raw.sum()                 # prior probabilities sum to 1
+
+    # Place R robot bases uniformly in [0,L]^2
+    bases = rng.uniform(0, L, size=(R, 2))
+
+    # Rejection-sample a feasible target site
+    for _ in range(10_000):
+        tau   = rng.choice(n, p=p)          # sample target from prior
+        d_opt = min(np.linalg.norm(bases[r] - sites[tau])
+                    for r in range(R))      # nearest base distance
+        if d_opt >= d_min and 2 * d_opt <= E:
+            return sites, p, bases, tau     # feasible instance found
+    raise ValueError("No feasible instance found for given parameters")
+\end{verbatim}
+
+Each call to \texttt{generate\_instance} with the same seed produces an
+identical scenario, which is how all models are evaluated on the same
+instances for a fair paired comparison. The 5{,}000-trial main comparison
+uses seeds $42, 43, \ldots, 5041$; every result in Chapter~V can be
+exactly reproduced by running \texttt{python experiments/exp8\_ci\_table.py}
+from the repository root.
+
 \section{Algorithmic Models}
 
 \subsection{Model 1: Random Baseline}
@@ -197,6 +239,91 @@ found.
 \State Bayesian update on $\mathbf{p}$ using visited sites; repeat
 \end{algorithmic}
 \end{algorithm}
+
+\subsection{Model 4* Implementation}
+
+The following pseudocode shows one complete auction iteration of Model~4*.
+Reading through this code is the fastest way to understand exactly how the
+bid function and chain extension work together. Annotations explain each
+step.
+
+\begin{verbatim}
+def m4star_iteration(sites, p, bases, R, E, visited):
+    """
+    One auction iteration of Model 4* (p/d^2 bid, greedy chain).
+    Input:  sites    - array of n site positions
+            p        - current prior probabilities (updated each round)
+            bases    - array of R robot base positions
+            R        - number of robots
+            E        - energy budget per robot per sortie
+            visited  - set of already-inspected site indices
+    Returns: tours   - list of R site-index lists (one tour per robot)
+    """
+    unvisited = [i for i in range(len(sites)) if i not in visited]
+    pos    = [bases[r].copy() for r in range(R)]  # current position = base
+    E_rem  = [E] * R                              # remaining energy per robot
+    claimed = set()                               # sites already assigned
+    tours  = [[] for _ in range(R)]              # output: one tour per robot
+
+    # --- Phase 1: SSI auction assigns each robot one anchor site ---
+    # The robot with the highest p[i]/d^2 bid wins site i.
+    # This is run sequentially: once a robot wins, it is removed from bidding.
+    available = [i for i in unvisited if any(
+        2 * dist(bases[r], sites[i]) <= E for r in range(R))]
+    for _ in range(R):                            # at most R winners
+        best_bid, best_r, best_i = -inf, None, None
+        for r in range(R):
+            if tours[r]:                          # already has an anchor
+                continue
+            for i in available:
+                if i in claimed:
+                    continue
+                d = dist(bases[r], sites[i])
+                if 2 * d <= E:                    # round-trip feasibility
+                    bid = p[i] / d**2             # the p/d^2 bid function
+                    if bid > best_bid:
+                        best_bid, best_r, best_i = bid, r, i
+        if best_r is None:
+            break                                 # no more feasible sites
+        tours[best_r].append(best_i)
+        claimed.add(best_i)
+        pos[best_r]   = sites[best_i]            # robot moves to anchor
+        E_rem[best_r] -= dist(bases[best_r], sites[best_i])
+
+    # --- Phase 2: Greedy chain extension ---
+    # Each robot greedily adds the next site with the best p/d^2 score,
+    # as long as it can still return to base afterward.
+    changed = True
+    while changed:
+        changed = False
+        for r in range(R):
+            if not tours[r]:
+                continue
+            best_bid, best_j = -inf, None
+            for j in unvisited:
+                if j in claimed:
+                    continue
+                d_next = dist(pos[r], sites[j])       # cost to reach j
+                d_home = dist(sites[j], bases[r])     # cost to return home
+                if d_next + d_home <= E_rem[r]:       # energy check
+                    bid = p[j] / d_next**2
+                    if bid > best_bid:
+                        best_bid, best_j = bid, j
+            if best_j is not None:
+                tours[r].append(best_j)
+                claimed.add(best_j)
+                E_rem[r] -= dist(pos[r], sites[best_j])
+                pos[r]    = sites[best_j]
+                changed   = True                      # keep extending
+    return tours
+\end{verbatim}
+
+After each auction iteration, the outer loop performs a Bayesian update:
+every inspected site has its prior set to zero and the remaining priors
+are renormalized. The loop repeats until the target site appears in a
+robot's tour. The full simulation code, including all five models and
+all eight experiments, is available at
+\url{https://github.com/foojanbabaeeian/Multi-Robot-Algo}.
 
 \subsection{Hungarian Baselines}
 

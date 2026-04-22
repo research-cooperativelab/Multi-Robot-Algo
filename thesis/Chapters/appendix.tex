@@ -4,14 +4,10 @@
 
 \begin{doublespacing}
 
-This appendix records the complete set of parameters used in the Monte
-Carlo experiments of Chapter~V and the Python pseudocode for the
-instance generator and core M4* auction loop.  The purpose is to
-enable replication: any reader who implements the instance generator
-exactly as described here and runs the auction with the parameters in
-Table~\ref{tab:params} should recover the mean FCR values of
-Table~1 (Chapter~V) to within Monte Carlo sampling error
-($\pm 0.05$ FCR units at 500 trials).
+This appendix records the complete set of default parameters used in the
+Monte Carlo experiments of Chapter~V. The pseudocode for the instance
+generator and the Model~4* auction loop, along with line-by-line
+commentary, is presented in Chapter~IV (Methodology).
 
 \section{Complete Parameter Table}
 
@@ -27,7 +23,7 @@ Arena side length           & $L$              & 10            & fixed \\
 Number of candidate sites   & $n$              & 30            & fixed \\
 Number of robots            & $R$              & 3             & 1--6 \\
 Energy budget               & $E$              & 14            & 8--30 \\
-Number of Monte Carlo trials & ---             & 500           & fixed \\
+Number of Monte Carlo trials & ---             & 5{,}000       & fixed \\
 Prior distribution          & $p_i$           & Uniform(0.1,1.0), normalized & --- \\
 Site placement              & $x_i$           & Uniform$([0,L]^2)$     & --- \\
 Base placement              & $x_0^r$         & Uniform$([0,L]^2)$     & --- \\
@@ -52,109 +48,6 @@ $d_{\mathrm{avg}}$ and $d_{\mathrm{hop}}$, because the greedy chain
 extension preferentially selects sites closer than $d_{\mathrm{hop}}$.
 This is the primary source of looseness in the Model~4 bound
 (tightness $= 0.22$, Table~2 of Chapter~V).
-
-\section{Instance Generator Pseudocode}
-
-The following Python-style pseudocode describes the instance
-generator.  All random draws use a per-trial seed for reproducibility.
-
-\begin{verbatim}
-def generate_instance(n, R, L, E, d_min, seed):
-    rng = np.random.default_rng(seed)
-
-    # --- site positions and priors ---
-    sites = rng.uniform(0, L, size=(n, 2))
-    raw   = rng.uniform(0.1, 1.0, size=n)
-    p     = raw / raw.sum()          # normalize to sum = 1
-
-    # --- robot bases ---
-    bases = rng.uniform(0, L, size=(R, 2))
-
-    # --- target selection with feasibility filters ---
-    for _ in range(10_000):          # rejection sampling
-        tau = rng.choice(n, p=p)
-        d_opt = min(np.linalg.norm(bases[r] - sites[tau])
-                    for r in range(R))
-        if d_opt >= d_min and 2 * d_opt <= E:
-            return sites, p, bases, tau
-    raise ValueError("No feasible instance found for given parameters")
-\end{verbatim}
-
-\section{Model 4* Auction Loop Pseudocode}
-
-The following pseudocode describes one full iteration of the
-Model~4* algorithm (Algorithm~1 in Chapter~IV), written at a
-level of detail sufficient for implementation.
-
-\begin{verbatim}
-def m4star_iteration(sites, p, bases, R, E, visited):
-    """
-    One auction iteration of Model 4*.
-    Returns: list of per-robot tours [(site_idx, ...)]
-    and updated visited set.
-    """
-    unvisited = [i for i in range(len(sites)) if i not in visited]
-    pos = [bases[r].copy() for r in range(R)]
-    E_rem = [E] * R
-    claimed = set()
-    tours = [[] for _ in range(R)]
-
-    # --- SSI auction for anchor sites ---
-    available = [i for i in unvisited if any(
-        2 * dist(bases[r], sites[i]) <= E for r in range(R))]
-    for _ in range(R):
-        best_bid, best_r, best_i = -inf, None, None
-        for r in range(R):
-            if tours[r]:            # already has anchor
-                continue
-            for i in available:
-                if i in claimed:
-                    continue
-                d = dist(bases[r], sites[i])
-                if 2 * d <= E:
-                    bid = p[i] / d**2   # p/d^2 bid (M4*)
-                    if bid > best_bid:
-                        best_bid, best_r, best_i = bid, r, i
-        if best_r is None:
-            break
-        tours[best_r].append(best_i)
-        claimed.add(best_i)
-        pos[best_r] = sites[best_i]
-        E_rem[best_r] -= dist(bases[best_r], sites[best_i])
-
-    # --- greedy chain extension (round-robin) ---
-    changed = True
-    while changed:
-        changed = False
-        for r in range(R):
-            if not tours[r]:
-                continue
-            best_bid, best_j = -inf, None
-            for j in unvisited:
-                if j in claimed:
-                    continue
-                d_next = dist(pos[r], sites[j])
-                d_home = dist(sites[j], bases[r])
-                if d_next + d_home <= E_rem[r]:
-                    bid = p[j] / d_next**2
-                    if bid > best_bid:
-                        best_bid, best_j = bid, j
-            if best_j is not None:
-                tours[r].append(best_j)
-                claimed.add(best_j)
-                E_rem[r] -= dist(pos[r], sites[best_j])
-                pos[r] = sites[best_j]
-                changed = True
-
-    return tours
-\end{verbatim}
-
-The outer search loop calls \texttt{m4star\_iteration} repeatedly,
-performing a Bayesian update after each iteration
-($p_i \leftarrow 0$ for every visited site, followed by renormalization),
-until the target site $\tau$ appears in a robot's tour.  The full
-simulation code and figure generation scripts are available in the
-accompanying GitHub repository.
 
 \end{doublespacing}
 

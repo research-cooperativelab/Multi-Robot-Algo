@@ -58,7 +58,8 @@
 % authoryear = "(Author, Year)" format instead of numeric [1]
 % sort&compress = alphabetical order, compressed ranges
 \usepackage[round,authoryear,sort&compress]{natbib}
-\setlength{\bibsep}{\baselineskip}
+\setlength{\bibsep}{0pt}
+\setcounter{secnumdepth}{0}
 
 % Renames the "Bibliography" section heading to "REFERENCES" (CSULB spec).
 \renewcommand{\bibname}{REFERENCES}
@@ -136,8 +137,8 @@
 \renewenvironment{proof}{\indent{\em Proof}:}{}
 
 \usepackage[page,toc,title]{appendix}
-\renewcommand{\appendixtocname}{APPENDICES}
-\renewcommand{\appendixpagename}{\vspace*{\fill}\centering\normalsize APPENDICES\vspace*{\fill}}
+\renewcommand{\appendixtocname}{APPENDIX}
+\renewcommand{\appendixpagename}{\vspace*{\fill}\centering\normalsize APPENDIX\vspace*{\fill}}
 
 \usepackage{hyperref}
 \hypersetup{colorlinks,citecolor=black,linkcolor=black,urlcolor=black}

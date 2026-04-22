@@ -72,7 +72,7 @@ Table~\ref{tab:main} reports the main comparison. Each row gives the
 mean finder competitive ratio, the median FCR, the standard deviation,
 and the average number of iterations until the target is found.
 
-\textbf{Hypothesis H1 (communication dominates fleet size).} The
+\emph{Hypothesis H1 (communication dominates fleet size).} The
 ratio of M1's FCR (18.74) to M2's (2.83) is 6.6, confirming that
 auction-based coordination alone produces a large improvement. The
 difference is not a matter of statistical noise---with 5,000 trials
@@ -102,7 +102,7 @@ non-overlapping tours.
   \caption{The same 30-site, 3-robot instance solved by M1 (left) and M4* (right). Squares are robot bases; circles are candidate sites sized by prior probability; the green star is the target. M1 robots duplicate effort because they do not communicate. M4* robots chain nearby high-probability sites into short tours and find the target far sooner.}\label{fig:m1-vs-m4star}
 \end{figure}
 
-\textbf{Hypothesis H2 (probability-aware bids beat distance-only
+\emph{Hypothesis H2 (probability-aware bids beat distance-only
 centralized assignment).} M3 (FCR $= 6.32$) outperforms the
 distance-only Hungarian baseline H$_d$ (FCR $= 6.88$) by 8.1 percent
 (Wilcoxon $p = 3.4\times10^{-15}$), supporting H2 directly.
@@ -128,7 +128,7 @@ essential ingredient driving the improvement over H$_d$; probability-weighted
 costs alone, applied to a one-shot centralized assignment, are not only
 insufficient but counterproductive at scale. H2 is supported.
 
-\textbf{Hypothesis H3 (multi-site sorties recover most of the energy
+\emph{Hypothesis H3 (multi-site sorties recover most of the energy
 penalty).} The gap M3 $-$ M2 $= 6.32 - 2.83 = 3.49$ in FCR is the
 energy penalty under single-sortie constraints. Model 4's FCR of
 $3.16$ recovers
@@ -148,7 +148,7 @@ solve the hard problem of longer-lasting batteries---they can get
 most of the way to battery-unlimited performance just by changing
 the software that decides where to fly next. H3 is supported.
 
-\textbf{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
+\emph{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
 achieves a mean FCR of $3.11$ versus Model 4's $3.16$---a directional
 improvement of $1.5$ percent in the correct direction. As reported in
 Table~\ref{tab:main} footnote~(d), this difference is \emph{not}
