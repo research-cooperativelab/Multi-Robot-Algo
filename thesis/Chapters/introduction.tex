@@ -90,13 +90,13 @@ outcome.
 Rather than proposing a single algorithm, this thesis introduces a
 hierarchy of four base models that systematically isolate the
 contribution of each operational capability.
-At the base of the hierarchy is \textbf{Model~1 (M1)}, a
+At the base of the hierarchy is \emph{Model~1 (M1)}, a
 coordination-free baseline: robots independently sample sites from
 the prior distribution, with no communication.
 M1 quantifies the cost of zero coordination and provides a lower
 bound on performance against which everything else is measured.
 
-\textbf{Model~2 (M2)} adds full auction-based coordination and removes
+\emph{Model~2 (M2)} adds full auction-based coordination and removes
 the energy constraint, establishing an upper bound on what
 communication alone can achieve.
 In M2, robots share current position information, bid for sites using a
@@ -104,13 +104,13 @@ probability-weighted score, and are assigned sites via a \emph{sequential
 single-item} (SSI) auction~\citep{Koenig2006}.
 The gap between M1 and M2 measures the value of coordination.
 
-\textbf{Model~3 (M3)} reintroduces the energy constraint while retaining
+\emph{Model~3 (M3)} reintroduces the energy constraint while retaining
 the auction protocol.
 Each robot makes exactly one round trip per iteration, and the auction
 selects only from energy-feasible sites.
 The gap between M2 and M3 measures the cost of the finite battery.
 
-\textbf{Model~4 and M4*} extend M3 by allowing each robot to chain
+\emph{Model~4 and M4*} extend M3 by allowing each robot to chain
 multiple sites into a single sortie before returning to base.
 After the auction assigns an anchor site, a \emph{greedy chain extension}
 appends additional sites while budget remains.
@@ -134,7 +134,7 @@ one of the research hypotheses stated in Chapter~\ref{ch:method}:
 
 \emph{Coordination dominates fleet size:}  M2 (auction-coordinated,
 $\mathrm{FCR} = 2.83$) outperforms M1 (uncoordinated,
-$\mathrm{FCR} = 18.55$) by a factor of~$6.6$ at identical fleet size.
+$\mathrm{FCR} = 18.74$) by a factor of~$6.6$ at identical fleet size.
 The mode of communication, not the number of robots, is the primary
 determinant of search efficiency---consistent with the theoretical
 bound of \citet{Chrobak2015}.

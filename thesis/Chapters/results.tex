@@ -79,17 +79,16 @@ difference is not a matter of statistical noise---with 5,000 trials
 and the reported standard deviations, the two means are separated by
 many standard errors (Wilcoxon $p = 2.9\times10^{-153}$). H1 is supported.
 
-\emph{Why this matters.} The comparison of M1 and M2 is the
-simplest way to quantify the value of communication. Both models
-have the same fleet size, the same sites, the same priors, the same
-targets---the only thing they differ in is whether the robots talk
-to each other. A $6.6\times$ improvement from talking alone is
-substantial. It reinforces Chrobak et al.'s theoretical result that
-the \emph{mode} of communication matters more than the \emph{number}
-of robots: adding communication to a team of three beats adding
-more robots to a silent team. For a real-world deployment, this
-means a radio system that keeps working in a rubble pile is more
-valuable than spare drones.
+\emph{Why this matters.} The comparison of M1 and M2 isolates the
+contribution of communication: both models share fleet size, site
+layout, prior probabilities, and target placement, differing only in
+whether inter-robot coordination is present. A $6.6\times$ improvement
+attributable solely to coordination reinforces the theoretical result of
+\citet{Chrobak2015} that the \emph{mode} of communication determines
+efficiency more strongly than fleet size. In operational terms, the
+results indicate that reliable communication infrastructure provides
+greater performance gain than an equivalent increase in the number of
+robots.
 Figure~\ref{fig:m1-vs-m4star} shows what this improvement looks like
 on a single instance: the uncoordinated M1 team repeatedly re-visits
 the same regions and takes FCR 53.65, while M4* on the same instance
@@ -138,15 +137,15 @@ visible in the iteration count: M3 takes $4.82$ iterations on average
 while M4 takes $1.38$, because each M4 sortie visits approximately
 $5.3$ sites.
 
-\emph{Why this matters.} The gap between M3 and M2 represents what
-a battery costs you relative to a hypothetical world with no battery
-constraint at all. Most of that cost is \emph{recoverable} through
-smarter scheduling: the robots do not need a bigger battery, they
-need a planner that chains sites into longer flights before returning
-to base. In practical terms, a rescue drone team does not need to
-solve the hard problem of longer-lasting batteries---they can get
-most of the way to battery-unlimited performance just by changing
-the software that decides where to fly next. H3 is supported.
+\emph{Why this matters.} The gap between M3 and M2 quantifies the
+performance cost of finite energy relative to the unconstrained
+ideal. The result shows that most of this cost is \emph{recoverable}
+through route planning: rather than requiring expanded battery
+capacity, coordinated multi-site sorties recover $90\%$ of the
+energy penalty at constant hardware. This finding suggests that
+algorithmic improvements to mission planning yield returns
+comparable to substantial hardware upgrades, at substantially lower
+implementation cost. H3 is supported.
 
 \emph{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
 achieves a mean FCR of $3.11$ versus Model 4's $3.16$---a directional
@@ -278,11 +277,11 @@ sweeping $n \in \{30, 50, 100\}$ at fixed $R = 3$ and
 $R \in \{1, 2, 3, 4, 5, 6, 8, 10\}$ at fixed $n = 30$, with
 500 trials per configuration.
 
-\textbf{$n$ sweep (Table~\ref{tab:n-sweep}).} The relative ordering
+\emph{$n$ sweep (Table~\ref{tab:n-sweep}):} The relative ordering
 M2 $<$ M4* $\leq$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at all
 three values of $n$.  Absolute FCRs scale roughly linearly with $n$:
 at $n = 100$, M1 reaches $60.65$ while M4* remains at $5.60$---a
-$10.8\times$ gap, compared to $6.5\times$ at $n = 30$.  The
+$10.8\times$ gap, compared to $6.2\times$ at $n = 30$.  The
 coordination benefit therefore \emph{grows} with instance size, because
 a random robot must search on average $n/2$ sites before finding the
 target, while the auction models use probability-aware chaining to
@@ -306,7 +305,7 @@ $n$ & M1 & M2 & H$_d$ & M3 & M4 & M4* \\
 \end{tabular}
 \end{table}
 
-\textbf{$R$ sweep (Table~\ref{tab:r-sweep}).} The $R$-sweep reveals
+\emph{$R$ sweep (Table~\ref{tab:r-sweep}):} The $R$-sweep reveals
 two regime transitions not visible at the default single configuration.
 First, at mid-range fleet sizes ($R = 2$--$3$), M4* and M4 produce
 nearly identical FCRs (e.g., $3.93$ vs.\ $3.92$ at $R = 2$),
