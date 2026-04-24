@@ -162,6 +162,12 @@
 \addtocontents{lof}{\protect\noaddvspace}
 \addtocontents{lot}{\protect\noaddvspace}
 
+% List of algorithms — produced by the algorithm package's \listofalgorithms.
+\renewcommand{\listalgorithmname}{LIST OF ALGORITHMS}
+\makeatletter
+\renewcommand{\l@algorithm}{\@dottedtocline{1}{0.25in}{2.3em}}
+\makeatother
+
 \renewenvironment{proof}{\indent{\em Proof}:}{}
 
 \usepackage[page,toc,title]{appendix}
@@ -205,6 +211,11 @@
   \phantomsection
   \listoffigures
   \addcontentsline{toc}{chapter}{LIST OF FIGURES}
+
+  \clearpage
+  \phantomsection
+  \listofalgorithms
+  \addcontentsline{toc}{chapter}{LIST OF ALGORITHMS}
 \end{doublespacing}
 
 \mainmatter
