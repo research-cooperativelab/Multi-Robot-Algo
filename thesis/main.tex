@@ -77,24 +77,44 @@
 % 1in beforeskip + 1in top page margin = 2" to chapter title (CSULB rule).
 % 0.25in afterskip between chapter title and first paragraph.
 \RedeclareSectionCommand[beforeskip=1in,afterskip=0.25in]{chapter}
-\setkomafont{disposition}{\bfseries\normalsize}
+
+% CSULB: no bold on any heading level.
+% \normalfont resets to the document default (Times, 12pt, not bold).
+\setkomafont{disposition}{\normalfont\normalsize}
 \setkomafont{chapter}{\normalsize}
-\let\raggedsection\centering
+
+% First-level subheads: CENTERED + underlined (CSULB §3, "Formatting of
+% First Level Subheads"). raggedsection is intentionally NOT set to
+% \centering here — centering is applied per-level inside sectionlinesformat.
 \setkomafont{section}{\normalsize}
 \RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{section}
+
+% Second-level subheads: LEFT MARGIN + underlined (CSULB §3, "Second
+% Level Subheads").  Left-align is the KOMA default (raggedsection is
+% \raggedright unless overridden), so no extra command is needed.
 \setkomafont{subsection}{\normalsize}
 \RedeclareSectionCommand[beforeskip=0pt,afterskip=0.01pt]{subsection}
 
-% CSULB format: first/second-level subheads centered/left + underlined.
+% sectionlinesformat is called for every \section / \subsection heading.
+% #1 = level name ("section", "subsection", …)
+% #2 = indent width (0pt when secnumdepth=0)
+% #3 = label/number (empty when secnumdepth=0)
+% #4 = heading text
+%
+% CSULB rule: first-level (section) → centered + underlined;
+%             second-level (subsection) → left margin + underlined.
 \makeatletter
 \renewcommand\sectionlinesformat[4]{%
-  \@hangfrom{\hskip #2#3}{\uline{#4}}%
+  \Ifstr{#1}{section}{%
+    {\centering\uline{#4}\par}%   % first-level: centered + underlined
+  }{%
+    \uline{#4}%                   % second-level and below: left + underlined
+  }%
 }
 \makeatother
 
-% CSULB format: third-level run-in subheads are underlined, NOT bold.
-% All \paragraph{} uses in this thesis have no optional argument,
-% so a simple two-argument patch is safe.
+% CSULB format: third-level run-in subheads (\paragraph) are underlined,
+% not bold, and placed on the same line as text.
 \setkomafont{paragraph}{\normalsize\mdseries}
 \makeatletter
 \let\csulb@oldparagraph\paragraph
@@ -203,11 +223,13 @@
 \addcontentsline{toc}{chapter}{REFERENCES}
 \clearpage
 
-% apalike = LaTeX's built-in APA-style bibliography (author, year) with
-% hanging indent and alphabetical ordering. Close match to APA 7th edition
-% for CSULB honors thesis purposes.
-\addtokomafont{chapter}{\normalfont}
+% CSULB spec: citation entries are single-spaced with one blank line
+% between each entry (§5, "Citation List Format").  Switch to single
+% spacing here and restore one-baselineskip gap between entries.
+\begin{singlespace}
+\setlength{\bibsep}{\baselineskip}
 \bibliographystyle{apalike}
 \bibliography{ref}
+\end{singlespace}
 
 \end{document}
