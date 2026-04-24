@@ -64,10 +64,18 @@
 % Renames the "Bibliography" section heading to "REFERENCES" (CSULB spec).
 \renewcommand{\bibname}{REFERENCES}
 
+% CSULB: chapter word uses ALL CAPS so regular chapters read "CHAPTER 1".
+% \appendixname stays at its default "Appendix" (title case) so appendix
+% chapters read "Appendix A" — lower case as CSULB honors practice requires.
+\renewcommand{\chaptername}{CHAPTER}
+
 \makeatletter
 \renewcommand\chapterlinesformat[3]{\@hangfrom{#2}{\MakeUppercase{#3}}}
 \makeatother
-\renewcommand\chapterlineswithprefixformat[3]{\MakeUppercase{#2#3}}
+% #2 = prefix ("CHAPTER 1" or "Appendix A") rendered as-is;
+% #3 = title text uppercased.  This keeps "CHAPTER 1 / INTRODUCTION"
+% for regular chapters and "Appendix A / TITLE" for appendix chapters.
+\renewcommand\chapterlineswithprefixformat[3]{#2\MakeUppercase{#3}}
 
 \usepackage{chngcntr}
 \counterwithout{figure}{chapter}
@@ -157,8 +165,8 @@
 \renewenvironment{proof}{\indent{\em Proof}:}{}
 
 \usepackage[page,toc,title]{appendix}
-\renewcommand{\appendixtocname}{APPENDIX}
-\renewcommand{\appendixpagename}{\vspace*{\fill}\centering\normalsize APPENDIX\vspace*{\fill}}
+\renewcommand{\appendixtocname}{APPENDICES}
+\renewcommand{\appendixpagename}{\vspace*{\fill}\centering\normalsize APPENDICES\vspace*{\fill}}
 
 \usepackage{hyperref}
 \hypersetup{colorlinks,citecolor=black,linkcolor=black,urlcolor=black}
