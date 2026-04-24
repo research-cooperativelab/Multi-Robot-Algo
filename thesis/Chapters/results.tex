@@ -79,22 +79,22 @@ difference is not a matter of statistical noise---with 5,000 trials
 and the reported standard deviations, the two means are separated by
 many standard errors (Wilcoxon $p = 2.9\times10^{-153}$). H1 is supported.
 
-\emph{Why this matters.} The comparison of M1 and M2 is the
-simplest way to quantify the value of communication. Both models
-have the same fleet size, the same sites, the same priors, the same
-targets---the only thing they differ in is whether the robots talk
-to each other. A $6.6\times$ improvement from talking alone is
-substantial. It reinforces Chrobak et al.'s theoretical result that
-the \emph{mode} of communication matters more than the \emph{number}
-of robots: adding communication to a team of three beats adding
-more robots to a silent team. For a real-world deployment, this
-means a radio system that keeps working in a rubble pile is more
-valuable than spare drones.
-Figure~\ref{fig:m1-vs-m4star} shows what this improvement looks like
-on a single instance: the uncoordinated M1 team repeatedly re-visits
-the same regions and takes FCR 53.65, while M4* on the same instance
-and same seed completes the search at FCR 3.02 with compact,
-non-overlapping tours.
+\emph{Significance.} The M1--M2 comparison isolates the effect of
+communication: both models share the same fleet size, sites, priors,
+and targets---the sole difference is whether robots exchange
+information.
+A $6.6\times$ improvement attributable entirely to coordination
+confirms \citet{Chrobak2015}'s theoretical result that the
+\emph{mode} of communication is a more impactful design lever than
+fleet size: equipping a three-robot team with coordination produces
+larger gains than adding robots to an uncoordinated team.
+In practical terms, a reliable communication link in a rubble
+environment contributes more to search efficiency than additional
+vehicles.
+Figure~\ref{fig:m1-vs-m4star} illustrates this on a single instance:
+the uncoordinated M1 team repeatedly revisits the same regions and
+achieves FCR $53.65$, while M4* on the same instance completes the
+search at FCR $3.02$ with compact, non-overlapping tours.
 
 \begin{figure}[ht]
   \centering
@@ -138,15 +138,15 @@ visible in the iteration count: M3 takes $4.82$ iterations on average
 while M4 takes $1.38$, because each M4 sortie visits approximately
 $5.3$ sites.
 
-\emph{Why this matters.} The gap between M3 and M2 represents what
-a battery costs you relative to a hypothetical world with no battery
-constraint at all. Most of that cost is \emph{recoverable} through
-smarter scheduling: the robots do not need a bigger battery, they
-need a planner that chains sites into longer flights before returning
-to base. In practical terms, a rescue drone team does not need to
-solve the hard problem of longer-lasting batteries---they can get
-most of the way to battery-unlimited performance just by changing
-the software that decides where to fly next. H3 is supported.
+\emph{Significance.} The M2--M3 gap quantifies the performance cost
+of the energy constraint relative to an unconstrained baseline.
+The $90\%$ recovery achieved by M4 demonstrates that this cost is
+largely not a hardware limitation but an algorithmic one: most of
+the energy penalty is recoverable through multi-site sortie planning
+rather than requiring higher-capacity batteries.
+Robot teams operating under battery constraints can recover the
+majority of the energy penalty through improved planning alone.
+H3 is supported.
 
 \emph{Hypothesis H4 ($p/d^2$ is empirically optimal).} Model 4*
 achieves a mean FCR of $3.11$ versus Model 4's $3.16$---a directional
@@ -170,16 +170,18 @@ sweeps and by the theoretical cost-foreclosure argument; the aggregate
 effect at the default configuration ($n = 30$, $R = 3$, $E = 14$) falls
 below the detection threshold at 1,000 trials.
 
-\emph{Why this matters.} The change from $p/d$ to $p/d^2$ is minimal
-in implementation: a single squared term in the bid formula. The
-mechanism is general and applies wherever an agent's budget for
-follow-up actions is reduced by its first commitment: anchoring far away
-not only costs more upfront, it forecloses the budget available for
-follow-on sites. The energy sweep confirms that the benefit becomes
-large when $E$ is tight relative to the terrain. For practitioners
-running multi-robot search with limited battery, the recommendation
-remains concrete: substitute $d^2$ for $d$ in the bid denominator and
-the advantage will materialize in the energy-constrained regime.
+\emph{Significance.} The substitution of $p/d$ by $p/d^2$ requires
+a single modification to the bid formula.
+The cost-foreclosure mechanism is general: it applies wherever an
+agent's budget for follow-up actions is reduced by its initial
+commitment, such that anchoring farther away forecloses the budget
+available for chain extensions.
+The energy sweep confirms that the benefit grows when $E$ is tight
+relative to the inter-site spacing.
+For multi-robot deployments with constrained energy budgets, the
+recommendation is to substitute $d^2$ for $d$ in the bid
+denominator; the advantage materializes in the energy-constrained
+regime.
 
 \begin{figure}[ht]
   \centering

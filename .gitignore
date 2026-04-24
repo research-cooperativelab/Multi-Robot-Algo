@@ -13,6 +13,7 @@ build/
 dist/
 
 # Node
+node_modules/
 sar-sim/node_modules/
 sar-sim/dist/
 

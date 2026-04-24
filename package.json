@@ -1,0 +1,19 @@
+{
+  "name": "flamboyant-rosalind-2467e7",
+  "version": "1.0.0",
+  "description": "**A benchmark and reference implementation for budgeted multi-robot search with probability-aware auctions.**",
+  "main": "make_showcase.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}

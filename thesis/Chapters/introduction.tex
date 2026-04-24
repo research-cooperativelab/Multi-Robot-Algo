@@ -85,7 +85,7 @@ quantity that matters operationally: how efficiently the \emph{finding}
 robot expended its resource budget relative to the best achievable
 outcome.
 
-\section{Our Approach: A Hierarchy of Four Base Models}
+\section{Algorithmic Approach: A Hierarchy of Four Models}
 
 Rather than proposing a single algorithm, this thesis introduces a
 hierarchy of four base models that systematically isolate the
@@ -134,37 +134,40 @@ one of the research hypotheses stated in Chapter~\ref{ch:method}:
 
 \emph{Coordination dominates fleet size:}  M2 (auction-coordinated,
 $\mathrm{FCR} = 2.83$) outperforms M1 (uncoordinated,
-$\mathrm{FCR} = 18.55$) by a factor of~$6.6$ at identical fleet size.
+$\mathrm{FCR} = 18.74$) by a factor of~$6.6$ at identical fleet size.
 The mode of communication, not the number of robots, is the primary
 determinant of search efficiency---consistent with the theoretical
 bound of \citet{Chrobak2015}.
 
-\emph{Probability-aware bids outperform distance-optimal centralized
-assignment:}  M3 ($\mathrm{FCR} = 6.41$) outperforms the Hungarian
-distance-optimal baseline ($\mathrm{FCR} = 6.80$) by $5.7\%$, despite
-the Hungarian algorithm computing the globally optimal assignment each
-iteration.
-A probability-weighted Hungarian ablation narrows this gap to $1.4\%$,
-establishing that the advantage is attributable to the bid function,
-not to the distributed mechanism.
+\emph{The distributed auction mechanism outperforms centralized
+assignment:}  M3 ($\mathrm{FCR} = 6.32$) outperforms the Hungarian
+distance-optimal baseline H$_d$ ($\mathrm{FCR} = 6.88$) by $8.1\%$,
+despite the Hungarian algorithm computing the globally optimal
+distance assignment each iteration.
+A probability-weighted Hungarian ablation H$_{p/d}$ achieves
+$\mathrm{FCR} = 7.38$---worse than both H$_d$ and M3---establishing
+that the sequential iterative mechanism of the SSI auction, rather
+than probability-aware bids alone, is the essential contributor to the
+improvement over centralized assignment.
 
 \emph{Multi-node sorties recover the energy penalty:}  M4
-($\mathrm{FCR} = 3.11$) recovers $92\%$ of the performance gap between
+($\mathrm{FCR} = 3.16$) recovers $90\%$ of the performance gap between
 M3 and M2 by chaining an average of $5.3$ sites per sortie, reducing
 average iteration count from $4.81$ to~$1.38$.
 
 \emph{The $p/d^2$ bid is superior under energy constraints:}  M4*
-($\mathrm{FCR} = 2.98$) improves upon M4 by $4.2\%$.
+($\mathrm{FCR} = 3.11$) improves upon M4 by $1.5\%$.
 The improvement is justified by a cost-foreclosure argument: a distant
 anchor site not only costs more energy to reach, but also shortens the
 remaining budget for chain extensions---making the effective marginal
 cost of distance superlinear.
-The $p/d^2$ bid captures this by penalizing distance quadratically.
+The $p/d^2$ bid captures this by penalizing distance quadratically,
+and the advantage grows with instance size and tight energy budgets.
 
-All theoretical bounds were validated through 500 Monte Carlo trials
+All theoretical bounds were validated through 5{,}000 Monte Carlo trials
 per configuration, with paired Wilcoxon signed-rank tests confirming
-statistical significance ($p < 0.001$, Bonferroni-corrected) for all
-four comparisons.
+statistical significance ($p < 0.001$, Bonferroni-corrected) for three
+of the four primary comparisons.
 Parameter sweeps over energy budget $E \in [8, 30]$ and fleet size
 $R \in [1, 6]$ demonstrate the stability of these findings across
 operating conditions.
