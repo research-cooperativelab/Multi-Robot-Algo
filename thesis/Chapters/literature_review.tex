@@ -251,12 +251,16 @@ that the analytical argument predicts but does not prove.
 
 In addition, the thesis conducts an ablation that disentangles two
 effects previously conflated in the MRTA literature: the value of
-probability-aware bids versus the value of centralized allocation.
-The ablation shows that the bid function is the dominant factor,
-centralization contributing essentially nothing once the bid is
-probability-aware. This result concretely answers the question
-implicitly raised by \citet{OtteKuhlman2020} of whether coordination
-structure or bid design is the more impactful design decision under
-reliable communication.
+probability-aware bids versus the value of the sequential iterative
+allocation mechanism.
+The ablation reveals that a probability-weighted Hungarian assignment
+H$_{p/d}$ performs \emph{worse} than a distance-only Hungarian baseline
+H$_d$, while the sequential single-item auction M3 outperforms both.
+This establishes that the iterative site-removal structure of the SSI
+auction---not probability-aware bid values alone---is the essential
+contributor to coordination quality under reliable communication.
+The result concretely answers the question implicitly raised by
+\citet{OtteKuhlman2020} of whether coordination structure or bid
+design is the more impactful design decision.
 
 \end{doublespacing}
