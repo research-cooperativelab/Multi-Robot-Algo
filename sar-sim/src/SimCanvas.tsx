@@ -49,31 +49,6 @@ function probRadius(p: number): number {
 }
 
 // ── drawing helpers ────────────────────────────────────────────────────────────
-function drawArrow(
-  ctx: CanvasRenderingContext2D,
-  x1: number, y1: number,
-  x2: number, y2: number,
-  headLen = 10,
-) {
-  const angle = Math.atan2(y2 - y1, x2 - x1)
-  ctx.beginPath()
-  ctx.moveTo(x1, y1)
-  ctx.lineTo(x2, y2)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(x2, y2)
-  ctx.lineTo(
-    x2 - headLen * Math.cos(angle - Math.PI / 7),
-    y2 - headLen * Math.sin(angle - Math.PI / 7),
-  )
-  ctx.lineTo(
-    x2 - headLen * Math.cos(angle + Math.PI / 7),
-    y2 - headLen * Math.sin(angle + Math.PI / 7),
-  )
-  ctx.closePath()
-  ctx.fill()
-}
-
 function drawArrowPartial(
   ctx: CanvasRenderingContext2D,
   x1: number, y1: number,

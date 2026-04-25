@@ -491,6 +491,9 @@ export default function App() {
     }
   }, [comparePlaying, leftStepIdx, rightStepIdx, leftResult, rightResult, stopComparePlay])
 
+  const leftTotal   = leftResult?.rounds.length  ?? 0
+  const rightTotal  = rightResult?.rounds.length ?? 0
+
   // ── keyboard shortcuts ───────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -626,8 +629,6 @@ export default function App() {
   }
 
   // ── comparison step helpers ──────────────────────────────────────────────────
-  const leftTotal   = leftResult?.rounds.length  ?? 0
-  const rightTotal  = rightResult?.rounds.length ?? 0
   const leftRound:  RoundState | null = leftResult?.rounds[leftStepIdx]   ?? null
   const rightRound: RoundState | null = rightResult?.rounds[rightStepIdx] ?? null
 
