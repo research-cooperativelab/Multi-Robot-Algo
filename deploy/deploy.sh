@@ -12,12 +12,12 @@ echo "==> [1/8] System packages"
 apt-get update -q
 apt-get install -y -q \
     git nginx python3 python3-venv python3-pip \
-    nodejs npm certbot python3-certbot-nginx curl
+    certbot python3-certbot-nginx curl
 
-# Install a recent Node via NodeSource if system node is too old
+# Install Node 20+ via NodeSource (bundles its own npm — do NOT install ubuntu's npm)
 node_ver=$(node --version 2>/dev/null | cut -c2- | cut -d. -f1)
 if [ "${node_ver:-0}" -lt 20 ]; then
-    echo "  Node too old ($node_ver), installing v20 via NodeSource..."
+    echo "  Installing Node 20 via NodeSource..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     apt-get install -y nodejs
 fi
