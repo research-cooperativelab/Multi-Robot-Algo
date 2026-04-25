@@ -16,7 +16,7 @@ apt-get install -y -q \
 
 # Install a recent Node via NodeSource if system node is too old
 node_ver=$(node --version 2>/dev/null | cut -c2- | cut -d. -f1)
-if [ "${node_ver:-0}" -lt 18 ]; then
+if [ "${node_ver:-0}" -lt 20 ]; then
     echo "  Node too old ($node_ver), installing v20 via NodeSource..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     apt-get install -y nodejs
@@ -45,8 +45,8 @@ sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -e "$APP_DIR"
 
 echo "==> [5/8] Build React frontend"
 cd "$APP_DIR/sar-sim"
-sudo -u "$APP_USER" npm ci
-sudo -u "$APP_USER" npm run build
+HOME="$APP_DIR" sudo -u "$APP_USER" npm ci
+HOME="$APP_DIR" sudo -u "$APP_USER" npm run build
 echo "  Built to $APP_DIR/sar-sim/dist/"
 
 echo "==> [6/8] Nginx config"
