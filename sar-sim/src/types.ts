@@ -22,6 +22,7 @@ export interface InstanceData {
 export interface RoundState {
   round: number
   probs_before: Record<string, number>
+  entropy_before?: number
   robot_tours: Record<string, number[]>       // robotId → [nodeId, ...]
   robot_positions?: Record<string, [number, number]>  // M2 only
   visited_this_round: number[]

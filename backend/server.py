@@ -102,9 +102,12 @@ def _build_round(
         fd = robot_dists[finder]
         fcr = fd / optimal_dist if optimal_dist > 1e-9 else None
 
+    ent = entropy(probs_before)
+
     return {
         "round":              iteration,
         "probs_before":       {str(k): v for k, v in probs_before.items()},
+        "entropy_before":     ent,
         "robot_tours":        {str(r): robot_tours_ids[r] for r in robot_tours_ids},
         "visited_this_round": visited_this_round,
         "all_visited":        all_visited,
