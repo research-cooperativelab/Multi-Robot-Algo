@@ -1,0 +1,54 @@
+# /etc/nginx/sites-available/searchfcr.fozhan.dev
+# Certbot will append the SSL block automatically when you run it.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name searchfcr.fozhan.dev;
+
+    # ── React simulator (sar-sim built static files) ──────────────────────
+    root /var/www/searchfcr/sar-sim/dist;
+    index index.html;
+
+    # SPA fallback: every unknown path serves index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ── FastAPI backend ───────────────────────────────────────────────────
+    location /api/ {
+        proxy_pass         http://127.0.0.1:8000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # ── HTML slide deck ───────────────────────────────────────────────────
+    location = /slides {
+        alias /var/www/searchfcr/SearchFCR Research.html;
+        default_type text/html;
+    }
+
+    # Static assets referenced by the slide deck (figures, GIF, etc.)
+    location /figures/ {
+        alias /var/www/searchfcr/figures/;
+    }
+    location /pybullet_demo/ {
+        alias /var/www/searchfcr/pybullet_demo/;
+    }
+    location /assets/ {
+        alias /var/www/searchfcr/assets/;
+    }
+
+    # ── Gzip ─────────────────────────────────────────────────────────────
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # ── Security headers ─────────────────────────────────────────────────
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+}

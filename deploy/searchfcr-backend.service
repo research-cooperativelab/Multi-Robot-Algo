@@ -1,0 +1,28 @@
+# /etc/systemd/system/searchfcr-backend.service
+# Runs the FastAPI backend under a dedicated system user.
+
+[Unit]
+Description=SearchFCR FastAPI backend
+After=network.target
+
+[Service]
+Type=simple
+User=searchfcr
+Group=searchfcr
+WorkingDirectory=/var/www/searchfcr
+ExecStart=/var/www/searchfcr/venv/bin/uvicorn backend.server:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 2 \
+    --log-level info
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
