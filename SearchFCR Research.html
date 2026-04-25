@@ -1226,7 +1226,7 @@ table.t tr.worst td { color: var(--red); }
     <!-- Live simulator iframe panel (hidden by default) -->
     <div id="sim18-live-panel" style="display:none;margin-top:32px;flex:1;flex-direction:column">
       <div style="display:flex;gap:16px;margin-bottom:10px;align-items:center">
-        <div class="mono" style="font-size:12px;color:#7a7466;letter-spacing:.12em">LIVE — localhost:5173</div>
+        <div class="mono" style="font-size:12px;color:#7a7466;letter-spacing:.12em">LIVE — searchfcr.fozhan.dev</div>
         <div style="display:flex;gap:8px">
           <button onclick="sim18SetMode('compare')"
             style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:3px;border:1px solid #3a3528;background:#1e1a14;color:#bdb6a1;cursor:pointer">
@@ -1528,7 +1528,7 @@ table.t tr.worst td { color: var(--red); }
 })();
 
 // ── Slide 18: GIF ↔ Live toggle ───────────────────────────────────────────────
-const SIM_BASE = 'http://localhost:5173';
+const SIM_BASE = 'https://searchfcr.fozhan.dev';
 
 function sim18Switch(mode) {
   const gifPanel  = document.getElementById('sim18-gif-panel');
