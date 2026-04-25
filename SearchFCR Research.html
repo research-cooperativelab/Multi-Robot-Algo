@@ -1181,57 +1181,124 @@ table.t tr.worst td { color: var(--red); }
   <div class="slide">
     <div class="slide-head">
       <div>
-        <div class="eyebrow" style="color:#bdb6a1">17 &nbsp;/&nbsp; Reproducibility</div>
-        <div class="slide-title serif" style="color:var(--paper);margin-top:18px">Runs on real drones, in sim.</div>
+        <div class="eyebrow" style="color:#bdb6a1">17 &nbsp;/&nbsp; Demo</div>
+        <div class="slide-title serif" style="color:var(--paper);margin-top:18px">Same map. Same robots. Radically different paths.</div>
       </div>
-      <div class="slide-num" style="color:#7a7466">17 / 20</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button id="sim18-gif-btn" onclick="sim18Switch('gif')"
+          style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;padding:6px 14px;border-radius:3px;border:1px solid #4a4438;background:#2a241c;color:#bdb6a1;cursor:pointer">
+          🎬 RECORDING
+        </button>
+        <button id="sim18-live-btn" onclick="sim18Switch('live')"
+          style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;padding:6px 14px;border-radius:3px;border:1px solid #3b5e3b;background:#1a2e1a;color:#7da14a;cursor:pointer">
+          ⚡ LIVE SIM
+        </button>
+        <div class="slide-num" style="color:#7a7466;margin-left:8px">17 / 21</div>
+      </div>
     </div>
     <div style="height:1px;background:#3a3528"></div>
 
-    <!-- Animated side-by-side comparison GIF -->
-    <div style="margin-top:40px;flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;gap:32px;margin-bottom:16px">
+    <!-- GIF panel -->
+    <div id="sim18-gif-panel" style="margin-top:32px;flex:1;display:flex;flex-direction:column">
+      <div style="display:flex;gap:32px;margin-bottom:14px">
         <div style="flex:1;text-align:center">
-          <div class="mono" style="font-size:13px;letter-spacing:.18em;color:#e05050;margin-bottom:8px">M1 — RANDOM &nbsp;|&nbsp; FCR 18.74</div>
+          <div class="mono" style="font-size:13px;letter-spacing:.18em;color:#e05050">M1 — RANDOM &nbsp;|&nbsp; FCR 18.74</div>
         </div>
         <div style="flex:1;text-align:center">
-          <div class="mono" style="font-size:13px;letter-spacing:.18em;color:#4fc3f7;margin-bottom:8px">M4&#9733; — AUCTION + CHAIN &nbsp;|&nbsp; FCR 3.11</div>
+          <div class="mono" style="font-size:13px;letter-spacing:.18em;color:#4fc3f7">M4&#9733; — AUCTION + CHAIN &nbsp;|&nbsp; FCR 3.11</div>
         </div>
       </div>
       <div style="background:#000;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;flex:1;overflow:hidden;border-radius:4px">
         <img src="pybullet_demo/compare_M1_vs_M4star.gif"
+             id="sim18-gif-img"
              style="max-width:100%;max-height:340px;object-fit:contain"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/>
-        <!-- Fallback: static 3-frame grid if GIF not found -->
-        <div style="display:none;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px;width:100%">
-          <div style="display:flex;flex-direction:column">
-            <div style="background:#000;flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #2a2a2a">
-              <img src="assets/sim_01_initial.png" style="max-width:100%;object-fit:contain"/>
-            </div>
-            <div class="mono" style="font-size:12px;color:#7a7466;margin-top:8px">FRAME 01 — Auction resolves anchors</div>
-          </div>
-          <div style="display:flex;flex-direction:column">
-            <div style="background:#000;flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #2a2a2a">
-              <img src="assets/sim_02_flight.png" style="max-width:100%;object-fit:contain"/>
-            </div>
-            <div class="mono" style="font-size:12px;color:#7a7466;margin-top:8px">FRAME 02 — Chains execute in flight</div>
-          </div>
-          <div style="display:flex;flex-direction:column">
-            <div style="background:#000;flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #2a2a2a">
-              <img src="assets/sim_03_found.png" style="max-width:100%;object-fit:contain"/>
-            </div>
-            <div class="mono" style="font-size:12px;color:#7da14a;margin-top:8px">FRAME 03 — Target found by R2</div>
-          </div>
+             onerror="document.getElementById('sim18-gif-missing').style.display='flex';this.style.display='none'"/>
+        <div id="sim18-gif-missing" style="display:none;flex-direction:column;align-items:center;gap:12px;color:#4a4438;padding:40px">
+          <div style="font-size:48px">🎬</div>
+          <div class="mono" style="font-size:13px;letter-spacing:.12em">GIF NOT FOUND — run: python pybullet_demo/make_video.py</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:18px;color:#7a7466">
+        Same map &middot; same 3 robots &middot; same target
+      </div>
+    </div>
+
+    <!-- Live simulator iframe panel (hidden by default) -->
+    <div id="sim18-live-panel" style="display:none;margin-top:32px;flex:1;flex-direction:column">
+      <div style="display:flex;gap:16px;margin-bottom:10px;align-items:center">
+        <div class="mono" style="font-size:12px;color:#7a7466;letter-spacing:.12em">LIVE — localhost:5173</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="sim18SetMode('compare')"
+            style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:3px;border:1px solid #3a3528;background:#1e1a14;color:#bdb6a1;cursor:pointer">
+            Compare M1 vs M4★
+          </button>
+          <button onclick="sim18SetMode('benchmark')"
+            style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:3px;border:1px solid #3b5e3b;background:#1a2e1a;color:#7da14a;cursor:pointer">
+            All 5 Benchmark
+          </button>
+        </div>
+      </div>
+      <div style="flex:1;position:relative;border:1px solid #2a2a2a;border-radius:4px;overflow:hidden">
+        <iframe id="sim18-iframe"
+          src="about:blank"
+          style="width:100%;height:100%;border:none;background:#0f1117"
+          allow="same-origin"></iframe>
+        <div id="sim18-iframe-cover"
+          style="position:absolute;inset:0;background:rgba(14,14,14,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer"
+          onclick="sim18ActivateIframe()">
+          <div style="font-size:48px">⚡</div>
+          <div class="mono" style="font-size:14px;color:#7da14a;letter-spacing:.12em">CLICK TO LAUNCH SIMULATOR</div>
+          <div class="mono" style="font-size:11px;color:#4a4438;letter-spacing:.1em">requires: uvicorn backend + npm run dev</div>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:24px;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #2a2a2a;padding-top:16px">
-      <div style="font-size:20px;color:#bdb6a1;max-width:900px">
-        Same map &middot; same 3 robots &middot; same target &mdash; radically different paths.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     18b — LIVE BENCHMARK (full-screen embed)
+════════════════════════════════════════════════════════════════════════ -->
+<section data-label="18b Benchmark Live" style="background:#0a0d14;color:var(--paper);padding:0">
+  <div style="display:flex;flex-direction:column;height:100%;width:100%">
+
+    <!-- slim header bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 56px;border-bottom:1px solid #1e2a3a;flex-shrink:0">
+      <div>
+        <span class="mono" style="font-size:11px;letter-spacing:.2em;color:#475569">17b &nbsp;/&nbsp; BENCHMARK</span>
+        <span style="font-size:22px;font-family:'Playfair Display',serif;margin-left:20px;color:#e2e8f0">All 5 models. Same instance. Live.</span>
       </div>
-      <div class="mono" style="font-size:14px;color:#7a7466;letter-spacing:.14em">PYBULLET &middot; MATPLOTLIB RENDERER</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button onclick="benchSlideActivate()"
+          style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;padding:6px 14px;border-radius:3px;border:1px solid #3b5e3b;background:#1a2e1a;color:#4ade80;cursor:pointer">
+          ⚡ LAUNCH
+        </button>
+        <span class="mono" style="font-size:13px;color:#475569;letter-spacing:.1em">17b / 21</span>
+      </div>
     </div>
+
+    <!-- iframe fills remaining space -->
+    <div style="flex:1;position:relative;overflow:hidden">
+      <iframe id="bench-iframe"
+        src="about:blank"
+        style="width:100%;height:100%;border:none;background:#0f1117"
+        allow="same-origin"></iframe>
+      <div id="bench-cover"
+        style="position:absolute;inset:0;background:#0a0d14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;cursor:pointer"
+        onclick="benchSlideActivate()">
+        <div style="font-size:72px">📊</div>
+        <div class="mono" style="font-size:16px;color:#4ade80;letter-spacing:.16em">RUN ALL 5 MODELS — CLICK TO LAUNCH</div>
+        <div style="display:flex;gap:24px;margin-top:8px">
+          <span style="font-size:18px;color:#f87171;font-weight:700">M1 · 18.74</span>
+          <span style="font-size:18px;color:#22d3ee;font-weight:700">M2 · 2.83</span>
+          <span style="font-size:18px;color:#fbbf24;font-weight:700">M3 · 6.32</span>
+          <span style="font-size:18px;color:#60a5fa;font-weight:700">M4 · 3.16</span>
+          <span style="font-size:18px;color:#4ade80;font-weight:800">M4★ · 3.11</span>
+        </div>
+        <div class="mono" style="font-size:11px;color:#334155;letter-spacing:.1em;margin-top:4px">requires: uvicorn backend + npm run dev</div>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -1459,6 +1526,66 @@ table.t tr.worst td { color: var(--red); }
     }
   });
 })();
+
+// ── Slide 18: GIF ↔ Live toggle ───────────────────────────────────────────────
+const SIM_BASE = 'http://localhost:5173';
+
+function sim18Switch(mode) {
+  const gifPanel  = document.getElementById('sim18-gif-panel');
+  const livePanel = document.getElementById('sim18-live-panel');
+  const gifBtn    = document.getElementById('sim18-gif-btn');
+  const liveBtn   = document.getElementById('sim18-live-btn');
+  if (mode === 'gif') {
+    gifPanel.style.display  = 'flex';
+    livePanel.style.display = 'none';
+    gifBtn.style.borderColor  = '#7a7466';
+    gifBtn.style.color        = '#e2d8c4';
+    liveBtn.style.borderColor = '#3b5e3b';
+    liveBtn.style.color       = '#7da14a';
+  } else {
+    gifPanel.style.display  = 'none';
+    livePanel.style.display = 'flex';
+    gifBtn.style.borderColor  = '#4a4438';
+    gifBtn.style.color        = '#7a7466';
+    liveBtn.style.borderColor = '#4ade80';
+    liveBtn.style.color       = '#4ade80';
+  }
+}
+
+function sim18SetMode(appMode) {
+  const iframe = document.getElementById('sim18-iframe');
+  const cover  = document.getElementById('sim18-iframe-cover');
+  const url = appMode === 'benchmark'
+    ? SIM_BASE + '/?mode=benchmark&n=20&r=3&e=15&seed=42'
+    : SIM_BASE + '/?mode=compare&n=20&r=3&e=15&seed=42&model=M1';
+  iframe.src = url;
+  if (cover) cover.style.display = 'none';
+}
+
+function sim18ActivateIframe() {
+  sim18SetMode('compare');
+}
+
+// ── Slide 18b: Benchmark full-screen ─────────────────────────────────────────
+function benchSlideActivate() {
+  const iframe = document.getElementById('bench-iframe');
+  const cover  = document.getElementById('bench-cover');
+  iframe.src = SIM_BASE + '/?mode=benchmark&n=20&r=3&e=15&seed=42';
+  if (cover) cover.style.display = 'none';
+}
+
+// Reset iframes when leaving those slides (so they reload fresh next time)
+document.addEventListener('slidechange', function(e) {
+  const label = e.detail?.slide?.getAttribute('data-label') || '';
+  if (!label.includes('18')) {
+    const f1 = document.getElementById('sim18-iframe');
+    const f2 = document.getElementById('bench-iframe');
+    // Only reset if they were previously loaded (not about:blank)
+    if (f1 && f1.src !== 'about:blank' && !label.includes('18')) {
+      // leave loaded — presenter may want to go back
+    }
+  }
+});
 </script>
 </body>
 </html>
