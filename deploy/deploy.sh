@@ -27,6 +27,7 @@ id -u "$APP_USER" &>/dev/null || useradd --system --no-create-home --shell /usr/
 mkdir -p "$APP_DIR"
 
 echo "==> [3/8] Clone / pull repo"
+git config --global --add safe.directory "$APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
     git -C "$APP_DIR" pull --ff-only
 else
