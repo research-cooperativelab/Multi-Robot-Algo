@@ -279,7 +279,7 @@ If you want to test a new bid function or a new cost model, the API is designed 
 
 **[Pause. Look up. Smile.]**
 
-Thank you. The repository is at github.com/foojanbabaeeian/Multi-Robot-Algo. I'm happy to take questions.
+Thank you. The repository is at github.com/research-cooperativelab/Multi-Robot-Algo. I'm happy to take questions.
 
 ---
 

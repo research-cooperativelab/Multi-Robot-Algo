@@ -37,7 +37,7 @@ Key gaps: **6.6×** coordination gain (M1→M2); **90%** energy gap recovered (M
 ## Install
 
 ```bash
-git clone https://github.com/foojanbabaeeian/Multi-Robot-Algo.git
+git clone https://github.com/research-cooperativelab/Multi-Robot-Algo.git
 cd Multi-Robot-Algo
 pip install -e .
 ```
@@ -193,7 +193,7 @@ We will update the headline table and add you as a co-author of the SearchFCR be
   school = {California State University, Long Beach},
   year   = {2026},
   type   = {Honors thesis},
-  url    = {https://github.com/foojanbabaeeian/Multi-Robot-Algo}
+  url    = {https://github.com/research-cooperativelab/Multi-Robot-Algo}
 }
 
 @software{SearchFCR2026,
@@ -202,7 +202,7 @@ We will update the headline table and add you as a co-author of the SearchFCR be
              with Probability-Aware Auctions},
   version = {0.1.0},
   year    = {2026},
-  url     = {https://github.com/foojanbabaeeian/Multi-Robot-Algo}
+  url     = {https://github.com/research-cooperativelab/Multi-Robot-Algo}
 }
 ```
 

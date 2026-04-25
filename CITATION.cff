@@ -4,7 +4,7 @@ title: "SearchFCR: A Benchmark for Budgeted Multi-Robot Search with Probability-
 version: 0.1.0
 date-released: 2026-04-17
 license: MIT
-repository-code: "https://github.com/foojanbabaeeian/Multi-Robot-Algo"
+repository-code: "https://github.com/research-cooperativelab/Multi-Robot-Algo"
 authors:
   - family-names: Babaeiyan Ghamsari
     given-names: Fozhan
@@ -33,4 +33,4 @@ preferred-citation:
   institution:
     name: "California State University, Long Beach"
   thesis-type: "Honors thesis"
-  url: "https://github.com/foojanbabaeeian/Multi-Robot-Algo"
+  url: "https://github.com/research-cooperativelab/Multi-Robot-Algo"

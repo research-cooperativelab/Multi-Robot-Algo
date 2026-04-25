@@ -6,7 +6,7 @@ set -euo pipefail
 DOMAIN="searchfcr.fozhan.dev"
 APP_DIR="/var/www/searchfcr"
 APP_USER="searchfcr"
-REPO="https://github.com/foojanbabaeeian/Multi-Robot-Algo.git"
+REPO="https://github.com/research-cooperativelab/Multi-Robot-Algo.git"
 
 echo "==> [1/8] System packages"
 apt-get update -q
