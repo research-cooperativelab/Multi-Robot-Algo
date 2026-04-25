@@ -164,9 +164,13 @@
 
 % List of algorithms — produced by the algorithm package's \listofalgorithms.
 \renewcommand{\listalgorithmname}{LIST OF ALGORITHMS}
-\makeatletter
-\renewcommand{\l@algorithm}{\@dottedtocline{1}{0.25in}{2.3em}}
-\makeatother
+% Defer \l@algorithm redefinition until after all packages are loaded,
+% because tocloft can overwrite it during \begin{document} setup.
+\AtBeginDocument{%
+  \makeatletter
+  \renewcommand{\l@algorithm}{\@dottedtocline{1}{0.25in}{2.3em}}
+  \makeatother
+}
 
 \renewenvironment{proof}{\indent{\em Proof}:}{}
 
