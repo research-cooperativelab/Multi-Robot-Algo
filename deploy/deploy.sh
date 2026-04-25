@@ -45,8 +45,8 @@ sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -e "$APP_DIR"
 
 echo "==> [5/8] Build React frontend"
 cd "$APP_DIR/sar-sim"
-sudo -u "$APP_USER" npm ci --silent
-sudo -u "$APP_USER" npm run build --silent
+sudo -u "$APP_USER" npm ci
+sudo -u "$APP_USER" npm run build
 echo "  Built to $APP_DIR/sar-sim/dist/"
 
 echo "==> [6/8] Nginx config"
