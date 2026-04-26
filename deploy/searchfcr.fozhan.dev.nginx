@@ -39,7 +39,7 @@ server {
     location /pybullet_demo/ {
         alias /var/www/searchfcr/pybullet_demo/;
     }
-    location /assets/ {
+    location /slide-assets/ {
         alias /var/www/searchfcr/assets/;
     }
 
