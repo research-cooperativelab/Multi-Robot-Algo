@@ -9,8 +9,12 @@ Endpoints:
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
+import asyncio
+import shutil
+import tempfile
 import sys
 import os
 import uuid
@@ -570,3 +574,103 @@ async def step(req: StepRequest):
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+# ── PyBullet 3-D demo endpoint ─────────────────────────────────────────────────
+
+_REPO_ROOT   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_DEMO_SCRIPT = os.path.join(_REPO_ROOT, "pybullet_demo", "run_demo.py")
+_VID_SCRIPT  = os.path.join(_REPO_ROOT, "pybullet_demo", "make_video.py")
+_PYBULLET_SEM = asyncio.Semaphore(2)   # max 2 concurrent renders
+
+_ALLOWED_MODELS = {"M1", "M4", "M4star"}
+
+
+class PyBulletRequest(BaseModel):
+    model:   str   = Field(default="M4star")
+    seed:    int   = Field(default=42)
+    n:       int   = Field(default=20, ge=5,  le=50)
+    r:       int   = Field(default=3,  ge=1,  le=5)
+    e:       float = Field(default=14.0, ge=5.0, le=30.0)
+    compare: bool  = Field(default=False)
+
+
+async def _run_proc(args: list[str], timeout: int = 90) -> tuple[int, str]:
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        cwd=_REPO_ROOT,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
+        raise HTTPException(504, "Demo render timed out — try fewer sites or lower energy")
+    return proc.returncode, (stderr or b"").decode()
+
+
+@app.post("/api/pybullet")
+async def run_pybullet_demo(req: PyBulletRequest):
+    model = req.model.replace("M4*", "M4star")
+    if model not in _ALLOWED_MODELS:
+        raise HTTPException(400, f"Invalid model '{req.model}'. Choose M1, M4, or M4star.")
+
+    common = [
+        "--seed", str(req.seed),
+        "--n",    str(req.n),
+        "--r",    str(req.r),
+        "--e",    str(req.e),
+        "--headless", "--record", "--force-matplotlib",
+    ]
+
+    async with _PYBULLET_SEM:
+        tmp = tempfile.mkdtemp(prefix="searchfcr_demo_")
+        try:
+            if req.compare:
+                left_dir  = os.path.join(tmp, "M1")
+                right_dir = os.path.join(tmp, model)
+                for m, d in [("M1", left_dir), (model, right_dir)]:
+                    rc, err = await _run_proc(
+                        [sys.executable, _DEMO_SCRIPT, "--model", m,
+                         "--frames-dir", d, *common]
+                    )
+                    if rc != 0:
+                        raise HTTPException(500, f"Demo render failed for {m}: {err[-300:]}")
+
+                gif_path = os.path.join(tmp, "compare.gif")
+                rc, err = await _run_proc([
+                    sys.executable, _VID_SCRIPT,
+                    "--dir", left_dir, right_dir,
+                    "--out", gif_path,
+                    "--side-by-side",
+                    "--left-label",  "M1 (random)",
+                    "--right-label", f"{req.model} (auction+chain)",
+                ], timeout=30)
+                if rc != 0:
+                    raise HTTPException(500, f"GIF stitch failed: {err[-300:]}")
+            else:
+                frames_dir = os.path.join(tmp, "frames")
+                rc, err = await _run_proc(
+                    [sys.executable, _DEMO_SCRIPT, "--model", model,
+                     "--frames-dir", frames_dir, *common]
+                )
+                if rc != 0:
+                    raise HTTPException(500, f"Demo render failed: {err[-300:]}")
+
+                gif_path = os.path.join(tmp, "demo.gif")
+                rc, err = await _run_proc([
+                    sys.executable, _VID_SCRIPT,
+                    "--dir", frames_dir,
+                    "--out", gif_path,
+                ], timeout=30)
+                if rc != 0:
+                    raise HTTPException(500, f"GIF stitch failed: {err[-300:]}")
+
+            with open(gif_path, "rb") as f:
+                gif_bytes = f.read()
+
+            return Response(content=gif_bytes, media_type="image/gif")
+
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)

@@ -367,7 +367,10 @@ const SPEED_OPTIONS = [
   { label: '4×',   ms:  300 },
 ]
 
-type AppMode = 'single' | 'compare' | 'benchmark'
+type AppMode = 'single' | 'compare' | 'benchmark' | 'demo'
+
+const DEMO_MODELS = ['M1', 'M4', 'M4*'] as const
+type DemoModel = typeof DEMO_MODELS[number]
 
 // ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -433,6 +436,13 @@ export default function App() {
   // ── benchmark mode state ─────────────────────────────────────────────────────
   const [benchResults,  setBenchResults]  = useState<Partial<Record<string, SimResult>>>({})
   const [benchLoading,  setBenchLoading]  = useState(false)
+
+  // ── demo mode state ───────────────────────────────────────────────────────────
+  const [demoModel,    setDemoModel]    = useState<DemoModel>('M4*')
+  const [demoCompare,  setDemoCompare]  = useState(false)
+  const [demoLoading,  setDemoLoading]  = useState(false)
+  const [demoGifUrl,   setDemoGifUrl]   = useState<string | null>(null)
+  const [demoError,    setDemoError]    = useState<string | null>(null)
 
   // ── helpers ──────────────────────────────────────────────────────────────────
   const setParam = <K extends keyof SimParams>(k: K, v: SimParams[K]) =>
@@ -628,7 +638,39 @@ export default function App() {
     }
   }
 
-  // ── comparison step helpers ──────────────────────────────────────────────────
+  // ── demo run ──────────────────────────────────────────────────────��──────────
+  const runDemo = async () => {
+    setDemoLoading(true)
+    setDemoError(null)
+    if (demoGifUrl) URL.revokeObjectURL(demoGifUrl)
+    setDemoGifUrl(null)
+    try {
+      const res = await fetch('/api/pybullet', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:   demoModel.replace('M4*', 'M4star'),
+          seed:    params.seed,
+          n:       Math.min(params.n_nodes, 30),
+          r:       params.n_robots,
+          e:       params.energy,
+          compare: demoCompare,
+        }),
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(`Server error ${res.status}: ${msg}`)
+      }
+      const blob = await res.blob()
+      setDemoGifUrl(URL.createObjectURL(blob))
+    } catch (e: unknown) {
+      setDemoError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
+  // ── comparison step helpers ─────────────────────────────────���────────────────
   const leftRound:  RoundState | null = leftResult?.rounds[leftStepIdx]   ?? null
   const rightRound: RoundState | null = rightResult?.rounds[rightStepIdx] ?? null
 
@@ -661,20 +703,27 @@ export default function App() {
 
       {/* ── sidebar ── */}
       <aside className="sidebar">
-        <h1 className="app-title">SAR Simulation</h1>
-        <p className="app-subtitle">Multi-robot search &amp; rescue</p>
+        <h1 className="app-title">SearchFCR</h1>
+        <p className="app-subtitle">Multi-robot search &amp; rescue simulator</p>
+
+        {/* nav links */}
+        <div className="nav-links">
+          <a href="/slides" target="_blank" rel="noopener noreferrer" className="nav-link">Research Slides</a>
+          <a href="https://github.com/research-cooperativelab/Multi-Robot-Algo" target="_blank" rel="noopener noreferrer" className="nav-link">GitHub</a>
+          <a href="/api/health" target="_blank" rel="noopener noreferrer" className="nav-link">API Status</a>
+        </div>
 
         {/* mode selector */}
         <section className="panel">
           <h2 className="panel-title">Mode</h2>
           <div className="mode-btns">
-            {(['single', 'compare', 'benchmark'] as AppMode[]).map(m => (
+            {(['single', 'compare', 'benchmark', 'demo'] as AppMode[]).map(m => (
               <button
                 key={m}
                 className={`mode-btn ${appMode === m ? 'active' : ''}`}
                 onClick={() => { setAppMode(m); setError(null) }}
               >
-                {m === 'single' ? 'Single' : m === 'compare' ? 'Compare' : 'Benchmark'}
+                {m === 'single' ? 'Single' : m === 'compare' ? 'Compare' : m === 'benchmark' ? 'Benchmark' : '3D Demo'}
               </button>
             ))}
           </div>
@@ -792,22 +841,59 @@ export default function App() {
           </div>
         </section>
 
+        {/* demo mode controls */}
+        {appMode === 'demo' && (
+          <section className="panel">
+            <h2 className="panel-title">Model</h2>
+            <div className="model-buttons">
+              {DEMO_MODELS.map(m => (
+                <button
+                  key={m}
+                  className={`model-btn ${demoModel === m ? 'active' : ''}`}
+                  onClick={() => setDemoModel(m)}
+                >{m}</button>
+              ))}
+            </div>
+            <label className="demo-compare-label">
+              <input
+                type="checkbox"
+                checked={demoCompare}
+                onChange={e => setDemoCompare(e.target.checked)}
+              />
+              Compare M1 vs selected model
+            </label>
+          </section>
+        )}
+
         {/* run button */}
-        <button
-          className={`run-btn ${(loading || benchLoading) ? 'loading' : ''}`}
-          onClick={benchMode ? runBenchmark : compareMode ? runComparison : runSimulation}
-          disabled={loading || benchLoading}
-        >
-          {(loading || benchLoading)
-            ? 'Running\u2026'
-            : benchMode
-              ? '\u25b6  Run Benchmark'
-              : compareMode
-                ? '\u25b6  Run Both'
-                : '\u25b6  Run Simulation'}
-        </button>
+        {appMode !== 'demo' && (
+          <button
+            className={`run-btn ${(loading || benchLoading) ? 'loading' : ''}`}
+            onClick={benchMode ? runBenchmark : compareMode ? runComparison : runSimulation}
+            disabled={loading || benchLoading}
+          >
+            {(loading || benchLoading)
+              ? 'Running...'
+              : benchMode
+                ? 'Run Benchmark'
+                : compareMode
+                  ? 'Run Both'
+                  : 'Run Simulation'}
+          </button>
+        )}
+
+        {appMode === 'demo' && (
+          <button
+            className={`run-btn ${demoLoading ? 'loading' : ''}`}
+            onClick={runDemo}
+            disabled={demoLoading}
+          >
+            {demoLoading ? 'Rendering 3D Demo...' : 'Generate 3D Demo'}
+          </button>
+        )}
 
         {error && <div className="error-box">{error}</div>}
+        {demoError && <div className="error-box">{demoError}</div>}
 
         {/* keyboard shortcut hint */}
         {(result || leftResult || rightResult) && (
@@ -927,7 +1013,47 @@ export default function App() {
 
       {/* ── canvas area ── */}
       <main className="canvas-area">
-        {benchMode ? (
+        {appMode === 'demo' ? (
+          <div className="demo-view">
+            <h2 className="demo-heading">3D Physics Demo</h2>
+            <p className="demo-desc">
+              Runs a PyBullet physics simulation server-side and renders an animated GIF.
+              Uses the same seed and parameters as the main simulator.
+              Render time is typically 5–20 seconds.
+            </p>
+            {demoLoading && (
+              <div className="demo-spinner">
+                <div className="bench-spinner" />
+                <p>Rendering physics simulation — please wait...</p>
+              </div>
+            )}
+            {demoGifUrl && !demoLoading && (
+              <div className="demo-result">
+                <img
+                  src={demoGifUrl}
+                  alt={demoCompare ? `M1 vs ${demoModel} comparison` : `${demoModel} 3D demo`}
+                  className="demo-gif"
+                />
+                <p className="demo-caption">
+                  {demoCompare ? `M1 (left) vs ${demoModel} (right) · seed ${params.seed}` : `${demoModel} · seed ${params.seed}`}
+                </p>
+                <a
+                  href={demoGifUrl}
+                  download={`searchfcr_demo_${demoModel}_seed${params.seed}.gif`}
+                  className="demo-download"
+                >
+                  Download GIF
+                </a>
+              </div>
+            )}
+            {!demoGifUrl && !demoLoading && !demoError && (
+              <div className="empty-state">
+                <div className="empty-icon" />
+                <p>Select a model and click <strong>Generate 3D Demo</strong> to render a physics simulation.</p>
+              </div>
+            )}
+          </div>
+        ) : benchMode ? (
           <BenchmarkView results={benchResults} loading={benchLoading} />
         ) : !compareMode ? (
           result ? (
