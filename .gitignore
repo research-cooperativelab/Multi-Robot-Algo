@@ -20,3 +20,16 @@ sar-sim/dist/
 # Misc
 .DS_Store
 *.log
+
+# Claude session files
+.claude/
+
+# PPTX generation intermediates
+design_bundle/
+design_extracted.html
+export_to_pptx.js
+make_presentation.js
+slide_screenshots/
+
+# LaTeX auxiliaries
+thesis/main.loa
