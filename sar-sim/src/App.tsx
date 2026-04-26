@@ -772,7 +772,7 @@ export default function App() {
                   style={{ padding: '3px 8px', fontSize: '0.7rem' }}
                   title="Random seed"
                   onClick={() => setParam('seed', Math.floor(Math.random() * 100000))}
-                >⚄</button>
+                >Random</button>
               </div>
             </div>
           </div>
@@ -956,14 +956,14 @@ export default function App() {
                   onClick={() => { stopPlay(); setStepIdx(clampStep(0)) }}
                   disabled={stepIdx === 0}
                   title="First round"
-                >\u23ee</button>
+                >First</button>
 
                 <button
                   className="step-btn"
                   onClick={() => { stopPlay(); setStepIdx(s => clampStep(s - 1)) }}
                   disabled={stepIdx === 0}
                   title="Previous round"
-                >\u25c0 Prev</button>
+                >Prev</button>
 
                 <button
                   className="step-btn play-btn"
@@ -971,7 +971,7 @@ export default function App() {
                   disabled={stepIdx >= totalRounds - 1 && !playing}
                   title={playing ? 'Pause' : 'Play through rounds'}
                 >
-                  {playing ? '\u23f8 Pause' : '\u25b6 Play'}
+                  {playing ? 'Pause' : 'Play'}
                 </button>
 
                 <button
@@ -979,14 +979,14 @@ export default function App() {
                   onClick={() => { stopPlay(); setStepIdx(s => clampStep(s + 1)) }}
                   disabled={stepIdx >= totalRounds - 1}
                   title="Next round"
-                >Next \u25b6</button>
+                >Next</button>
 
                 <button
                   className="step-btn"
                   onClick={() => { stopPlay(); setStepIdx(clampStep(totalRounds - 1)) }}
                   disabled={stepIdx >= totalRounds - 1}
                   title="Last round"
-                >\u23ed</button>
+                >Last</button>
               </div>
 
               {/* round progress bar */}
@@ -1003,7 +1003,7 @@ export default function App() {
             </>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">\uD83E\uDD16</div>
+              <div className="empty-icon"></div>
               <p>Configure parameters and click<br /><strong>Run Simulation</strong> to start.</p>
             </div>
           )
@@ -1089,7 +1089,7 @@ export default function App() {
                   onClick={resetBoth}
                   disabled={leftStepIdx === 0 && rightStepIdx === 0}
                   title="First round (both)"
-                >\u23ee</button>
+                >First</button>
 
                 <button
                   className="step-btn"
@@ -1100,7 +1100,7 @@ export default function App() {
                   }}
                   disabled={leftStepIdx === 0 && rightStepIdx === 0}
                   title="Previous round (both)"
-                >\u25c0 Prev</button>
+                >Prev</button>
 
                 <button
                   className="step-btn play-btn"
@@ -1111,7 +1111,7 @@ export default function App() {
                   disabled={!canAdvanceEither && !comparePlaying}
                   title={comparePlaying ? 'Pause' : 'Play both'}
                 >
-                  {comparePlaying ? '\u23f8 Pause' : '\u25b6 Play'}
+                  {comparePlaying ? 'Pause' : 'Play'}
                 </button>
 
                 <button
@@ -1119,19 +1119,19 @@ export default function App() {
                   onClick={advanceBoth}
                   disabled={!canAdvanceEither}
                   title="Next round (both)"
-                >Next \u25b6</button>
+                >Next</button>
 
                 <button
                   className="step-btn"
                   onClick={jumpEndBoth}
                   disabled={!canAdvanceEither}
                   title="Last round (both)"
-                >\u23ed</button>
+                >Last</button>
               </div>
             </>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">\uD83E\uDD16</div>
+              <div className="empty-icon"></div>
               <p>
                 Pick two models and click<br />
                 <strong>Run Both</strong> to compare them on the same seed.
