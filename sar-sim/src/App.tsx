@@ -438,11 +438,14 @@ export default function App() {
   const [benchLoading,  setBenchLoading]  = useState(false)
 
   // ── demo mode state ───────────────────────────────────────────────────────────
-  const [demoModel,    setDemoModel]    = useState<DemoModel>('M4*')
-  const [demoCompare,  setDemoCompare]  = useState(false)
-  const [demoLoading,  setDemoLoading]  = useState(false)
-  const [demoGifUrl,   setDemoGifUrl]   = useState<string | null>(null)
-  const [demoError,    setDemoError]    = useState<string | null>(null)
+  const [demoModel,      setDemoModel]      = useState<DemoModel>('M4*')
+  const [demoCompare,    setDemoCompare]    = useState(false)
+  const [demoLoading,    setDemoLoading]    = useState(false)
+  const [demoStatus,     setDemoStatus]     = useState('')
+  const [demoFrames,     setDemoFrames]     = useState(0)
+  const [demoError,      setDemoError]      = useState<string | null>(null)
+  const demoCanvasRef  = useRef<HTMLCanvasElement>(null)
+  const demoWsRef      = useRef<WebSocket | null>(null)
 
   // ── helpers ──────────────────────────────────────────────────────────────────
   const setParam = <K extends keyof SimParams>(k: K, v: SimParams[K]) =>
@@ -638,36 +641,61 @@ export default function App() {
     }
   }
 
-  // ── demo run ──────────────────────────────────────────────────────��──────────
-  const runDemo = async () => {
+  // cleanup WS on unmount
+  useEffect(() => () => { demoWsRef.current?.close() }, [])
+
+  // ── demo live stream ──────────────────────────────────────────────────────────
+  const startLiveDemo = () => {
+    demoWsRef.current?.close()
     setDemoLoading(true)
     setDemoError(null)
-    if (demoGifUrl) URL.revokeObjectURL(demoGifUrl)
-    setDemoGifUrl(null)
-    try {
-      const res = await fetch('/api/pybullet', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model:   demoModel.replace('M4*', 'M4star'),
-          seed:    params.seed,
-          n:       Math.min(params.n_nodes, 30),
-          r:       params.n_robots,
-          e:       params.energy,
-          compare: demoCompare,
-        }),
-      })
-      if (!res.ok) {
-        const msg = await res.text()
-        throw new Error(`Server error ${res.status}: ${msg}`)
-      }
-      const blob = await res.blob()
-      setDemoGifUrl(URL.createObjectURL(blob))
-    } catch (e: unknown) {
-      setDemoError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setDemoLoading(false)
+    setDemoStatus('Connecting...')
+    setDemoFrames(0)
+
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const ws = new WebSocket(`${proto}//${window.location.host}/api/pybullet/ws`)
+    demoWsRef.current = ws
+
+    ws.onopen = () => {
+      setDemoStatus('Starting simulation...')
+      ws.send(JSON.stringify({
+        model:   demoModel.replace('M4*', 'M4star'),
+        seed:    params.seed,
+        n:       Math.min(params.n_nodes, 30),
+        r:       params.n_robots,
+        e:       params.energy,
+        compare: demoCompare,
+      }))
     }
+
+    ws.onmessage = (event: MessageEvent) => {
+      if (typeof event.data === 'string') {
+        const msg = JSON.parse(event.data) as { status: string; message?: string; total?: number }
+        if (msg.status === 'done')      { setDemoLoading(false); setDemoStatus('Complete') }
+        else if (msg.status === 'streaming') setDemoStatus('Rendering frames...')
+        else if (msg.status === 'error') { setDemoError(msg.message ?? 'Unknown error'); setDemoLoading(false) }
+      } else {
+        const blob = new Blob([event.data as ArrayBuffer], { type: 'image/jpeg' })
+        const url  = URL.createObjectURL(blob)
+        const img  = new Image()
+        img.onload = () => {
+          const canvas = demoCanvasRef.current
+          if (canvas) {
+            if (canvas.width !== img.width || canvas.height !== img.height) {
+              canvas.width  = img.width
+              canvas.height = img.height
+            }
+            canvas.getContext('2d')?.drawImage(img, 0, 0)
+          }
+          URL.revokeObjectURL(url)
+          setDemoFrames(f => f + 1)
+        }
+        img.src = url
+      }
+    }
+
+    ws.onerror = () => { setDemoError('WebSocket connection failed — is the backend running?'); setDemoLoading(false) }
+    ws.onclose = () => { setDemoLoading(false); demoWsRef.current = null }
   }
 
   // ── comparison step helpers ─────────────────────────────────���────────────────
@@ -885,7 +913,7 @@ export default function App() {
         {appMode === 'demo' && (
           <button
             className={`run-btn ${demoLoading ? 'loading' : ''}`}
-            onClick={runDemo}
+            onClick={startLiveDemo}
             disabled={demoLoading}
           >
             {demoLoading ? 'Rendering 3D Demo...' : 'Generate 3D Demo'}
@@ -1017,39 +1045,35 @@ export default function App() {
           <div className="demo-view">
             <h2 className="demo-heading">3D Physics Demo</h2>
             <p className="demo-desc">
-              Runs a PyBullet physics simulation server-side and renders an animated GIF.
+              Streams a live PyBullet physics simulation frame-by-frame.
               Uses the same seed and parameters as the main simulator.
-              Render time is typically 5–20 seconds.
             </p>
+
+            <canvas
+              ref={demoCanvasRef}
+              className="demo-canvas"
+              style={{ display: demoFrames > 0 ? 'block' : 'none' }}
+            />
+
             {demoLoading && (
-              <div className="demo-spinner">
+              <div className="demo-status">
                 <div className="bench-spinner" />
-                <p>Rendering physics simulation — please wait...</p>
+                <span>{demoStatus}{demoFrames > 0 ? ` — ${demoFrames} frames` : ''}</span>
               </div>
             )}
-            {demoGifUrl && !demoLoading && (
-              <div className="demo-result">
-                <img
-                  src={demoGifUrl}
-                  alt={demoCompare ? `M1 vs ${demoModel} comparison` : `${demoModel} 3D demo`}
-                  className="demo-gif"
-                />
-                <p className="demo-caption">
-                  {demoCompare ? `M1 (left) vs ${demoModel} (right) · seed ${params.seed}` : `${demoModel} · seed ${params.seed}`}
-                </p>
-                <a
-                  href={demoGifUrl}
-                  download={`searchfcr_demo_${demoModel}_seed${params.seed}.gif`}
-                  className="demo-download"
-                >
-                  Download GIF
-                </a>
-              </div>
+
+            {!demoLoading && demoFrames > 0 && (
+              <p className="demo-caption">
+                {demoCompare ? `M1 vs ${demoModel} (side-by-side)` : demoModel}
+                &nbsp;·&nbsp;seed {params.seed}
+                &nbsp;·&nbsp;{demoFrames} frames rendered
+              </p>
             )}
-            {!demoGifUrl && !demoLoading && !demoError && (
+
+            {!demoLoading && demoFrames === 0 && !demoError && (
               <div className="empty-state">
                 <div className="empty-icon" />
-                <p>Select a model and click <strong>Generate 3D Demo</strong> to render a physics simulation.</p>
+                <p>Select a model and click <strong>Generate 3D Demo</strong> to stream a live physics simulation.</p>
               </div>
             )}
           </div>
