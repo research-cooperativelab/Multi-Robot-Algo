@@ -28,7 +28,7 @@ server {
 
     # ── HTML slide deck ───────────────────────────────────────────────────
     location = /slides {
-        alias /var/www/searchfcr/SearchFCR Research.html;
+        alias /var/www/searchfcr/SearchFCR_Research.html;
         default_type text/html;
     }
 
