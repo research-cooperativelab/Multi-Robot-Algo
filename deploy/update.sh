@@ -16,8 +16,10 @@ sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -e "$APP_DIR"
 
 echo "==> Rebuilding frontend"
 cd "$APP_DIR/sar-sim"
-sudo -u "$APP_USER" npm ci --silent
-sudo -u "$APP_USER" npm run build --silent
+rm -rf node_modules
+npm ci
+npm run build
+chown -R "$APP_USER:$APP_USER" "$APP_DIR/sar-sim"
 
 echo "==> Restarting backend"
 systemctl restart searchfcr-backend
