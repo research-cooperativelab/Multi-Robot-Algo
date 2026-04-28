@@ -7,12 +7,14 @@ Endpoints:
   POST /api/step      — session-based step-through replay
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
+from pathlib import Path
 import asyncio
+import io
 import shutil
 import tempfile
 import sys
@@ -674,3 +676,155 @@ async def run_pybullet_demo(req: PyBulletRequest):
 
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ── Frame helpers ──────────────────────────────────────────────────────────────
+
+def _to_jpeg(path: str, scale: float = 0.5, quality: int = 80) -> bytes:
+    from PIL import Image
+    img = Image.open(path).convert("RGB")
+    if scale != 1.0:
+        w, h = img.size
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality)
+    return buf.getvalue()
+
+
+def _stitch_jpeg(left: str, right: str, right_label: str,
+                 scale: float = 0.5, quality: int = 80) -> bytes:
+    from PIL import Image, ImageDraw
+    L = Image.open(left).convert("RGB")
+    R = Image.open(right).convert("RGB")
+    if scale != 1.0:
+        w, h = L.size; L = L.resize((int(w*scale), int(h*scale)), Image.LANCZOS)
+        w, h = R.size; R = R.resize((int(w*scale), int(h*scale)), Image.LANCZOS)
+    combo = Image.new("RGB", (L.width + R.width + 4, max(L.height, R.height)), (20, 20, 20))
+    combo.paste(L, (0, 0))
+    combo.paste(R, (L.width + 4, 0))
+    draw = ImageDraw.Draw(combo)
+    draw.text((8, 8), "M1  (random)", fill=(255, 100, 100))
+    draw.text((L.width + 12, 8), f"{right_label}  (auction+chain)", fill=(100, 200, 255))
+    buf = io.BytesIO()
+    combo.save(buf, format="JPEG", quality=quality)
+    return buf.getvalue()
+
+
+# ── WebSocket live-stream endpoint ─────────────────────────────────────────────
+
+@app.websocket("/api/pybullet/ws")
+async def pybullet_stream(ws: WebSocket):
+    await ws.accept()
+
+    try:
+        raw = await asyncio.wait_for(ws.receive_json(), timeout=10)
+    except (asyncio.TimeoutError, Exception):
+        await ws.close(1008)
+        return
+
+    model   = raw.get("model", "M4star").replace("M4*", "M4star")
+    seed    = int(raw.get("seed", 42))
+    n       = max(5, min(int(raw.get("n", 20)), 30))
+    r       = max(1, min(int(raw.get("r", 3)), 5))
+    e       = max(5.0, min(float(raw.get("e", 14.0)), 30.0))
+    compare = bool(raw.get("compare", False))
+
+    if model not in _ALLOWED_MODELS:
+        await ws.send_json({"status": "error", "message": f"Invalid model: {model}"})
+        await ws.close(); return
+
+    common = ["--seed", str(seed), "--n", str(n), "--r", str(r),
+              "--e", str(e), "--headless", "--record", "--force-matplotlib"]
+
+    async with _PYBULLET_SEM:
+        tmp = tempfile.mkdtemp(prefix="searchfcr_ws_")
+        try:
+            await ws.send_json({"status": "starting"})
+
+            if compare:
+                # Run both models in parallel, wait, then stream stitched pairs
+                left_dir  = os.path.join(tmp, "M1")
+                right_dir = os.path.join(tmp, model)
+
+                async def _spawn(m: str, d: str):
+                    return await asyncio.create_subprocess_exec(
+                        sys.executable, _DEMO_SCRIPT,
+                        "--model", m, "--frames-dir", d, *common,
+                        cwd=_REPO_ROOT,
+                        stdout=asyncio.subprocess.DEVNULL,
+                        stderr=asyncio.subprocess.DEVNULL,
+                    )
+
+                lp, rp = await asyncio.gather(_spawn("M1", left_dir), _spawn(model, right_dir))
+                await asyncio.wait_for(asyncio.gather(lp.wait(), rp.wait()), timeout=120)
+
+                left_frames  = sorted(Path(left_dir).glob("frame_*.png"))
+                right_frames = sorted(Path(right_dir).glob("frame_*.png"))
+                n_pairs = min(len(left_frames), len(right_frames))
+                await ws.send_json({"status": "streaming", "total": n_pairs})
+
+                for lf, rf in zip(left_frames, right_frames):
+                    frame = await asyncio.get_event_loop().run_in_executor(
+                        None, _stitch_jpeg, str(lf), str(rf), model)
+                    await ws.send_bytes(frame)
+                    await asyncio.sleep(0.04)   # ~25 fps playback
+
+            else:
+                frames_dir = os.path.join(tmp, "frames")
+                os.makedirs(frames_dir, exist_ok=True)
+                proc = await asyncio.create_subprocess_exec(
+                    sys.executable, _DEMO_SCRIPT,
+                    "--model", model, "--frames-dir", frames_dir, *common,
+                    cwd=_REPO_ROOT,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await ws.send_json({"status": "streaming"})
+
+                sent: set[str] = set()
+                deadline = asyncio.get_event_loop().time() + 120
+
+                while True:
+                    if asyncio.get_event_loop().time() > deadline:
+                        proc.kill(); break
+
+                    for fname in sorted(os.listdir(frames_dir)):
+                        if fname.startswith("frame_") and fname.endswith(".png") and fname not in sent:
+                            fpath = os.path.join(frames_dir, fname)
+                            try:
+                                frame = await asyncio.get_event_loop().run_in_executor(
+                                    None, _to_jpeg, fpath)
+                                await ws.send_bytes(frame)
+                                sent.add(fname)
+                            except Exception:
+                                pass
+
+                    if proc.returncode is not None:
+                        break
+                    await asyncio.sleep(0.1)
+
+                # flush remaining frames
+                for fname in sorted(os.listdir(frames_dir)):
+                    if fname.startswith("frame_") and fname.endswith(".png") and fname not in sent:
+                        try:
+                            frame = await asyncio.get_event_loop().run_in_executor(
+                                None, _to_jpeg, os.path.join(frames_dir, fname))
+                            await ws.send_bytes(frame)
+                            sent.add(fname)
+                        except Exception:
+                            pass
+
+            await ws.send_json({"status": "done"})
+
+        except WebSocketDisconnect:
+            pass
+        except asyncio.TimeoutError:
+            try: await ws.send_json({"status": "error", "message": "Render timed out"})
+            except Exception: pass
+        except Exception as ex:
+            try: await ws.send_json({"status": "error", "message": str(ex)[:300]})
+            except Exception: pass
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+            try: await ws.close()
+            except Exception: pass
