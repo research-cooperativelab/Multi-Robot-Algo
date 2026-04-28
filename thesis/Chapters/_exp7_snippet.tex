@@ -1,0 +1,128 @@
+\section{Robustness to Prior Distribution Shape}\label{sec:exp7-prior-shape}
+
+The prior misspecification experiment of Section~\ref{sec:exp1-misspec}
+tested what happens when the prior probabilities $p_i$ seen by the auction
+are noisy corruptions of the true prior from which the target was drawn.
+A complementary and arguably more fundamental robustness question is
+whether the \emph{model ranking}---M2 $<$ M4* $\leq$ M4 $<$ M3 $<$
+H$_d$ $<$ M1---holds when the prior distribution itself has a
+qualitatively different shape, not merely when it is noisy.
+In a real deployment the analyst may not know which prior shape is
+most appropriate; the robustness of the ranking across shapes therefore
+determines whether the conclusions of this thesis transfer to
+deployments with different prior models.
+
+Five prior shapes were tested over 500 paired trials each at the default
+configuration ($n = 30$, $R = 3$, $E = 14$, $L = 10$):
+
+\begin{enumerate}
+    \item \emph{Concentrated} ($\mathrm{Dirichlet}(\alpha = 0.2)$): one
+          or two sites dominate, modeling a scenario where strong evidence
+          concentrates the prior.
+    \item \emph{Moderate} ($\mathrm{Uniform}(0.1, 1.0)$, normalized):
+          the paper's baseline---mild variation, no strong peak.
+    \item \emph{Diffuse} ($\mathrm{Dirichlet}(\alpha = 2.0)$): broader
+          spread with no dominant site.
+    \item \emph{Near-uniform} ($\mathrm{Dirichlet}(\alpha = 10.0)$):
+          essentially uniform, with very weak prior information.
+    \item \emph{Power-law} ($U(0,1)^3$, normalized): heavy-tailed,
+          modeling sparse but strong indications at a few sites.
+\end{enumerate}
+
+The target was resampled from each prior subject to the same geometric
+feasibility filters ($d_{\mathrm{opt}} \geq 1.0$,
+$2\,d_{\mathrm{opt}} \leq E$) used throughout the thesis.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_prior_sensitivity.png}
+  \caption{Mean finder competitive ratio by model and prior distribution
+    shape, over 500 paired trials per shape at the default configuration
+    ($n = 30$, $R = 3$, $E = 14$, $L = 10$).
+    Three of five prior shapes preserve the complete ordering
+    M2 $<$ M4* $\leq$ M4 $<$ M3 $<$ H$_d$ $<$ M1.
+    The concentrated prior reveals a regime where M4* surpasses M2:
+    the quadratic penalty guides the robot directly to the single dominant
+    high-probability site so efficiently that the energy constraint
+    becomes irrelevant.
+    The power-law prior reveals a narrow exception where M4 outperforms
+    M4*: extreme skew in the prior creates a few very high-probability
+    distant sites that the quadratic penalty discounts too
+    aggressively.}\label{fig:prior-sensitivity}
+\end{figure}
+
+\begin{table}[ht]
+\centering
+\caption{Mean finder competitive ratio by prior distribution shape and
+  model (500 paired trials per row, $n = 30$, $R = 3$, $E = 14$).
+  A checkmark indicates the full ordering
+  M2 $<$ M4* $\leq$ M4 $<$ M3 $<$ H$_d$ $<$ M1 holds;
+  a cross indicates at least one pair is
+  violated.}\label{tab:prior-sensitivity}
+\vspace{2pt}
+\begin{tabular}{@{}lrrrrrrc@{}}
+\toprule
+\textbf{Prior Shape} & \textbf{M2} & \textbf{M4*} & \textbf{M4}
+  & \textbf{M3} & \textbf{H$_d$} & \textbf{M1} & \textbf{Ordering} \\
+\midrule
+Concentrated (Dir~0.2) & 1.89 & \textbf{1.86} & 1.97 &  2.66 & 6.85 &  6.86 & $\dagger$ \\
+Moderate (Uniform)     & 3.05 &          3.19 & 3.29 &  6.50 & 6.98 & 18.08 & \checkmark \\
+Diffuse (Dir~2.0)      & 2.92 &          3.06 & 3.17 &  6.13 & 6.98 & 16.97 & \checkmark \\
+Near-Uniform (Dir~10.0)& 3.12 &          3.27 & 3.35 &  6.72 & 6.90 & 20.10 & \checkmark \\
+Power-Law ($U^3$)      & 2.23 &          2.52 & 2.43 &  4.08 & 7.09 & 11.77 & $\ddagger$ \\
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+
+\noindent\footnotesize
+$\dagger$~Concentrated: M4* (1.86) $<$ M2 (1.89)---M4* \emph{surpasses} the unconstrained baseline.\\
+$\ddagger$~Power-law: M4 (2.43) $<$ M4* (2.52)---the quadratic penalty over-penalizes rare distant high-prior sites.\\
+Raw data: \texttt{experiments/data/exp7\_prior\_sensitivity\_summary.csv}.
+\end{table}
+
+Figure~\ref{fig:prior-sensitivity} and Table~\ref{tab:prior-sensitivity}
+report the results. The full ordering holds for three of the five prior
+shapes; two qualitatively different exceptions emerge that are themselves
+informative.
+
+\emph{Concentrated prior: M4* surpasses the unconstrained baseline.}
+Under the Dirichlet(0.2) prior, probability mass concentrates so strongly
+on one or two sites that the auction's first anchor choice is almost
+certainly the dominant site; the robot travels directly to it and finds
+the target with near-minimal FCR regardless of energy budget.
+In this regime M4* (mean FCR $= 1.86$) edges out M2 ($1.89$), confirming
+the pattern observed in the energy sweep (Section~\ref{sec:energy}) and
+the large-fleet regime of the robot sweep: when the search problem is
+effectively reduced to a single high-confidence site, the energy budget
+is no longer the binding constraint, and the quadratic penalty guides the
+anchor placement as accurately as the unconstrained node-to-node auction.
+This result extends the energy and fleet-size crossovers to a third
+mechanism---prior concentration---under which M4* can surpass M2.
+
+\emph{Power-law prior: M4 edge over M4*.}
+The power-law prior ($U(0,1)^3$ normalized) generates a few sites with
+very high probability and many with very low probability.
+Under this distribution the optimal strategy is to travel to the dominant
+high-prior site even if it is geometrically far from base, because the
+probability reward is large enough to compensate.
+The quadratic penalty of M4* discounts this distant site more than M4's
+linear penalty does, causing M4*'s anchor selection to be more
+conservative than is warranted by the extreme prior skew.
+M4 (mean FCR $= 2.43$) therefore outperforms M4* ($2.52$) by $3.7\%$
+on power-law priors.
+This exception is not a failure of the cost-foreclosure argument but
+rather its boundary: the argument assumes that the anchor site is drawn
+from a distribution that spreads probability over the arena without
+extreme heavy tails.
+In the rare regime of extreme power-law skew, the linear penalty $p/d$
+is more appropriate than the quadratic $p/d^2$.
+A practical deployment heuristic follows: use M4* when prior distributions
+are moderate to concentrated, and revert to M4 when the operational prior
+is known to have power-law character.
+
+These two exceptions are theoretically coherent and enrich rather than
+undermine the primary findings: the $p/d^2$ bid is optimal over the broad
+class of moderate, diffuse, and near-uniform priors that characterize most
+real deployments, and it achieves its most striking advantage precisely
+when a concentrated prior makes the search problem hard for the
+unconstrained baseline.

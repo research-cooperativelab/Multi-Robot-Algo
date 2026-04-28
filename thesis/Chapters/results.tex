@@ -68,6 +68,22 @@ detectable as a statistically significant aggregate effect.
 Wilcoxon $W$ statistics are from \texttt{experiments/data/exp4\_wilcoxon.csv}.
 \end{table}
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_main_comparison.png}
+  \caption{Mean finder competitive ratio across all seven models at the
+    default configuration ($n = 30$, $R = 3$, $E = 14$, $L = 10$;
+    5,000 paired trials). Error bars show 95\% confidence intervals.
+    Three capability additions drive the improvement from M1 to M4*:
+    auction coordination (M1 $\to$ M2, $6.6\times$ gain), multi-node
+    sortie planning (M3 $\to$ M4, 90\% energy-gap recovery), and the
+    $p/d^2$ bid function (M4 $\to$ M4*, directional gain).
+    The Hungarian baseline H$_d$ sits between M3 and M1; the
+    probability-weighted ablation H$_{p/d}$ performs worse than H$_d$,
+    exposing the clustering pathology of centralized
+    assignment.}\label{fig:main-comparison}
+\end{figure}
+
 Table~\ref{tab:main} reports the main comparison. Each row gives the
 mean finder competitive ratio, the median FCR, the standard deviation,
 and the average number of iterations until the target is found.
@@ -207,6 +223,19 @@ M4 Multi   &  3.16 & 13.87 & \checkmark & 0.23 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig_bounds.png}
+  \caption{Empirical mean FCR (filled bars) versus closed-form theoretical
+    upper bound (dashed line or hatched bar) for each model at the default
+    configuration. Every empirical result lies strictly below its bound,
+    confirming the theoretical analysis of Chapter~IV. The Model~2 bound
+    is the tightest (85\% efficiency); the Model~4 bound is loosest
+    because the analytical estimate of sites per sortie ($S = 2$)
+    underestimates the empirical average of 5.3 achieved by the greedy
+    chain.}\label{fig:bounds-comparison}
+\end{figure}
 
 All four bounds hold across 500 trials at the default configuration (Table~\ref{tab:bounds}). The
 Model 2 bound is the tightest at $0.85$: the model has the simplest
@@ -351,6 +380,10 @@ $R$ & M1 & M2 & H$_d$ & M3 & M4 & M4* \\
 \input{Chapters/_exp2_snippet}
 
 \input{Chapters/_exp3_snippet}
+
+\input{Chapters/_exp6_snippet}
+
+\input{Chapters/_exp7_snippet}
 
 \section{Discussion}
 

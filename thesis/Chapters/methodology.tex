@@ -328,6 +328,23 @@ robot's tour. The full simulation code, including all five models and
 all eight experiments, is available at
 \url{https://github.com/research-cooperativelab/Multi-Robot-Algo}.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{fig_simulation_snapshot_v2.png}
+  \caption{Screenshot of the interactive \textsc{SearchFCR} web simulator
+    (\url{https://searchfcr.fozhan.dev}) mid-run on a 30-site,
+    3-robot instance with Model~4*.
+    Sites are drawn as circles scaled by prior probability; the
+    color shifts from gray (unvisited) to blue (visited this round)
+    and fades for sites cleared in earlier rounds.
+    The FCR timeline (bottom left) and entropy-collapse curve
+    (bottom right) update in real time as the user steps through
+    rounds. The sidebar panel exposes all instance parameters
+    and allows instant re-seeding for paired comparisons or
+    benchmarking all five models on the same
+    instance.}\label{fig:simulator}
+\end{figure}
+
 \subsection{Hungarian Baselines}
 
 The Hungarian algorithm~\citep{Kuhn1955} computes the globally
