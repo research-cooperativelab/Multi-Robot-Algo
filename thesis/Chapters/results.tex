@@ -39,7 +39,7 @@ enable paired comparisons.
   Wilcoxon statistics are from \texttt{experiments/data/exp4\_wilcoxon.csv}.}
   \label{tab:main}
 \vspace{2pt}
-\begin{tabular}{@{}lrrrrrr@{}}
+\resizebox{\textwidth}{!}{\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
 \textbf{Model} & \textbf{Mean FCR} & \textbf{95\% CI} & \textbf{Median}
                & \textbf{Std} & \textbf{Iters} & \textbf{$p$-value} \\
@@ -52,7 +52,7 @@ M3 Auction Single ($E$, $p/d$)         &  6.32 & $\pm$0.136 &  5.08 &  4.91 & 4.
 M4 Auction Multi ($E$, $p/d$)          &  3.16 & $\pm$0.065 &  2.32 &  2.34 & 1.38 & $<0.001$\textsuperscript{c} \\
 M4* Auction Multi ($E$, $p/d^2$)       &  3.11 & $\pm$0.058 &  2.37 &  2.11 & 1.38 & \textit{n.s.}\textsuperscript{d} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \vspace{4pt}
 
 \noindent\footnotesize
@@ -151,7 +151,7 @@ energy penalty under single-sortie constraints. Model 4's FCR of
 $3.16$ recovers
 $(6.32 - 3.16)/(6.32 - 2.83) = 90\%$ of that gap (Wilcoxon
 $p = 3.2\times10^{-107}$). The mechanism is
-visible in the iteration count: M3 takes $4.82$ iterations on average
+visible in the iteration count: M3 takes $4.81$ iterations on average
 while M4 takes $1.38$, because each M4 sortie visits approximately
 $5.3$ sites.
 
@@ -280,10 +280,10 @@ cannot convert surplus energy into additional site visits.
 \end{figure}
 
 Figure~\ref{fig:robots} sweeps fleet size from $R = 1$ to $R = 6$. At
-$R = 1$, the gap between M3 and M4* is largest ($12.97$ versus $5.44$),
+$R = 1$, the gap between M3 and M4* is largest ($13.94$ versus $5.60$),
 because a single robot cannot divide the search load and a single-node
 sortie wastes the most budget proportionally. By $R = 6$, Model 4*
-($2.04$) approaches Model 2 ($2.14$). The FCRs of all coordinated
+($2.08$) approaches Model 2 ($2.14$). The FCRs of all coordinated
 models appear to stabilize as $R$ grows, which is consistent with the
 hypothesis that coordination quality is the dominant determinant of
 search efficiency rather than raw fleet size---a theoretically open
@@ -314,7 +314,7 @@ $R \in \{1, 2, 3, 4, 5, 6, 8, 10\}$ at fixed $n = 30$, with
 M2 $<$ M4* $\leq$ M4 $<$ M3 $<$ H$_d$ $<$ M1 is preserved at all
 three values of $n$.  Absolute FCRs scale roughly linearly with $n$:
 at $n = 100$, M1 reaches $60.65$ while M4* remains at $5.60$---a
-$10.8\times$ gap, compared to $6.5\times$ at $n = 30$.  The
+$10.8\times$ gap, compared to $6.2\times$ at $n = 30$.  The
 coordination benefit therefore \emph{grows} with instance size, because
 a random robot must search on average $n/2$ sites before finding the
 target, while the auction models use probability-aware chaining to
