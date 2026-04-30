@@ -871,6 +871,29 @@ input[type='range']::-webkit-slider-thumb {
 }
 
 
+/* ── thesis slides button ─────────────────────────────────────────────────── */
+.thesis-slides-btn {
+  display: block;
+  text-align: center;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #1a3a5c 0%, #0d2a45 100%);
+  border: 1px solid #4FC3F7;
+  border-radius: 8px;
+  color: #4FC3F7;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.thesis-slides-btn:hover {
+  background: linear-gradient(135deg, #1e4a72 0%, #123454 100%);
+  border-color: #81d4fa;
+  color: #e1f5fe;
+  box-shadow: 0 0 10px rgba(79, 195, 247, 0.25);
+}
+
 /* ── nav links ────────────────────────────────────────────────────────────── */
 .nav-links {
   display: flex;
