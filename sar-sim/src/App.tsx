@@ -734,9 +734,18 @@ export default function App() {
         <h1 className="app-title">SearchFCR</h1>
         <p className="app-subtitle">Multi-robot search &amp; rescue simulator</p>
 
+        {/* Honors thesis slides button */}
+        <a
+          href="/slides.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="thesis-slides-btn"
+        >
+          🎓 Honors Thesis Slides
+        </a>
+
         {/* nav links */}
         <div className="nav-links">
-          <a href="/slides" target="_blank" rel="noopener noreferrer" className="nav-link">Research Slides</a>
           <a href="https://github.com/research-cooperativelab/Multi-Robot-Algo" target="_blank" rel="noopener noreferrer" className="nav-link">GitHub</a>
           <a href="/api/health" target="_blank" rel="noopener noreferrer" className="nav-link">API Status</a>
         </div>
