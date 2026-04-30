@@ -264,13 +264,13 @@ def m4star_iteration(sites, p, bases, R, E, visited):
     """
     unvisited = [i for i in range(len(sites)) if i not in visited]
     pos    = [bases[r].copy() for r in range(R)]  # start at base
-    E_rem  = [E] * R                              # remaining energy per robot
-    claimed = set()                               # sites already assigned
-    tours  = [[] for _ in range(R)]              # output: one tour per robot
+    E_rem  = [E] * R              # energy remaining per robot
+    claimed = set()               # sites already assigned
+    tours  = [[] for _ in range(R)]   # one list per robot
 
     # --- Phase 1: SSI auction assigns each robot one anchor site ---
     # The robot with the highest p[i]/d^2 bid wins site i.
-    # This is run sequentially: once a robot wins, it is removed from bidding.
+    # Sequential SSI: a robot is removed once it wins.
     available = [i for i in unvisited if any(
         2 * dist(bases[r], sites[i]) <= E for r in range(R))]
     for _ in range(R):                            # at most R winners
