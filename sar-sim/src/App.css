@@ -902,24 +902,69 @@ input[type='range']::-webkit-slider-thumb {
 }
 
 /* ── honors slide viewer ──────────────────────────────────────────────────── */
+/* ── honors slide viewer ──────────────────────────────────────────────────── */
 .honors-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   height: 100%;
-  padding: 8px 0 4px;
+  padding: 6px 8px 4px;
+  box-sizing: border-box;
 }
 
+/* top bar: back button + counter + fullscreen */
+.honors-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.honors-back-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid #2d3a50;
+  color: #94a3b8;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.honors-back-btn:hover { background: rgba(255,255,255,0.12); color: #e2e8f0; }
+
+.honors-counter {
+  font-size: 0.78rem;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.honors-fs-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid #2d3a50;
+  color: #64748b;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.honors-fs-btn:hover { background: rgba(255,255,255,0.12); color: #e2e8f0; }
+
+/* slide + tap zones */
 .honors-stage {
   flex: 1;
   width: 100%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   min-height: 0;
+  touch-action: pan-y;
 }
 
 .honors-img {
@@ -928,13 +973,28 @@ input[type='range']::-webkit-slider-thumb {
   width: auto;
   height: auto;
   object-fit: contain;
-  border-radius: 4px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  border-radius: 6px;
+  box-shadow: 0 4px 28px rgba(0,0,0,0.55);
   display: block;
   user-select: none;
   -webkit-user-drag: none;
+  pointer-events: none;
 }
 
+/* invisible tap zones on left/right 25% */
+.honors-tap-prev,
+.honors-tap-next {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 25%;
+  z-index: 2;
+  cursor: pointer;
+}
+.honors-tap-prev { left: 0; }
+.honors-tap-next { right: 0; }
+
+/* bottom nav buttons — desktop only */
 .honors-controls {
   display: flex;
   align-items: center;
@@ -942,18 +1002,11 @@ input[type='range']::-webkit-slider-thumb {
   flex-shrink: 0;
 }
 
-.honors-counter {
-  font-size: 0.78rem;
-  color: #64748b;
-  min-width: 54px;
-  text-align: center;
-  letter-spacing: 0.05em;
-}
-
 .honors-hint {
-  font-size: 0.68rem;
-  color: #334155;
+  font-size: 0.65rem;
+  color: #2d3a50;
   flex-shrink: 0;
+  text-align: center;
 }
 
 /* ── nav links ────────────────────────────────────────────────────────────── */
@@ -1058,4 +1111,100 @@ input[type='range']::-webkit-slider-thumb {
 
 .demo-download:hover {
   background: #1a3a5c;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── small tablets / large phones (≤768px) ─────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* stack layout vertically */
+  .app-shell {
+    flex-direction: column;
+    height: 100dvh; /* dynamic viewport height — handles mobile address bar */
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    max-height: 44px;          /* collapsed strip showing only title + button */
+    overflow: hidden;
+    padding: 8px 14px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    border-right: none;
+    border-bottom: 1px solid #1e2a3a;
+    flex-shrink: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  /* expand sidebar when user scrolls down to it (focus-within trick) */
+  .sidebar:focus-within {
+    max-height: 100dvh;
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-title  { font-size: 1rem; white-space: nowrap; }
+  .app-subtitle { display: none; }
+
+  .canvas-area {
+    flex: 1;
+    padding: 8px;
+    gap: 8px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* hide desktop-only controls on phone */
+  .honors-controls { display: none; }
+  .honors-hint     { display: none; }
+
+  /* make the topbar slightly larger for touch */
+  .honors-back-btn,
+  .honors-fs-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ── honors mode: sidebar collapses to minimal strip ──────────────────── */
+@media (max-width: 768px) {
+  .app-shell[data-mode="honors"] .sidebar {
+    max-height: 44px !important;
+    overflow: hidden !important;
+    flex-direction: row !important;
+  }
+
+  .app-shell[data-mode="honors"] .canvas-area {
+    flex: 1;
+    padding: 4px 4px 8px;
+    min-height: 0;
+  }
+
+  .app-shell[data-mode="honors"] .honors-wrap {
+    gap: 6px;
+    padding: 4px 2px 2px;
+  }
+
+  /* full-bleed image on phone */
+  .app-shell[data-mode="honors"] .honors-img {
+    border-radius: 3px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.6);
+  }
+}
+
+/* ── desktop: honors mode hides sidebar entirely ──────────────────────── */
+@media (min-width: 769px) {
+  .app-shell[data-mode="honors"] .sidebar {
+    display: none;
+  }
+
+  .app-shell[data-mode="honors"] .canvas-area {
+    padding: 12px;
+  }
 }

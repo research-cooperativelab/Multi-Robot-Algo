@@ -372,18 +372,21 @@ type AppMode = 'single' | 'compare' | 'benchmark' | 'demo' | 'honors'
 // ── Honors Thesis Slide Viewer ────────────────────────────────────────────────
 const HONORS_SLIDES = Array.from({ length: 13 }, (_, i) => `/uhp-slides/${String(i + 1).padStart(2, '0')}.png`)
 
-function HonorsSlides() {
+function HonorsSlides({ onClose }: { onClose: () => void }) {
   const [cur, setCur] = useState(0)
   const N = HONORS_SLIDES.length
+  const touchStartX = useRef<number | null>(null)
 
-  const go = (n: number) => setCur(Math.max(0, Math.min(N - 1, n)))
+  const go = useCallback((n: number) => setCur(Math.max(0, Math.min(N - 1, n))), [N])
 
+  // keyboard nav
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur + 1) }
       if (e.key === 'ArrowLeft')                   { e.preventDefault(); go(cur - 1) }
       if (e.key === 'Home')                        { e.preventDefault(); go(0) }
       if (e.key === 'End')                         { e.preventDefault(); go(N - 1) }
+      if (e.key === 'Escape')                      { onClose() }
       if (e.key === 'f' || e.key === 'F') {
         if (!document.fullscreenElement) document.documentElement.requestFullscreen()
         else document.exitFullscreen()
@@ -391,12 +394,44 @@ function HonorsSlides() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [cur])
+  }, [cur, go, N, onClose])
+
+  // touch swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) go(cur + 1)   // swipe left → next
+      else        go(cur - 1)   // swipe right → prev
+    }
+    touchStartX.current = null
+  }
 
   return (
     <div className="honors-wrap">
-      {/* slide image */}
-      <div className="honors-stage" onClick={() => go(cur + 1)}>
+      {/* top bar */}
+      <div className="honors-topbar">
+        <button className="honors-back-btn" onClick={onClose}>← Back</button>
+        <span className="honors-counter">{cur + 1} / {N}</span>
+        <button
+          className="honors-fs-btn"
+          onClick={() => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen()
+            else document.exitFullscreen()
+          }}
+        >⛶</button>
+      </div>
+
+      {/* slide */}
+      <div
+        className="honors-stage"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onClick={() => go(cur + 1)}
+      >
         <img
           key={cur}
           src={HONORS_SLIDES[cur]}
@@ -404,26 +439,21 @@ function HonorsSlides() {
           className="honors-img"
           draggable={false}
         />
+
+        {/* tap zones — left 30% = prev, right 30% = next */}
+        <div className="honors-tap-prev" onClick={e => { e.stopPropagation(); go(cur - 1) }} />
+        <div className="honors-tap-next" onClick={e => { e.stopPropagation(); go(cur + 1) }} />
       </div>
 
-      {/* controls */}
+      {/* bottom controls (hidden on mobile — use tap zones / swipe) */}
       <div className="honors-controls">
-        <button className="step-btn" onClick={() => go(0)}           disabled={cur === 0}>First</button>
-        <button className="step-btn" onClick={() => go(cur - 1)}     disabled={cur === 0}>Prev</button>
-        <span className="honors-counter">{cur + 1} / {N}</span>
+        <button className="step-btn" onClick={() => go(0)}       disabled={cur === 0}>First</button>
+        <button className="step-btn" onClick={() => go(cur - 1)} disabled={cur === 0}>Prev</button>
         <button className="step-btn play-btn" onClick={() => go(cur + 1)} disabled={cur === N - 1}>Next</button>
-        <button className="step-btn" onClick={() => go(N - 1)}       disabled={cur === N - 1}>Last</button>
-        <button
-          className="step-btn"
-          title="Fullscreen (F)"
-          onClick={() => {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen()
-            else document.exitFullscreen()
-          }}
-        >⛶ Full</button>
+        <button className="step-btn" onClick={() => go(N - 1)}   disabled={cur === N - 1}>Last</button>
       </div>
 
-      <p className="honors-hint">← → navigate &nbsp;·&nbsp; click slide to advance &nbsp;·&nbsp; F for fullscreen</p>
+      <p className="honors-hint">swipe or tap edges to navigate &nbsp;·&nbsp; F = fullscreen</p>
     </div>
   )
 }
@@ -786,7 +816,7 @@ export default function App() {
 
   // ── render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="app-shell" ref={shellRef}>
+    <div className="app-shell" ref={shellRef} data-mode={appMode}>
 
       {/* ── sidebar ── */}
       <aside className="sidebar">
@@ -1108,7 +1138,7 @@ export default function App() {
       {/* ── canvas area ── */}
       <main className="canvas-area">
         {appMode === 'honors' ? (
-          <HonorsSlides />
+          <HonorsSlides onClose={() => setAppMode('single')} />
         ) : appMode === 'demo' ? (
           <div className="demo-view">
             <h2 className="demo-heading">3D Physics Demo</h2>
