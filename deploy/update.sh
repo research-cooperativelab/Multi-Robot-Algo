@@ -14,6 +14,10 @@ sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q \
     -r "$APP_DIR/backend/requirements.txt"
 sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -e "$APP_DIR"
 
+echo "==> Syncing slide assets (thesis/figures → /var/www/searchfcr/assets/)"
+mkdir -p "$APP_DIR/assets"
+cp -f "$APP_DIR"/thesis/figures/*.png "$APP_DIR/assets/" 2>/dev/null || true
+
 echo "==> Rebuilding frontend"
 cd "$APP_DIR/sar-sim"
 rm -rf node_modules

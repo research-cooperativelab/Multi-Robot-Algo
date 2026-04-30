@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="/deck-stage.js"></script>
+<script src="./deck-stage.js"></script>
 
 <style>
 :root {
@@ -680,7 +680,7 @@ table.t tr.worst td { color: var(--red); }
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
-        <img src="/slide-assets/fig_simulation_snapshot.png"
+        <img src="/slide-assets/fig_simulation_snapshot_v2.png"
              style="max-width:100%;max-height:480px;object-fit:contain;border:1px solid var(--rule);border-radius:2px"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
              alt="Simulator screenshot"/>
@@ -857,11 +857,20 @@ table.t tr.worst td { color: var(--red); }
   const kbdHint    = document.getElementById('kbd-hint');
   let notesVisible = false;
   let kbdTimer = null;
+  let _total = 0;
+  let _initialFired = false;
 
   setTimeout(() => {
     kbdHint.classList.add('show');
     kbdTimer = setTimeout(() => kbdHint.classList.remove('show'), 4000);
   }, 800);
+
+  // Parse speaker notes immediately so deck-stage.js can also read them.
+  const notesTag = document.getElementById('speaker-notes');
+  if (notesTag) {
+    try { window._deckNotes = JSON.parse(notesTag.textContent || '[]'); }
+    catch (e) { window._deckNotes = []; }
+  }
 
   function animateCounter(el) {
     const to = parseFloat(el.dataset.countTo);
@@ -891,8 +900,8 @@ table.t tr.worst td { color: var(--red); }
     el.style.animation = '';
   }
 
-  document.addEventListener('slidechange', function (e) {
-    const { index, total, slide } = e.detail;
+  function applySlide(index, total, slide) {
+    _total = total;
     bar.style.width = (total <= 1 ? 100 : (index / (total - 1)) * 100) + '%';
     const notes = window._deckNotes || [];
     notesText.textContent = notes[index] || '';
@@ -900,13 +909,35 @@ table.t tr.worst td { color: var(--red); }
       slide.querySelectorAll('[data-count-to]').forEach(animateCounter);
       slide.querySelectorAll('.progress-fill').forEach(resetAnimation);
     }
+  }
+
+  document.addEventListener('slidechange', function (e) {
+    const { index, total, slide } = e.detail;
+    _initialFired = true;
+    applySlide(index, total, slide);
   });
 
-  const notesTag = document.getElementById('speaker-notes');
-  if (notesTag) {
-    try { window._deckNotes = JSON.parse(notesTag.textContent || '[]'); }
-    catch (e) { window._deckNotes = []; }
-  }
+  // Fallback: slidechange for slide 0 may fire before this listener
+  // registers (slotchange is synchronous in some browsers). Re-run on
+  // DOMContentLoaded to ensure first-slide counters and CSS animations play.
+  document.addEventListener('DOMContentLoaded', function () {
+    // Re-trigger CSS animations for the first active slide by briefly
+    // removing and re-adding data-deck-active (forces animation restart).
+    const active = document.querySelector('section[data-deck-active]');
+    if (active) {
+      active.removeAttribute('data-deck-active');
+      void active.getBoundingClientRect(); // flush style
+      active.setAttribute('data-deck-active', '');
+    }
+
+    // If the initial slidechange was missed, fire counters manually.
+    if (!_initialFired && active) {
+      const allSlides = Array.from(document.querySelectorAll('deck-stage > section'));
+      const idx = allSlides.indexOf(active);
+      const total = allSlides.length;
+      applySlide(idx, total, active);
+    }
+  });
 
   document.addEventListener('keydown', function (e) {
     if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
