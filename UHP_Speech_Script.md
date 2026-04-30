@@ -1,5 +1,5 @@
 # UHP Honors Symposium — Speaker Script
-**"On the Numerical Analysis of Multi-Robot Search & Rescue"**
+**"Multi-Robot Search & Rescue Under Energy Constraints"**
 Fozhan Babaeiyan Ghamsari · CSULB Honors Program · Spring 2026
 **Target time: 10 minutes · 13 slides · ~45 seconds each**
 
@@ -142,7 +142,7 @@ Everything I just showed you is interactive at **searchfcr.fozhan.dev**.
 
 You can run all five models on the same seed, watch the auction assign robots in real time, and see FCR and belief entropy collapse round by round.
 
-**Scan the QR code** — try it on your phone right now. Pick M1 and M4-star, run them side by side, and watch the 18-fold difference play out live.
+**Open it on your phone right now.** Pick M1 and M4-star, run them side by side, and watch the 18-fold difference play out live.
 
 This was built as part of the thesis so the results are fully reproducible — every figure in the paper can be generated with one command.
 
