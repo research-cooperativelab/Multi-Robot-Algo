@@ -28,10 +28,17 @@ server {
         proxy_read_timeout 120s;
     }
 
-    # ── HTML slide deck ───────────────────────────────────────────────────
+    # ── HTML slide decks ──────────────────────────────────────────────────
     location = /slides {
         alias /var/www/searchfcr/SearchFCR_Research.html;
         default_type text/html;
+    }
+
+    # UHP Honors Thesis slides (self-contained, all images embedded)
+    location = /slides.html {
+        alias /var/www/searchfcr/sar-sim/dist/slides.html;
+        default_type text/html;
+        add_header Cache-Control "no-cache";
     }
 
     # Static assets referenced by the slide deck (figures, GIF, etc.)
