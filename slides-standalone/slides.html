@@ -1,0 +1,959 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SearchFCR — UHP Honors Symposium 2026</title>
+<script type="application/json" id="speaker-notes">
+[
+  "Good afternoon. My name is Fozhan, and my honors thesis asks a question that sounds simple but turns out to be surprisingly deep: If you have a small team of battery-powered drones and a collapsed building — how do those drones coordinate to find a survivor as fast as possible? I'm going to show you what we found, why it matters, and a live simulator you can try right now on your phone.",
+  "Think about Haiti. Turkey. The moment a building collapses, there's a window — measured in hours — where survivors can still be found. Drones can cover that rubble far faster than human teams. But there's a catch: without coordination, multiple drones visit the same rooms over and over while the high-probability zones go unchecked. Same map. Same three robots. Same target. On the left — no coordination: FCR of 53. On the right — our coordinated approach: FCR of 3. That eighteen-fold difference is what this research is about.",
+  "The question is not whether we should use robots for search and rescue. That debate is over. The question is how — specifically, how to coordinate a small fleet when each robot has a limited battery. R robots, each with energy budget E. n candidate sites. Each site has a prior probability. One site hides the target. The robots don't know where the target is. We need to assign them so the robot that finds the target travels as little as possible.",
+  "To compare algorithms fairly, we need one number. We use the Finder Competitive Ratio — FCR. Distance the finding robot actually flew, divided by the distance an all-knowing agent would have flown. FCR of 1: the finder went straight there. Perfect. FCR of 3: the finder traveled three times the minimum. FCR of 53: basically wandering. Everything above 1 is the cost of uncertainty. Our job is to drive that number down.",
+  "We don't just propose one algorithm and claim it works. We build a hierarchy of four models, each adding one real-world capability. M1 — no communication, infinite battery. The baseline. Pure chaos. M2 — we add a coordination auction. Robots bid on sites and divide the work. Still infinite battery. M3 — we add the real constraint: finite energy. M4-star — our contribution. Robots chain multiple sites into a single sortie, and we use a new smarter bid formula. Each step up the ladder is a clean experiment in what coordination is actually worth.",
+  "Same map. Same seed. Same three robots. Same target. M1 on the left: FCR 53.65. Spaghetti. M4-star on the right: FCR 3.02. Tight, ordered tours. An 18-fold reduction in finder travel — with no new hardware, no bigger batteries, no extra robots. Just smarter coordination.",
+  "So how does M4-star actually work? Three phases, every iteration. Phase 1 — the auction. Every robot bids on every site it can reach. Highest bid wins that site. Remove that pair, repeat until every robot has an assignment. Phase 2 — chain extension. From its assigned site, each robot asks: can I visit one more site and still make it home? If yes, go. Repeat until the energy budget runs out. One trip visits roughly five sites on average. Phase 3 — Bayesian update. Robots return to base, share results, zero out sites they visited, renormalize the probabilities, and re-auction.",
+  "The classical bid formula — established in 1975 — is p over d. Probability divided by distance. Under finite energy, that rule breaks. If your assigned site is far away, the round trip to that site burns most of your battery — leaving almost nothing for chaining additional sites. Distant anchors don't just cost more to reach — they shut down your whole sortie. We call this cost foreclosure. The correct response is to penalize distance twice as hard. That gives us p over d-squared. And the data prove it: p over d-squared beats p over d under every energy-constrained configuration we tested.",
+  "Five thousand paired Monte Carlo trials. 30 sites, 3 robots, energy budget of 14. Three numbers tell the whole story: 6.6 times — coordination gain. Same fleet, same hardware, just communication added. 90% — energy penalty recovered. M3 with smart trip chaining closes 90% of the gap to the infinite-battery ideal. No hardware changes. Pure scheduling. 3.11 — M4-star sits within 10% of the theoretical floor set by a robot with unlimited battery.",
+  "Everything I just showed you is interactive at searchfcr.fozhan.dev. You can run all five models on the same seed, watch the auction assign robots in real time, and see FCR and belief entropy collapse round by round. Scan the QR code — try it on your phone right now. Pick M1 and M4-star, run them side by side, and watch the 18-fold difference play out live. This was built as part of the thesis so the results are fully reproducible — every figure in the paper can be generated with one command.",
+  "We also ship a full 3D physics demonstration built in PyBullet. Left side: M1. Watch the robots wander. Paths overlap. Right side: M4-star. Clean assignments from the auction. Robots chain their sites. The finder reaches the target efficiently. Same map, same three robots, same target — radically different paths. This is the difference coordination makes, visualized in physics.",
+  "The entire research is open-source as SearchFCR. One command — python reproduce_thesis.py — regenerates every figure in the thesis. Seven models, five bid functions, four cost metrics, eight experiments, five thousand trials each, thirty-seven unit tests. If you want to test a new bid formula or a new terrain model, the API is designed for exactly that. github.com/foojanbabaeeian/Multi-Robot-Algo",
+  "Four takeaways. One: The dominant lever is communication, not fleet size. If your robots aren't coordinating, buying more robots barely helps. Two: Multi-node trip planning recovers 90% of the energy penalty — in software, with no hardware changes. Three: p over d-squared is the right bid under energy constraints. The advantage is largest exactly when you need it most: tight batteries, noisy maps. Four: All of this is reproducible, open-source, and live at searchfcr.fozhan.dev. Thank you. I'm happy to take questions."
+]
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./deck-stage.js"></script>
+
+<style>
+:root {
+  --paper:   #f3efe5;
+  --paper-2: #ebe6d8;
+  --ink:     #15140f;
+  --ink-2:   #3b372e;
+  --ink-3:   #7a7466;
+  --rule:    #cfc8b6;
+  --accent:  #c8501e;
+  --green:   #2f5a3a;
+  --blue:    #1f4d8a;
+  --plum:    #5a3a6e;
+  --red:     #8a2a1f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #0a0a0a; color: var(--ink); }
+deck-stage { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; }
+
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: var(--accent); width: 0%; z-index: 9999;
+  transition: width 0.4s cubic-bezier(.4,0,.2,1); pointer-events: none;
+}
+
+#notes-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10,10,10,0.96); color: #e8e4d8;
+  font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6;
+  padding: 20px 40px; max-height: 160px; overflow-y: auto;
+  z-index: 9998; transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1); border-top: 1px solid #333;
+}
+#notes-panel.visible { transform: translateY(0); }
+#notes-panel .notes-header {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: .2em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;
+}
+
+#kbd-hint {
+  position: fixed; top: 24px; right: 24px;
+  background: rgba(10,10,10,0.82); color: rgba(255,255,255,0.72);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  letter-spacing: .1em; padding: 10px 16px; border-radius: 6px;
+  z-index: 9999; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s; line-height: 1.7;
+}
+#kbd-hint.show { opacity: 1; }
+#kbd-hint kbd {
+  display: inline-block; background: rgba(255,255,255,0.15);
+  border-radius: 3px; padding: 1px 5px; margin: 0 2px; font-size: 11px;
+}
+
+section {
+  background: var(--paper); color: var(--ink);
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 30px; line-height: 1.4;
+  padding: 88px 110px; overflow: hidden; position: relative;
+  transition: opacity 0.05s;
+}
+
+section[data-deck-active] .slide-title,
+section[data-deck-active] .pullquote,
+section[data-deck-active] h1,
+section[data-deck-active] h2 {
+  animation: slideUp 0.55s cubic-bezier(.16,1,.3,1) both;
+}
+section[data-deck-active] .stat-row,
+section[data-deck-active] table.t { animation: fadeIn 0.6s 0.1s both; }
+section[data-deck-active] .figure img { animation: fadeIn 0.7s 0.15s both; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideFromLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes barGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes progressFill {
+  from { width: 0%; }
+  to   { width: var(--progress-to, 100%); }
+}
+@keyframes countBounce {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+.stagger > * { opacity: 0; }
+section[data-deck-active] .stagger > * { animation: fadeIn 0.5s var(--sd, 0s) both; }
+section[data-deck-active] .stagger > *:nth-child(1) { --sd: 0.05s; }
+section[data-deck-active] .stagger > *:nth-child(2) { --sd: 0.18s; }
+section[data-deck-active] .stagger > *:nth-child(3) { --sd: 0.31s; }
+section[data-deck-active] .stagger > *:nth-child(4) { --sd: 0.44s; }
+
+.stagger-left > * { opacity: 0; }
+section[data-deck-active] .stagger-left > * {
+  animation: slideFromLeft 0.65s var(--sd, 0s) cubic-bezier(.16,1,.3,1) both;
+}
+section[data-deck-active] .stagger-left > *:nth-child(1) { --sd: 0.10s; }
+section[data-deck-active] .stagger-left > *:nth-child(2) { --sd: 0.27s; }
+section[data-deck-active] .stagger-left > *:nth-child(3) { --sd: 0.44s; }
+
+.progress-track {
+  width: 100%; height: 22px; background: var(--paper-2);
+  border-radius: 11px; overflow: hidden; margin-top: 16px;
+}
+.progress-fill {
+  height: 100%; border-radius: 11px; width: 0%; transition: none;
+}
+section[data-deck-active] .progress-fill {
+  animation: progressFill 1.6s 0.5s cubic-bezier(.16,1,.3,1) both;
+}
+
+.count-el { display: inline; }
+.count-el.bounce { animation: countBounce 0.45s ease-out both; }
+
+h1, h2, h3 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+}
+.serif { font-family: 'Newsreader', Georgia, serif; }
+.mono  { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: "tnum"; }
+.eyebrow {
+  font-size: 18px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 600;
+}
+.rule     { height: 1px; background: var(--rule); width: 100%; }
+.accent   { color: var(--accent); }
+.green    { color: var(--green); }
+.muted    { color: var(--ink-3); }
+
+.slide       { display: flex; flex-direction: column; height: 100%; width: 100%; }
+.slide-head  { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 36px; }
+.slide-num   { font-family: 'JetBrains Mono', monospace; color: var(--ink-3); font-size: 18px; letter-spacing: .1em; }
+.slide-title { font-size: 60px; line-height: 1.05; letter-spacing: -.015em; }
+
+.cover {
+  padding: 90px 110px; background: var(--paper);
+  background-image:
+    radial-gradient(circle at 88% 18%, rgba(200,80,30,.08), transparent 38%),
+    radial-gradient(circle at 12% 86%, rgba(47,90,58,.08), transparent 40%);
+}
+.cover-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; height: 100%; }
+.cover h1   { font-size: 96px; line-height: .95; letter-spacing: -.025em; font-weight: 600; }
+.cover-meta {
+  display: flex; flex-direction: column; justify-content: space-between;
+  height: 100%; align-items: flex-end; text-align: right;
+}
+
+.figure { background: #fff; border: 1px solid var(--rule); padding: 14px; border-radius: 2px; }
+.figure img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.cap { font-size: 16px; color: var(--ink-3); margin-top: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: .04em; }
+
+.pullquote {
+  font-family: 'Newsreader', Georgia, serif; font-size: 64px; line-height: 1.12;
+  font-weight: 500; letter-spacing: -.015em; font-style: italic; color: var(--ink);
+}
+.pullquote::before { content: "\201C"; color: var(--accent); font-size: 1em; line-height: 0; display: inline-block; margin-right: .05em; }
+.pullquote::after  { content: "\201D"; color: var(--accent); }
+
+.brandfoot {
+  position: absolute; left: 110px; right: 110px; bottom: 48px;
+  display: flex; justify-content: space-between; color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: .06em;
+}
+.brandfoot .mark { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink-2); }
+.brandfoot .mark .sq { width: 10px; height: 10px; background: var(--accent); display: inline-block; }
+
+table.t { border-collapse: collapse; width: 100%; font-size: 24px; }
+table.t th, table.t td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--rule); }
+table.t th { font-weight: 600; color: var(--ink-3); letter-spacing: .12em; text-transform: uppercase; font-size: 15px; }
+table.t td.num { text-align: right; font-family: 'JetBrains Mono', monospace; }
+table.t tr.best td { background: rgba(47,90,58,.08); }
+table.t tr.worst td { color: var(--red); }
+
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
+.dot.red    { background: #b73223; }
+.dot.orange { background: var(--accent); }
+.dot.green  { background: var(--green); }
+.dot.blue   { background: var(--blue); }
+.dot.olive  { background: #7da14a; }
+
+.url-callout {
+  background: var(--ink); color: var(--paper); padding: 24px 32px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 32px;
+  letter-spacing: .04em; text-align: center;
+}
+.url-callout span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div id="notes-panel">
+  <div class="notes-header">Speaker Notes &nbsp;&middot;&nbsp; Press N to hide</div>
+  <div id="notes-text"></div>
+</div>
+
+<div id="kbd-hint">
+  <kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate &nbsp;&nbsp;
+  <kbd>N</kbd> notes &nbsp;&nbsp;
+  <kbd>F</kbd> fullscreen &nbsp;&nbsp;
+  <kbd>R</kbd> reset
+</div>
+
+<deck-stage width="1920" height="1080">
+
+<!-- 01 COVER -->
+<section data-label="01 Cover" class="cover">
+  <div class="cover-grid">
+    <div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+      <div class="eyebrow">
+        <span style="display:inline-block;width:14px;height:14px;background:var(--accent);margin-right:14px;vertical-align:-2px"></span>
+        SearchFCR &middot; UHP Honors Symposium 2026
+      </div>
+      <div>
+        <h1>Multi-Robot<br/>Search &amp; Rescue<br/>Under<br/><em style="font-style:italic;color:var(--accent)">Energy Constraints</em></h1>
+        <div style="margin-top:36px;font-size:30px;color:var(--ink-2);max-width:780px;line-height:1.35">
+          How do battery-powered drones coordinate to find a survivor as fast as possible?
+        </div>
+      </div>
+      <div class="mono" style="font-size:18px;color:var(--ink-3);letter-spacing:.1em">
+        searchfcr.fozhan.dev &nbsp;&middot;&nbsp; github.com/foojanbabaeeian/Multi-Robot-Algo
+      </div>
+    </div>
+    <div class="cover-meta">
+      <div class="mono" style="font-size:18px;letter-spacing:.16em;color:var(--ink-3)">CSULB &middot; Honors Program</div>
+      <div style="display:flex;flex-direction:column;gap:28px;align-items:flex-end">
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">Author</div>
+          <div class="serif" style="font-size:34px;line-height:1.2">Fozhan Babaeiyan Ghamsari</div>
+          <div class="serif" style="font-size:26px;line-height:1.4;color:var(--ink-2);margin-top:4px">Advisor: Prof. Oscar Morales-Ponce</div>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">Spring 2026</div>
+          <div class="mono" style="font-size:18px;color:var(--ink-3)">Computer Science &amp; Computer Engineering</div>
+        </div>
+      </div>
+      <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.14em;align-self:flex-end">01 &nbsp;/&nbsp; 13</div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 DISASTERS ARE SEARCH PROBLEMS -->
+<section data-label="02 Disasters" style="padding:0;background:var(--ink);color:var(--paper);display:grid;grid-template-columns:520px 1fr">
+  <div style="padding:88px 56px 88px 110px;display:flex;flex-direction:column;justify-content:space-between">
+    <div>
+      <div class="eyebrow" style="color:#bdb6a1">01 &nbsp;/&nbsp; Motivation</div>
+      <h2 style="color:var(--paper);font-size:84px;line-height:1;margin-top:24px;letter-spacing:-.02em">Disasters<br/>are search<br/>problems.</h2>
+    </div>
+    <div style="font-size:26px;line-height:1.45;color:#d6d0bd;max-width:440px">
+      Collapsed buildings, earthquake rubble, flood sites. A drone fleet can clear them faster &mdash; <em style="color:#fff">if it coordinates</em>. Without coordination, robots revisit the same rooms while high-probability regions go unchecked.
+    </div>
+    <div>
+      <div style="font-size:26px;color:#fff;font-family:'Newsreader',serif;margin-bottom:16px">Same map &middot; same robots &middot; same target:</div>
+      <div style="display:flex;gap:32px;align-items:center">
+        <div style="text-align:center">
+          <div class="mono" style="font-size:13px;color:#b73223;letter-spacing:.14em">NO COORDINATION</div>
+          <div class="serif count-el" style="font-size:72px;color:#b73223;line-height:1" data-count-to="53" data-count-decimals="0">53</div>
+          <div class="mono" style="font-size:12px;color:#7a7466">FCR score</div>
+        </div>
+        <div style="font-size:36px;color:#4a4438">&rarr;</div>
+        <div style="text-align:center">
+          <div class="mono" style="font-size:13px;color:#7da14a;letter-spacing:.14em">COORDINATED</div>
+          <div class="serif count-el" style="font-size:72px;color:#7da14a;line-height:1" data-count-to="3" data-count-decimals="0">3</div>
+          <div class="mono" style="font-size:12px;color:#7a7466">FCR score</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:22px;color:#fff;font-weight:600">18&times; reduction &mdash; no new hardware.</div>
+    </div>
+    <div class="mono" style="font-size:16px;color:#7a7466;letter-spacing:.16em">SAME SEED &middot; n=30 &middot; R=3 &middot; E=14</div>
+  </div>
+  <div style="background:#fff;display:flex;align-items:center;justify-content:center;padding:60px">
+    <img src="./figures/fig_m1_vs_m4star.png" style="max-width:100%;max-height:100%;object-fit:contain" alt="M1 vs M4* on the same instance"/>
+  </div>
+</section>
+
+<!-- 03 THE QUESTION -->
+<section data-label="03 Question">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">02 &nbsp;/&nbsp; Research Question</div>
+        <div class="slide-title serif" style="margin-top:18px">The question is not <em>whether</em>.</div>
+      </div>
+      <div class="slide-num">03 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:80px;margin-top:80px;flex:1">
+      <div class="pullquote">
+        How do you coordinate a small fleet of <span class="accent">battery-limited</span> robots to find a target hidden among <em>n</em> sites &mdash; without knowing where it is?
+      </div>
+      <div style="display:flex;flex-direction:column;gap:28px;justify-content:center">
+        <div>
+          <div class="eyebrow">The Setup</div>
+          <ul style="list-style:none;font-size:26px;line-height:1.55;margin-top:14px">
+            <li><span class="mono accent">R</span> &nbsp; robots, finite energy <span class="mono">E</span></li>
+            <li><span class="mono accent">n</span> &nbsp; candidate sites in a search area</li>
+            <li><span class="mono accent">p</span> &nbsp; prior probability per site (sensor data)</li>
+            <li><span class="mono accent">&tau;</span> &nbsp; one hidden target, drawn from <span class="mono">p</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="eyebrow">Our Goal</div>
+          <div style="font-size:28px;margin-top:10px" class="serif">Find an <em>assignment</em> &amp; <em>order</em> that minimizes the finding robot&rsquo;s travel.</div>
+        </div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>03 &middot; The Question</span></div>
+  </div>
+</section>
+
+<!-- 04 FCR METRIC -->
+<section data-label="04 FCR Metric">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">03 &nbsp;/&nbsp; Our Metric</div>
+        <div class="slide-title serif" style="margin-top:18px">Finder Competitive Ratio</div>
+      </div>
+      <div class="slide-num">04 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;margin-top:60px;flex:1;align-items:center">
+      <div>
+        <div class="serif" style="font-size:120px;line-height:1;letter-spacing:-.03em">
+          FCR&nbsp;=&nbsp;<span style="display:inline-block;text-align:center;vertical-align:middle">
+            <span style="display:block;border-bottom:3px solid var(--ink);padding:0 18px 6px">D<sub>f</sub></span>
+            <span style="display:block;padding-top:6px">D<sub>opt</sub></span>
+          </span>
+        </div>
+        <div style="margin-top:50px;font-size:28px;line-height:1.5;max-width:620px">
+          <div style="display:flex;gap:20px;align-items:baseline">
+            <span class="mono accent" style="width:60px">D<sub>f</sub></span>
+            <span>distance the finding robot actually traveled.</span>
+          </div>
+          <div style="display:flex;gap:20px;align-items:baseline;margin-top:16px">
+            <span class="mono green" style="width:60px">D<sub>opt</sub></span>
+            <span>distance an omniscient agent would have flown.</span>
+          </div>
+        </div>
+        <div style="margin-top:40px;padding:24px 28px;background:var(--paper-2);border-left:3px solid var(--accent);font-size:24px;line-height:1.5">
+          <strong>FCR = 1</strong> &nbsp;&rarr;&nbsp; the finder flew the geodesic. <span class="muted">Anything above is overhead from uncertainty.</span>
+        </div>
+      </div>
+      <div class="figure">
+        <img src="./figures/fig_fcr_explanation.png" alt="FCR worked example"/>
+        <div class="cap">Lower FCR = better coordination.</div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>04 &middot; Finder Competitive Ratio</span></div>
+  </div>
+</section>
+
+<!-- 05 FOUR MODELS -->
+<section data-label="05 Four Models">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">04 &nbsp;/&nbsp; Framework</div>
+        <div class="slide-title serif" style="margin-top:18px">Four models, one ladder.</div>
+      </div>
+      <div class="slide-num">05 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:64px;flex:1" class="stagger">
+      <div style="border:1px solid var(--rule);padding:28px;background:#f7f4eb;display:flex;flex-direction:column">
+        <div class="mono" style="color:var(--red);font-size:18px;letter-spacing:.18em;font-weight:600">M1 &middot; RANDOM</div>
+        <div class="serif" style="font-size:48px;line-height:1.05;margin-top:14px">No comm.<br/>Each robot solo.</div>
+        <div style="margin-top:auto;padding-top:24px">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em">ENERGY</div>
+          <div class="mono" style="font-size:24px">&infin;</div>
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em;margin-top:14px">COORD.</div>
+          <div class="mono" style="font-size:24px">none</div>
+        </div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:28px;background:#f7f4eb;display:flex;flex-direction:column">
+        <div class="mono" style="color:var(--blue);font-size:18px;letter-spacing:.18em;font-weight:600">M2 &middot; AUCTION &infin;E</div>
+        <div class="serif" style="font-size:48px;line-height:1.05;margin-top:14px">SSI auction.<br/>Battery-free.</div>
+        <div style="margin-top:auto;padding-top:24px">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em">ENERGY</div>
+          <div class="mono" style="font-size:24px">&infin;</div>
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em;margin-top:14px">COORD.</div>
+          <div class="mono" style="font-size:24px">full</div>
+        </div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:28px;background:#f7f4eb;display:flex;flex-direction:column">
+        <div class="mono" style="color:var(--accent);font-size:18px;letter-spacing:.18em;font-weight:600">M3 &middot; SINGLE SORTIE</div>
+        <div class="serif" style="font-size:48px;line-height:1.05;margin-top:14px">Auction +<br/>finite battery.</div>
+        <div style="margin-top:auto;padding-top:24px">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em">ENERGY</div>
+          <div class="mono" style="font-size:24px">E</div>
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em;margin-top:14px">BID</div>
+          <div class="mono" style="font-size:24px">p / d</div>
+        </div>
+      </div>
+      <div style="border:2px solid var(--green);padding:27px;background:#eef3ec;display:flex;flex-direction:column;position:relative">
+        <div style="position:absolute;top:-1px;right:-1px;background:var(--green);color:var(--paper);font-family:'JetBrains Mono',monospace;font-size:13px;padding:6px 12px;letter-spacing:.16em">CONTRIBUTION</div>
+        <div class="mono" style="color:var(--green);font-size:18px;letter-spacing:.18em;font-weight:600">M4&#9733; &middot; MULTI-SORTIE</div>
+        <div class="serif" style="font-size:48px;line-height:1.05;margin-top:14px">Chain several<br/>sites per trip.</div>
+        <div style="margin-top:auto;padding-top:24px">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em">ENERGY</div>
+          <div class="mono" style="font-size:24px">E</div>
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.1em;margin-top:14px">BID</div>
+          <div class="mono" style="font-size:24px;color:var(--green);font-weight:600">p / d&sup2;</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:48px;display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr auto;gap:18px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--ink-3);letter-spacing:.1em">
+      <div>M1</div>
+      <div style="height:1px;background:var(--rule);position:relative"><span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--paper);padding:0 12px;color:var(--accent);font-weight:600">+ COMMUNICATION</span></div>
+      <div>M2</div>
+      <div style="height:1px;background:var(--rule);position:relative"><span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--paper);padding:0 12px;color:var(--accent);font-weight:600">+ FINITE BATTERY</span></div>
+      <div>M3</div>
+      <div style="height:1px;background:var(--rule);position:relative"><span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--paper);padding:0 12px;color:var(--accent);font-weight:600">+ CHAIN EXTENSION</span></div>
+      <div style="color:var(--green);font-weight:700">M4&#9733;</div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>05 &middot; Model Hierarchy</span></div>
+  </div>
+</section>
+
+<!-- 06 M1 vs M4* -->
+<section data-label="06 M1 vs M4star">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">05 &nbsp;/&nbsp; Same Instance</div>
+        <div class="slide-title serif" style="margin-top:18px">Two algorithms. <em>One</em> seed.</div>
+      </div>
+      <div class="slide-num">06 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:48px;margin-top:48px;flex:1">
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div>
+            <div class="mono" style="color:var(--red);font-weight:600;letter-spacing:.18em;font-size:18px">M1 &middot; RANDOM</div>
+            <div class="serif" style="font-size:44px;margin-top:6px">Spaghetti tracks.</div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono muted" style="font-size:14px;letter-spacing:.14em">FCR</div>
+            <div class="serif count-el" style="font-size:130px;color:var(--red);line-height:1" data-count-to="53.65" data-count-decimals="2" data-count-duration="1100">53.65</div>
+          </div>
+        </div>
+        <div class="figure" style="margin-top:24px;flex:1;display:flex;align-items:center;justify-content:center">
+          <img src="./figures/fig_m1_vs_m4star.png" style="max-width:100%;max-height:520px;object-fit:contain;clip-path:inset(0 50% 0 0)"/>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div>
+            <div class="mono" style="color:var(--green);font-weight:600;letter-spacing:.18em;font-size:18px">M4&#9733; &middot; AUCTION p/d&sup2;</div>
+            <div class="serif" style="font-size:44px;margin-top:6px">Tight, ordered tours.</div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono muted" style="font-size:14px;letter-spacing:.14em">FCR</div>
+            <div class="serif count-el" style="font-size:130px;color:var(--green);line-height:1" data-count-to="3.02" data-count-decimals="2" data-count-duration="900">3.02</div>
+          </div>
+        </div>
+        <div class="figure" style="margin-top:24px;flex:1;display:flex;align-items:center;justify-content:center">
+          <img src="./figures/fig_m1_vs_m4star.png" style="max-width:100%;max-height:520px;object-fit:contain;clip-path:inset(0 0 0 50%)"/>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:32px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--rule);padding-top:18px">
+      <div class="mono" style="font-size:18px;color:var(--ink-3);letter-spacing:.1em">SEED 7 &middot; n=30 &middot; R=3 &middot; E=14</div>
+      <div class="serif" style="font-size:30px"><span class="accent">&asymp; 18&times;</span> shorter finder travel from coordination alone.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 AUCTION MECHANISM -->
+<section data-label="07 Auction">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">06 &nbsp;/&nbsp; How M4&#9733; Runs</div>
+        <div class="slide-title serif" style="margin-top:18px">Auction, then chain.</div>
+      </div>
+      <div class="slide-num">07 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:64px;margin-top:48px;flex:1;align-items:stretch">
+      <div class="figure" style="display:flex;align-items:center;justify-content:center">
+        <img src="./figures/fig_m4star_walkthrough.png" alt="M4* walkthrough"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:32px;justify-content:center" class="stagger-left">
+        <div style="display:flex;gap:24px;align-items:flex-start">
+          <div class="serif" style="font-size:64px;color:var(--accent);line-height:.9;font-weight:600">1</div>
+          <div>
+            <div class="serif" style="font-size:32px">SSI Auction.</div>
+            <div style="font-size:22px;color:var(--ink-2);line-height:1.45;margin-top:6px">Each robot bids on every feasible site. Highest <span class="mono">p/d&sup2;</span> wins. Repeat until every robot has an anchor.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;align-items:flex-start">
+          <div class="serif" style="font-size:64px;color:var(--accent);line-height:.9;font-weight:600">2</div>
+          <div>
+            <div class="serif" style="font-size:32px">Greedy Chain.</div>
+            <div style="font-size:22px;color:var(--ink-2);line-height:1.45;margin-top:6px">From the anchor, append the next-best feasible site as long as the round-trip fits in remaining energy. ~5 sites per sortie.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;align-items:flex-start">
+          <div class="serif" style="font-size:64px;color:var(--accent);line-height:.9;font-weight:600">3</div>
+          <div>
+            <div class="serif" style="font-size:32px">Bayesian Update.</div>
+            <div style="font-size:22px;color:var(--ink-2);line-height:1.45;margin-top:6px">Robots return to base, broadcast results, zero-out visited priors, renormalize, then re-auction.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>07 &middot; Algorithmic Walkthrough</span></div>
+  </div>
+</section>
+
+<!-- 08 WHY p/d² -->
+<section data-label="08 p over d2">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">07 &nbsp;/&nbsp; Key Insight</div>
+        <div class="slide-title serif" style="margin-top:18px">Why <em>p/d&sup2;</em>?</div>
+      </div>
+      <div class="slide-num">08 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:80px;margin-top:60px;flex:1;align-items:center">
+      <div>
+        <div class="serif" style="font-size:34px;line-height:1.4;color:var(--ink-2)">
+          <span class="serif" style="font-size:58px;color:var(--accent);font-weight:600">Cost foreclosure.</span><br/>
+          Anchoring at distance <span class="mono">d</span> burns <span class="mono">2d</span> of the budget on base legs &mdash; leaving <span class="mono">E&minus;2d</span> for chain extensions. Distant anchors aren&rsquo;t just expensive; they <em>foreclose</em> on future hops.
+        </div>
+        <div style="margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div style="border:1px solid var(--rule);padding:24px;background:#f7f4eb">
+            <div class="eyebrow" style="color:var(--ink-3)">Classic rule (1975)</div>
+            <div class="serif" style="font-size:60px;margin-top:8px">p / d</div>
+            <div style="font-size:18px;color:var(--ink-3);margin-top:8px">Linear penalty. Works for a single searcher with unlimited battery.</div>
+          </div>
+          <div style="border:2px solid var(--green);padding:23px;background:#eef3ec">
+            <div class="eyebrow" style="color:var(--green)">This work</div>
+            <div class="serif" style="font-size:60px;margin-top:8px;color:var(--green)">p / d&sup2;</div>
+            <div style="font-size:18px;color:var(--ink-2);margin-top:8px">Quadratic penalty captures foreclosure under finite energy.</div>
+          </div>
+        </div>
+      </div>
+      <div class="figure" style="display:flex;flex-direction:column">
+        <img src="./figures/fig_bid_variants.png" style="height:auto" alt="Bid variants"/>
+        <div class="cap">Mean FCR by bid function &middot; 5,000 trials.</div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>08 &middot; The p/d&sup2; Bid</span></div>
+  </div>
+</section>
+
+<!-- 09 HEADLINE RESULTS -->
+<section data-label="09 Results">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">08 &nbsp;/&nbsp; Main Results</div>
+        <div class="slide-title serif" style="margin-top:18px">Headline results.</div>
+      </div>
+      <div class="slide-num">09 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:64px;margin-top:48px;flex:1">
+      <div>
+        <table class="t">
+          <thead>
+            <tr><th>Model</th><th style="text-align:right">Mean FCR</th><th style="text-align:right">&plusmn;95% CI</th></tr>
+          </thead>
+          <tbody>
+            <tr class="worst"><td><span class="dot red"></span>M1 &middot; Random (no coordination)</td><td class="num">18.74</td><td class="num">0.486</td></tr>
+            <tr><td><span class="dot orange"></span>M3 &middot; Auction, single site/trip</td><td class="num">6.32</td><td class="num">0.136</td></tr>
+            <tr><td><span class="dot olive"></span>M4 &middot; Auction + chaining (p/d)</td><td class="num">3.16</td><td class="num">0.065</td></tr>
+            <tr class="best"><td><span class="dot green"></span><strong>M4&#9733; &middot; Auction + chaining (p/d&sup2;)</strong></td><td class="num"><strong>3.11</strong></td><td class="num"><strong>0.058</strong></td></tr>
+            <tr><td><span class="dot blue"></span>M2 &middot; Auction, unlimited battery</td><td class="num">2.83</td><td class="num">0.069</td></tr>
+          </tbody>
+        </table>
+        <div class="cap" style="margin-top:18px">5,000 paired trials &middot; n=30, R=3, E=14 &middot; sorted by mean FCR.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:36px">
+        <div>
+          <div class="eyebrow">Coordination Gain</div>
+          <div class="serif count-el" style="font-size:110px;line-height:1;color:var(--accent);letter-spacing:-.02em" data-count-to="6.6" data-count-decimals="1" data-count-suffix="&times;">6.6&times;</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:8px">M1 &rarr; M2 &middot; communication alone</div>
+        </div>
+        <div>
+          <div class="eyebrow">Energy Penalty Recovered</div>
+          <div class="serif count-el" style="font-size:110px;line-height:1;letter-spacing:-.02em" data-count-to="90" data-count-decimals="0" data-count-suffix="%" data-count-duration="1000">90%</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:8px">M3 &rarr; M4 &middot; multi-node sorties</div>
+          <div class="progress-track" style="margin-top:14px">
+            <div class="progress-fill" style="background:var(--green);--progress-to:90%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow">Best Energy-Bound FCR</div>
+          <div class="serif count-el" style="font-size:110px;line-height:1;color:var(--green);letter-spacing:-.02em" data-count-to="3.11" data-count-decimals="2">3.11</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:8px">M4&#9733; &middot; within 10% of unconstrained M2</div>
+        </div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>09 &middot; 5,000 Paired Trials</span></div>
+  </div>
+</section>
+
+<!-- 10 WEB SIMULATOR -->
+<section data-label="10 Simulator">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">09 &nbsp;/&nbsp; Live Demo</div>
+        <div class="slide-title serif" style="margin-top:18px">SearchFCR &mdash; Try it now.</div>
+      </div>
+      <div class="slide-num">10 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:.45fr 1fr;gap:80px;margin-top:48px;flex:1;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:40px">
+        <div class="url-callout">
+          <span>searchfcr</span>.fozhan.dev
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;font-size:24px;color:var(--ink-2);line-height:1.45">
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;flex-shrink:0">01</span>
+            <span>Run all 5 models on the same seed &mdash; side by side</span>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;flex-shrink:0">02</span>
+            <span>Watch FCR &amp; belief entropy collapse round by round</span>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;flex-shrink:0">03</span>
+            <span>Adjust robots, energy, sites &mdash; fully interactive</span>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-start;border:1px solid var(--green);padding:12px 16px;background:#eef3ec;border-radius:2px">
+            <span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;flex-shrink:0">&rarr;</span>
+            <span style="color:var(--ink)">Click <strong>&ldquo;Honors Thesis Slides&rdquo;</strong> to open this deck on your phone</span>
+          </div>
+        </div>
+        <div style="font-size:20px;color:var(--ink-3);font-style:italic;border-top:1px solid var(--rule);padding-top:20px">
+          Scan or type the URL now &mdash; try M1 vs M4&#9733; live.
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+        <img src="./figures/fig_simulation_snapshot_v2.png"
+             style="max-width:100%;max-height:480px;object-fit:contain;border:1px solid var(--rule);border-radius:2px"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+             alt="Simulator screenshot"/>
+        <div style="display:none;width:100%;height:380px;background:#f7f4eb;border:1px solid var(--rule);border-radius:2px;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+          <div style="font-size:64px">&#x1F4BB;</div>
+          <div class="mono" style="font-size:20px;color:var(--ink-3);text-align:center">searchfcr.fozhan.dev</div>
+          <div style="font-size:22px;color:var(--ink-2);text-align:center;padding:0 40px;line-height:1.4">Interactive simulator &mdash; visit on your phone or computer</div>
+        </div>
+        <div class="mono" style="font-size:16px;color:var(--ink-3);letter-spacing:.06em">Single mode &middot; M4&#9733; &middot; n=30 &middot; R=3 &middot; seed 42</div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>10 &middot; Interactive Simulator</span></div>
+  </div>
+</section>
+
+<!-- 11 PYBULLET 3D DEMO -->
+<section data-label="11 PyBullet" style="background:#0e0e0e;color:var(--paper);padding:88px 110px">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow" style="color:#bdb6a1">10 &nbsp;/&nbsp; 3D Demo</div>
+        <div class="slide-title serif" style="color:var(--paper);margin-top:18px">Same map. Same robots. Radically different paths.</div>
+      </div>
+      <div class="slide-num" style="color:#7a7466">11 / 13</div>
+    </div>
+    <div style="height:1px;background:#3a3528"></div>
+    <div style="margin-top:32px;flex:1;display:flex;flex-direction:column">
+      <div style="display:flex;gap:32px;margin-bottom:14px">
+        <div style="flex:1;text-align:center">
+          <div class="mono" style="font-size:13px;letter-spacing:.18em;color:#e05050">M1 &mdash; RANDOM &nbsp;|&nbsp; FCR 18.74 &nbsp;&middot;&nbsp; Spaghetti tracks</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div class="mono" style="font-size:13px;letter-spacing:.18em;color:#4fc3f7">M4&#9733; &mdash; AUCTION + CHAIN &nbsp;|&nbsp; FCR 3.11 &nbsp;&middot;&nbsp; Clean, ordered paths</div>
+        </div>
+      </div>
+      <div style="background:#000;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;flex:1;overflow:hidden;border-radius:4px">
+        <img src="./figures/compare_M1_vs_M4star.gif"
+             style="max-width:100%;max-height:400px;object-fit:contain"
+             onerror="this.style.display='none';document.getElementById('pybullet-missing').style.display='flex'"
+             alt="PyBullet demo"/>
+        <div id="pybullet-missing"
+             style="display:none;flex-direction:column;align-items:center;gap:12px;color:#4a4438;padding:40px">
+          <div style="font-size:48px">&#127916;</div>
+          <div class="mono" style="font-size:13px;letter-spacing:.12em;text-align:center">PYBULLET DEMO &mdash; searchfcr.fozhan.dev &rarr; 3D Demo tab</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:18px;color:#7a7466">
+        Same map &middot; same 3 robots &middot; same target &mdash; coordination alone makes the difference.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 BENCHMARK YOU CAN FORK -->
+<section data-label="12 Benchmark">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">11 &nbsp;/&nbsp; Open Source</div>
+        <div class="slide-title serif" style="margin-top:18px">A benchmark you can fork.</div>
+      </div>
+      <div class="slide-num">12 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:60px;flex:1">
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div>
+          <div class="serif" style="font-size:38px;line-height:1.2">One command reproduces everything.</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:8px">Every figure. Every trial. Every experiment.</div>
+        </div>
+        <div style="background:#15140f;color:#d6d0bd;font-family:'JetBrains Mono',monospace;font-size:20px;padding:24px 28px;border-radius:2px;line-height:1.6">
+          <span style="color:#7a7466"># reproduce every figure</span><br/>
+          <span style="color:#c8501e">$</span> python reproduce_thesis.py<br/><br/>
+          <span style="color:#7a7466"># install as a package</span><br/>
+          <span style="color:#c8501e">$</span> pip install searchfcr<br/><br/>
+          <span style="color:#7a7466"># or run live</span><br/>
+          <span style="color:#c8501e">&rarr;</span> searchfcr.fozhan.dev
+        </div>
+        <div class="mono" style="font-size:16px;color:var(--ink-3);letter-spacing:.06em">github.com/foojanbabaeeian/Multi-Robot-Algo</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:14px">
+        <div style="border:1px solid var(--rule);padding:24px;display:flex;flex-direction:column;justify-content:center">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.16em">MODELS</div>
+          <div class="serif" style="font-size:64px;line-height:1;margin-top:6px">7</div>
+          <div style="font-size:18px;color:var(--ink-3)">incl. Hungarian baselines</div>
+        </div>
+        <div style="border:1px solid var(--rule);padding:24px;display:flex;flex-direction:column;justify-content:center">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.16em">BID FUNCTIONS</div>
+          <div class="serif" style="font-size:64px;line-height:1;margin-top:6px">5</div>
+          <div style="font-size:18px;color:var(--ink-3)">extensible API</div>
+        </div>
+        <div style="border:1px solid var(--rule);padding:24px;display:flex;flex-direction:column;justify-content:center">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.16em">EXPERIMENTS</div>
+          <div class="serif" style="font-size:64px;line-height:1;margin-top:6px">8</div>
+          <div style="font-size:18px;color:var(--ink-3)">fixed-seed reproducible</div>
+        </div>
+        <div style="border:1px solid var(--rule);padding:24px;display:flex;flex-direction:column;justify-content:center">
+          <div class="mono" style="font-size:14px;color:var(--ink-3);letter-spacing:.16em">UNIT TESTS</div>
+          <div class="serif" style="font-size:64px;line-height:1;margin-top:6px">37</div>
+          <div style="font-size:18px;color:var(--ink-3)">pytest</div>
+        </div>
+        <div style="border:1px solid var(--rule);padding:24px;display:flex;flex-direction:column;justify-content:center;background:#eef3ec;grid-column:1/-1">
+          <div class="mono" style="font-size:14px;color:var(--green);letter-spacing:.16em">PAIRED MONTE CARLO TRIALS</div>
+          <div style="display:flex;align-items:baseline;gap:24px;margin-top:6px">
+            <div class="serif count-el" style="font-size:64px;line-height:1;color:var(--green)" data-count-to="5000" data-count-decimals="0">5,000</div>
+            <div style="font-size:20px;color:var(--ink-2)">per config &middot; ~3 min to reproduce all results</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>12 &middot; Reproducibility</span></div>
+  </div>
+</section>
+
+<!-- 13 FOUR TAKEAWAYS -->
+<section data-label="13 Takeaways">
+  <div class="slide">
+    <div class="slide-head">
+      <div>
+        <div class="eyebrow">12 &nbsp;/&nbsp; Closing</div>
+        <div class="slide-title serif" style="margin-top:18px">Four takeaways.</div>
+      </div>
+      <div class="slide-num">13 / 13</div>
+    </div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:48px 80px;margin-top:64px;flex:1" class="stagger">
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div class="serif" style="font-size:96px;color:var(--accent);line-height:.85;font-weight:600">01</div>
+        <div>
+          <div class="serif" style="font-size:34px;line-height:1.15">Communication beats fleet size.</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:10px;line-height:1.45">The dominant lever is whether robots talk &mdash; not how many you launch. 6.6&times; gain from coordination alone.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div class="serif" style="font-size:96px;color:var(--accent);line-height:.85;font-weight:600">02</div>
+        <div>
+          <div class="serif" style="font-size:34px;line-height:1.15">Chain trips, not bigger batteries.</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:10px;line-height:1.45">Multi-node sorties recover 90% of the energy penalty &mdash; in software, no hardware changes.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div class="serif" style="font-size:96px;color:var(--accent);line-height:.85;font-weight:600">03</div>
+        <div>
+          <div class="serif" style="font-size:34px;line-height:1.15"><em>p/d&sup2;</em> is the right bid under finite&nbsp;E.</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:10px;line-height:1.45">Advantage grows under tight budgets and noisy maps &mdash; exactly when it matters most in real SAR.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div class="serif" style="font-size:96px;color:var(--green);line-height:.85;font-weight:600">04</div>
+        <div>
+          <div class="serif" style="font-size:34px;line-height:1.15">All open-source &amp; live.</div>
+          <div style="font-size:22px;color:var(--ink-2);margin-top:10px;line-height:1.45">Fully reproducible &middot; interactive at <strong>searchfcr.fozhan.dev</strong> &middot; one command reproduces all results.</div>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--rule);padding-top:24px;margin-top:24px;display:flex;justify-content:space-between;align-items:baseline">
+      <div>
+        <div class="mono" style="font-size:14px;letter-spacing:.18em;color:var(--ink-3)">CSULB HONORS PROGRAM &middot; SPRING 2026</div>
+        <div class="serif" style="font-size:22px;margin-top:4px">Fozhan Babaeiyan Ghamsari &amp; Oscar Morales-Ponce</div>
+      </div>
+      <div class="mono" style="font-size:18px;color:var(--accent);letter-spacing:.1em">searchfcr.fozhan.dev</div>
+    </div>
+    <div class="brandfoot"><span class="mark"><span class="sq"></span>SearchFCR &middot; UHP 2026</span><span>Thank you &middot; Questions?</span></div>
+  </div>
+</section>
+
+</deck-stage>
+
+<script>
+(function () {
+  const bar = document.getElementById('progress-bar');
+  const notesPanel = document.getElementById('notes-panel');
+  const notesText  = document.getElementById('notes-text');
+  const kbdHint    = document.getElementById('kbd-hint');
+  let notesVisible = false;
+  let kbdTimer = null;
+  let _total = 0;
+  let _initialFired = false;
+
+  setTimeout(() => {
+    kbdHint.classList.add('show');
+    kbdTimer = setTimeout(() => kbdHint.classList.remove('show'), 4000);
+  }, 800);
+
+  // Parse speaker notes immediately so deck-stage.js can also read them.
+  const notesTag = document.getElementById('speaker-notes');
+  if (notesTag) {
+    try { window._deckNotes = JSON.parse(notesTag.textContent || '[]'); }
+    catch (e) { window._deckNotes = []; }
+  }
+
+  function animateCounter(el) {
+    const to = parseFloat(el.dataset.countTo);
+    const decimals = parseInt(el.dataset.countDecimals || '0');
+    const duration = parseInt(el.dataset.countDuration || '900');
+    const suffix = el.dataset.countSuffix || '';
+    if (isNaN(to)) return;
+    const from = to * 0.25;
+    const start = performance.now();
+    function update(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = (from + (to - from) * eased).toFixed(decimals) + suffix;
+      if (progress < 1) { requestAnimationFrame(update); }
+      else {
+        el.textContent = to.toFixed(decimals) + suffix;
+        el.classList.add('bounce');
+        setTimeout(() => el.classList.remove('bounce'), 450);
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  function resetAnimation(el) {
+    el.style.animation = 'none';
+    el.getBoundingClientRect();
+    el.style.animation = '';
+  }
+
+  function applySlide(index, total, slide) {
+    _total = total;
+    bar.style.width = (total <= 1 ? 100 : (index / (total - 1)) * 100) + '%';
+    const notes = window._deckNotes || [];
+    notesText.textContent = notes[index] || '';
+    if (slide) {
+      slide.querySelectorAll('[data-count-to]').forEach(animateCounter);
+      slide.querySelectorAll('.progress-fill').forEach(resetAnimation);
+    }
+  }
+
+  document.addEventListener('slidechange', function (e) {
+    const { index, total, slide } = e.detail;
+    _initialFired = true;
+    applySlide(index, total, slide);
+  });
+
+  // Fallback: slidechange for slide 0 may fire before this listener
+  // registers (slotchange is synchronous in some browsers). Re-run on
+  // DOMContentLoaded to ensure first-slide counters and CSS animations play.
+  document.addEventListener('DOMContentLoaded', function () {
+    // Re-trigger CSS animations for the first active slide by briefly
+    // removing and re-adding data-deck-active (forces animation restart).
+    const active = document.querySelector('section[data-deck-active]');
+    if (active) {
+      active.removeAttribute('data-deck-active');
+      void active.getBoundingClientRect(); // flush style
+      active.setAttribute('data-deck-active', '');
+    }
+
+    // If the initial slidechange was missed, fire counters manually.
+    if (!_initialFired && active) {
+      const allSlides = Array.from(document.querySelectorAll('deck-stage > section'));
+      const idx = allSlides.indexOf(active);
+      const total = allSlides.length;
+      applySlide(idx, total, active);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'n' || e.key === 'N') {
+      notesVisible = !notesVisible;
+      notesPanel.classList.toggle('visible', notesVisible);
+      e.preventDefault();
+    }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+      else document.exitFullscreen().catch(() => {});
+      e.preventDefault();
+    }
+  });
+})();
+</script>
+</body>
+</html>
