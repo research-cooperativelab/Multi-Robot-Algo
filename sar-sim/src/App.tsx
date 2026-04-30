@@ -367,7 +367,66 @@ const SPEED_OPTIONS = [
   { label: '4×',   ms:  300 },
 ]
 
-type AppMode = 'single' | 'compare' | 'benchmark' | 'demo'
+type AppMode = 'single' | 'compare' | 'benchmark' | 'demo' | 'honors'
+
+// ── Honors Thesis Slide Viewer ────────────────────────────────────────────────
+const HONORS_SLIDES = Array.from({ length: 13 }, (_, i) => `/uhp-slides/${String(i + 1).padStart(2, '0')}.png`)
+
+function HonorsSlides() {
+  const [cur, setCur] = useState(0)
+  const N = HONORS_SLIDES.length
+
+  const go = (n: number) => setCur(Math.max(0, Math.min(N - 1, n)))
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur + 1) }
+      if (e.key === 'ArrowLeft')                   { e.preventDefault(); go(cur - 1) }
+      if (e.key === 'Home')                        { e.preventDefault(); go(0) }
+      if (e.key === 'End')                         { e.preventDefault(); go(N - 1) }
+      if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen()
+        else document.exitFullscreen()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [cur])
+
+  return (
+    <div className="honors-wrap">
+      {/* slide image */}
+      <div className="honors-stage" onClick={() => go(cur + 1)}>
+        <img
+          key={cur}
+          src={HONORS_SLIDES[cur]}
+          alt={`Slide ${cur + 1}`}
+          className="honors-img"
+          draggable={false}
+        />
+      </div>
+
+      {/* controls */}
+      <div className="honors-controls">
+        <button className="step-btn" onClick={() => go(0)}           disabled={cur === 0}>First</button>
+        <button className="step-btn" onClick={() => go(cur - 1)}     disabled={cur === 0}>Prev</button>
+        <span className="honors-counter">{cur + 1} / {N}</span>
+        <button className="step-btn play-btn" onClick={() => go(cur + 1)} disabled={cur === N - 1}>Next</button>
+        <button className="step-btn" onClick={() => go(N - 1)}       disabled={cur === N - 1}>Last</button>
+        <button
+          className="step-btn"
+          title="Fullscreen (F)"
+          onClick={() => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen()
+            else document.exitFullscreen()
+          }}
+        >⛶ Full</button>
+      </div>
+
+      <p className="honors-hint">← → navigate &nbsp;·&nbsp; click slide to advance &nbsp;·&nbsp; F for fullscreen</p>
+    </div>
+  )
+}
 
 const DEMO_MODELS = ['M1', 'M4', 'M4*'] as const
 type DemoModel = typeof DEMO_MODELS[number]
@@ -735,14 +794,12 @@ export default function App() {
         <p className="app-subtitle">Multi-robot search &amp; rescue simulator</p>
 
         {/* Honors thesis slides button */}
-        <a
-          href="/slides.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="thesis-slides-btn"
+        <button
+          className={`thesis-slides-btn ${appMode === 'honors' ? 'active' : ''}`}
+          onClick={() => { setAppMode(appMode === 'honors' ? 'single' : 'honors'); setError(null) }}
         >
           🎓 Honors Thesis Slides
-        </a>
+        </button>
 
         {/* nav links */}
         <div className="nav-links">
@@ -750,8 +807,8 @@ export default function App() {
           <a href="/api/health" target="_blank" rel="noopener noreferrer" className="nav-link">API Status</a>
         </div>
 
-        {/* mode selector */}
-        <section className="panel">
+        {/* mode selector — hidden in honors mode */}
+        {appMode !== 'honors' && <section className="panel">
           <h2 className="panel-title">Mode</h2>
           <div className="mode-btns">
             {(['single', 'compare', 'benchmark', 'demo'] as AppMode[]).map(m => (
@@ -764,7 +821,7 @@ export default function App() {
               </button>
             ))}
           </div>
-        </section>
+        </section>}
 
         {/* model selector(s) */}
         {!compareMode ? (
@@ -903,7 +960,7 @@ export default function App() {
         )}
 
         {/* run button */}
-        {appMode !== 'demo' && (
+        {appMode !== 'demo' && appMode !== 'honors' && (
           <button
             className={`run-btn ${(loading || benchLoading) ? 'loading' : ''}`}
             onClick={benchMode ? runBenchmark : compareMode ? runComparison : runSimulation}
@@ -1050,7 +1107,9 @@ export default function App() {
 
       {/* ── canvas area ── */}
       <main className="canvas-area">
-        {appMode === 'demo' ? (
+        {appMode === 'honors' ? (
+          <HonorsSlides />
+        ) : appMode === 'demo' ? (
           <div className="demo-view">
             <h2 className="demo-heading">3D Physics Demo</h2>
             <p className="demo-desc">

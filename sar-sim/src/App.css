@@ -894,6 +894,68 @@ input[type='range']::-webkit-slider-thumb {
   box-shadow: 0 0 10px rgba(79, 195, 247, 0.25);
 }
 
+.thesis-slides-btn.active {
+  background: linear-gradient(135deg, #0d3a6c 0%, #082040 100%);
+  border-color: #4FC3F7;
+  color: #e1f5fe;
+  box-shadow: 0 0 14px rgba(79, 195, 247, 0.4);
+}
+
+/* ── honors slide viewer ──────────────────────────────────────────────────── */
+.honors-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 8px 0 4px;
+}
+
+.honors-stage {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  min-height: 0;
+}
+
+.honors-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.honors-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.honors-counter {
+  font-size: 0.78rem;
+  color: #64748b;
+  min-width: 54px;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.honors-hint {
+  font-size: 0.68rem;
+  color: #334155;
+  flex-shrink: 0;
+}
+
 /* ── nav links ────────────────────────────────────────────────────────────── */
 .nav-links {
   display: flex;
