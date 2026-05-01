@@ -164,7 +164,7 @@ constraint.
 The third strand of related work concerns search under finite energy
 and under probabilistic priors. \citet{Betke1995} introduced \emph{piecemeal learning}, in which a
 robot must periodically return to the origin and therefore can only
-execute bounded-length excursions. \citet{Das2015} studied
+execute bounded-length excursions. \citet{Das2017} studied
 energy-constrained depth-first search
 and proved that the number of robots required to explore a graph
 grows with the ratio of graph diameter to battery capacity. The common
@@ -177,7 +177,7 @@ Search}~\citep{Stone1975} established that search effort should be
 allocated in proportion to the ratio of target probability to search
 cost. This is the theoretical basis for the $p_i / d$ bid function
 used in this thesis: it is Stone's rule evaluated locally at each
-decision point. \citet{Bourgault2002} applied information-theoretic
+decision point. \citet{Bourgault2003} applied information-theoretic
 criteria (specifically mutual information) to coordinated target
 search and demonstrated experimentally that information-greedy
 policies outperform distance-greedy policies. The observation
@@ -234,7 +234,7 @@ Second, a sortie model is formalized in which each energy budget $E$
 constrains a single round trip, not a whole mission. This contrasts
 with prior energy models that either restrict total lifetime
 travel~\citep{Betke1995} or graph traversal under a global
-budget~\citep{Das2015}. The sortie model matches the battery-swap
+budget~\citep{Das2017}. The sortie model matches the battery-swap
 reality of UAV deployments and enables the multi-site chaining
 strategy of Model~4.
 
